@@ -1,0 +1,41 @@
+import { defineConfig } from 'eslint/config';
+import tseslint from 'typescript-eslint';
+
+// Architecture rule enforced automatically (see CLAUDE.md):
+// the domain package uses no outside library and no browser API.
+// Later steps add rules for the adapters, ApiClient and the server.
+
+const browserGlobals = ['window', 'document', 'navigator', 'fetch', 'localStorage', 'AudioContext', 'OfflineAudioContext'];
+
+export default defineConfig(
+  {
+    ignores: ['**/node_modules/**', '**/dist/**', 'packages/web/public/**'],
+  },
+  tseslint.configs.recommended,
+  {
+    rules: {
+      // Parameters starting with "_" may be unused (useful for interface methods not implemented yet).
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    },
+  },
+  {
+    files: ['packages/domain/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            { group: ['@mediapipe/*'], message: 'The domain must not use MediaPipe. Use the HandTracker interface in the web package.' },
+            { group: ['fastify', '@fastify/*'], message: 'The domain must not use Fastify. HTTP belongs to the server controllers.' },
+            { group: ['better-sqlite3', 'sqlite3'], message: 'The domain must not use the database. Use a repository interface.' },
+            { group: ['@instrument/web', '@instrument/server', '**/web/**', '**/server/**'], message: 'The domain must not depend on the web or server packages.' },
+          ],
+        },
+      ],
+      'no-restricted-globals': [
+        'error',
+        ...browserGlobals.map((name) => ({ name, message: 'The domain must not use browser APIs. Put this in an adapter in the web package.' })),
+      ],
+    },
+  },
+);

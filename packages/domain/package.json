@@ -1,0 +1,10 @@
+{
+  "name": "@instrument/domain",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Core rules of the instrument and the game. Plain TypeScript, no outside libraries.",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

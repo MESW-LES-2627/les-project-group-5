@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // No "DOM" here on purpose: domain code cannot use browser APIs
+    // such as window, document or AudioContext. The compiler rejects them.
+    "lib": ["ES2022"],
+    "types": []
+  },
+  "include": ["src"]
+}

@@ -1,0 +1,26 @@
+{
+  "name": "gesture-web-instrument",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "npm run dev -w @instrument/web",
+    "build": "npm run build -w @instrument/web",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint .",
+    "typecheck": "tsc -p packages/domain && tsc -p packages/web",
+    "check": "npm run lint && npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "eslint": "^10.13.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.0",
+    "vitest": "^5.0.5"
+  }
+}
