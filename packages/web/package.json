@@ -1,0 +1,18 @@
+{
+  "name": "@instrument/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The browser app: camera, hand tracking, sound and pages.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@instrument/domain": "*"
+  },
+  "devDependencies": {
+    "vite": "^8.3.4"
+  }
+}
