@@ -22,3 +22,6 @@ export { pickHand } from './hand/pickHand';
 export { CalibrationProfile, DEFAULT_CALIBRATION_PROFILE } from './calibration/CalibrationProfile';
 export { ControlCalibration } from './calibration/ControlCalibration';
 export type { HandControls } from './calibration/HandControls';
+
+export { DEFAULT_VOLUME_THRESHOLD, Instrument } from './instrument/Instrument';
+export type { InstrumentFrame, NoteChange } from './instrument/InstrumentFrame';
