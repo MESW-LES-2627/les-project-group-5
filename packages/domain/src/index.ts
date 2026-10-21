@@ -7,3 +7,5 @@ export { PITCH_CLASSES } from './music/PitchClass';
 export type { PitchClass } from './music/PitchClass';
 export { Scale } from './music/Scale';
 export { ScaleType } from './music/ScaleType';
+
+export type { Point } from './geometry/Point';
