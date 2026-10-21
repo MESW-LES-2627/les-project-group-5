@@ -1,0 +1,50 @@
+@startuml
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam defaultFontName Helvetica
+skinparam componentStyle uml2
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #555555
+}
+skinparam nodesep 45
+skinparam ranksep 55
+
+actor Player
+
+node "Browser" #F3F8FF {
+  component "Player App\n(instrument, game\nand account pages)" as App
+  component "Instrument\n(layouts, scale, notes)" as Instr
+  component "Game\n(exercises, attempts)" as Ear
+  component "Hand Tracking" as Track
+  component "Sound" as Sound
+}
+
+node "Server" #F2FBF2 {
+  component "Accounts\n(sign up, login,\npreferences, progress)" as Acc
+  component "Email Sender" as Mail
+  database "Accounts DB" as DB
+  () "Accounts API\n(REST)" as AAPI
+}
+
+cloud "Email provider" as SMTP #FFF0F6
+component "Webcam" as Cam <<external>> #FFF0F6
+component "MediaPipe" as MP <<external>> #FFF0F6
+component "Web Audio" as WA <<external>> #FFF0F6
+
+Player --> App
+App ..> Instr
+App ..> Ear
+Ear ..> Instr
+Instr ..> Track
+Instr ..> Sound
+Ear ..> Sound
+Track ..> Cam
+Track ..> MP
+Sound ..> WA
+AAPI - Acc
+App ..> AAPI
+Acc ..> DB
+Acc ..> Mail
+Mail --> SMTP
+@enduml

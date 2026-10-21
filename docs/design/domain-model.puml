@@ -1,0 +1,98 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam defaultFontName Helvetica
+skinparam packageStyle rectangle
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #555555
+}
+hide empty members
+hide circle
+skinparam linetype polyline
+skinparam nodesep 60
+skinparam ranksep 60
+
+class Player #FFF8C4
+
+package "Playing" #F3F8FF {
+  class HandGesture {
+    pointing position
+    hand openness
+  }
+  class Instrument
+  class Layout {
+    kind : Grid | Piano
+  }
+  class Pad
+  class Scale {
+    key : C, D, ...
+    mode : Major | Minor
+  }
+  class Degree {
+    number : 1..8
+  }
+  class Note {
+    pitch
+    volume
+  }
+}
+
+package "Accounts" #F2FBF2 {
+  class Account {
+    email
+    email confirmed
+  }
+  class Preferences {
+    key, scale, layout
+    dominant hand
+    sensitivity
+  }
+}
+
+package "Game" #FFF8EE {
+  class Progress {
+    unlocked level
+    best result per exercise
+  }
+  class Attempt {
+    result : Passed | Failed
+  }
+  class Exercise {
+    title
+    level : 1..3
+    key and scale
+  }
+  class Melody {
+    sequence of degrees
+  }
+}
+
+' Player and the three areas
+Player "1" -- "*" HandGesture : makes >
+Player "1" -- "1" Instrument : plays >
+Player "1" -- "0..1" Account : owns >
+Player "1" -- "*" Attempt : makes >
+Player "1" -- "1" Progress : has >
+
+' Playing
+HandGesture "*" -- "0..1" Pad : points at >
+Instrument "1" -- "1" Layout : arranged as >
+Instrument "1" -- "1" Scale : tuned to >
+Instrument "1" -- "*" Note : produces >
+Layout "1" *-- "8" Pad
+Scale "1" *-- "8" Degree
+Pad "1" -- "1" Degree : stands for >
+Note "*" -- "1" Degree : of >
+
+' Accounts
+Account "1" *-- "1" Preferences : keeps >
+Account "1" -- "0..1" Progress : saves >
+Preferences ..> Instrument : configures
+
+' Game
+Attempt "*" -- "1" Exercise : tries >
+Exercise "1" *-- "1" Melody
+Progress "1" -- "*" Exercise : unlocks >
+@enduml
