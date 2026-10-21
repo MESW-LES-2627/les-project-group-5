@@ -10,3 +10,11 @@ export { ScaleType } from "./music/ScaleType";
 
 export type { Point } from "./geometry/Point";
 export type { Layout } from "./layouts/Layout";
+export { SingleBoxLayout } from './layouts/SingleBoxLayout';
+export type { Region } from './layouts/Region';
+
+export type { Handedness, Landmark, TrackedHand } from './hand/TrackedHand';
+export type { HandFeatures } from './hand/HandFeatures';
+export { HandFeatureExtractor } from './hand/HandFeatureExtractor';
+export { HandLandmark, LANDMARK_COUNT } from './hand/HandLandmark';
+export { pickHand } from './hand/pickHand';
