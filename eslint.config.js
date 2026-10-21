@@ -38,4 +38,14 @@ export default defineConfig(
       ],
     },
   },
+  {
+    files: ['packages/web/src/**/*.ts'],
+    ignores: ['packages/web/src/tracking/MediaPipeHandTracker.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: [{ group: ['@mediapipe/*'], message: 'Only MediaPipeHandTracker may import MediaPipe. Use the HandTracker interface.' }] },
+      ],
+    },
+  },
 );

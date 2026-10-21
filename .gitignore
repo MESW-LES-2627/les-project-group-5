@@ -14,3 +14,6 @@ coverage/
 *.log
 .vscode/
 .idea/
+
+# MediaPipe WASM files, copied from node_modules on `npm install`
+packages/web/public/mediapipe/
