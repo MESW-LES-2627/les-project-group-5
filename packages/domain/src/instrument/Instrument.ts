@@ -13,7 +13,8 @@ export const DEFAULT_VOLUME_THRESHOLD = 0.05;
  * - Leaving the cells, closing the hand or losing the hand stops the note.
  *
  * It only decides; it doesn't make sound or draw. Whoever listens to the frames does that.
- * Hysteresis on the volume threshold is planned for Iteration 1: start above 0.06, stop below 0.03.
+ * Hysteresis is planned: on the volume threshold in Iteration 1 (start above 0.06, stop below 0.03)
+ * and on cell borders later.
  */
 export class Instrument {
   private playingDegree: Degree | null = null;
