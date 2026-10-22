@@ -48,4 +48,14 @@ export default defineConfig(
       ],
     },
   },
+  {
+    files: ['packages/server/src/**/*.ts'],
+    ignores: ['packages/server/src/controllers/**', 'packages/server/src/app.ts', 'packages/server/src/**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: [{ group: ['fastify', '@fastify/*'], message: 'Only controllers (and app.ts) may use Fastify. Services and repositories must not know about HTTP.' }] },
+      ],
+    },
+    },
 );

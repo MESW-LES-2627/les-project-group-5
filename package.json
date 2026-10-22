@@ -10,12 +10,12 @@
   },
   "scripts": {
     "postinstall": "node scripts/copy-mediapipe-wasm.mjs",
-    "dev": "npm run dev -w @instrument/web",
+    "dev": "node scripts/dev.mjs",
     "build": "npm run build -w @instrument/web",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
-    "typecheck": "tsc -p packages/domain && tsc -p packages/web",
+    "typecheck": "tsc -p packages/domain && tsc -p packages/web && tsc -p packages/server",
     "check": "npm run lint && npm run typecheck && npm test"
   },
   "devDependencies": {
