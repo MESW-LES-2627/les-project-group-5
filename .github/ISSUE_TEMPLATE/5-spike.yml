@@ -1,0 +1,61 @@
+name: Spike
+description: Time-boxed research to answer a question or make a decision. The result is knowledge, not production code
+title: "[Spike] "
+labels: ["spike"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A spike answers **one question** within a fixed time. Any code written is only to learn and is thrown away (or rewritten properly in a task).
+        Create it as a **sub-issue** of the epic or user story that needs the answer.
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What do we need to find out or decide?
+      placeholder: Can MediaPipe run at 30 fps on a mid-range Android phone in Chrome?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why we need to know
+      description: Which work is blocked or at risk without the answer?
+      placeholder: "US-E4-02 (portrait grid on phones) depends on tracking being fast enough."
+    validations:
+      required: true
+  - type: dropdown
+    id: timebox
+    attributes:
+      label: Time-box
+      description: Stop when the time is over, even without a final answer, and report what you found.
+      options:
+        - 2 hours
+        - Half a day
+        - 1 day
+        - 2 days
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Options to investigate
+      placeholder: |
+        - Option A: ...
+        - Option B: ...
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      value: |
+        - [ ] The question is answered (or we know why it can't be answered yet)
+        - [ ] Options compared with pros and cons
+        - [ ] Decision and reasons written down (in this issue or in docs/) and shared with the team
+        - [ ] Follow-up tasks or stories created
+    validations:
+      required: true
+  - type: textarea
+    id: findings
+    attributes:
+      label: Findings
+      description: Fill in at the end. Results, measurements, links, the decision.
