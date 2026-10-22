@@ -48,6 +48,7 @@ export default defineConfig(
     files: ['packages/web/src/**/*.ts'],
     ignores: ['packages/web/src/audio/WebAudioSynth.ts'],
     rules: { 'no-restricted-globals': ['error', ...webAudioOnlyInSynth] },
+  },
   {
     files: ['packages/web/src/**/*.ts'],
     ignores: ['packages/web/src/tracking/MediaPipeHandTracker.ts'],
