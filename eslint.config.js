@@ -7,6 +7,11 @@ import tseslint from 'typescript-eslint';
 
 const browserGlobals = ['window', 'document', 'navigator', 'fetch', 'localStorage', 'AudioContext', 'OfflineAudioContext'];
 
+const webAudioOnlyInSynth = ['AudioContext', 'OfflineAudioContext'].map((name) => ({
+  name,
+  message: 'Only WebAudioSynth may use the Web Audio API. Use the Synth interface.',
+}));
+
 export default defineConfig(
   {
     ignores: ['**/node_modules/**', '**/dist/**', 'packages/web/public/**'],
@@ -35,6 +40,22 @@ export default defineConfig(
       'no-restricted-globals': [
         'error',
         ...browserGlobals.map((name) => ({ name, message: 'The domain must not use browser APIs. Put this in an adapter in the web package.' })),
+      ],
+    },
+  },
+  // Web Audio only in WebAudioSynth.
+  {
+    files: ['packages/web/src/**/*.ts'],
+    ignores: ['packages/web/src/audio/WebAudioSynth.ts'],
+    rules: { 'no-restricted-globals': ['error', ...webAudioOnlyInSynth] },
+  },
+  {
+    files: ['packages/web/src/**/*.ts'],
+    ignores: ['packages/web/src/tracking/MediaPipeHandTracker.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: [{ group: ['@mediapipe/*'], message: 'Only MediaPipeHandTracker may import MediaPipe. Use the HandTracker interface.' }] },
       ],
     },
   },

@@ -8,7 +8,8 @@
   - draft the iteration 0 documents (`vision.md`, `mvp.md`, `definition-of-done.md`) from the group's decisions and Luis's proposal;
   - draft the requirements (`docs/requirements/`), the backlog issues, `decisions.md`, `START_HERE.md` and `REBUILD_GUIDE.md` (kept in the reference prototype, in the group Drive);
   - write the code and tests of the **reference vertical prototype** (kept in the group's Drive);
-  - set up step 1 of the rebuild in this repository (monorepo, tools, minimal packages, `README.md` sections, `CLAUDE.md`), based on that prototype.
+  - set up step 1 of the rebuild in this repository (monorepo, tools, minimal packages, `README.md` sections, `CLAUDE.md`), based on that prototype;
+  - do step 6 of the rebuild (instrument play rules: `Instrument`, `InstrumentFrame` and their tests), based on the reference prototype. Status: **pending review**.
 - **How:** the AI drafted and proposed options. Decisions came from the group and from Luis's proposal. Artur tested the reference prototype with a real camera. Artur's review of the code and documents is pending.
 
 ## One place the model was wrong
