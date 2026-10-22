@@ -57,5 +57,5 @@ export default defineConfig(
         { patterns: [{ group: ['fastify', '@fastify/*'], message: 'Only controllers (and app.ts) may use Fastify. Services and repositories must not know about HTTP.' }] },
       ],
     },
-    },
+  },
 );
