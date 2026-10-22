@@ -1,0 +1,167 @@
+:root {
+  --bg: #14161c;
+  --surface: #1f232c;
+  --text: #f2f3f5;
+  --muted: #a3a9b6;
+  --accent: #2ec4b6;
+  --accent-strong: #19a99c;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+}
+
+.instrument {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 12px;
+}
+
+h1 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.server-status {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.server-status.online {
+  color: var(--accent);
+}
+
+/* The play area. It has the camera's shape (4:3), so the pointer and the cells match the camera image. */
+.stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: var(--surface);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Mirrored, so the player sees themselves as in a mirror. */
+.camera {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+  opacity: 0.45;
+}
+
+.cells {
+  position: absolute;
+  inset: 0;
+}
+
+/* Each cell is placed by the layout; the padding only draws the visual gap between pads. */
+.cell {
+  position: absolute;
+  box-sizing: border-box;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(1rem, 3vw, 1.75rem);
+  font-weight: 600;
+  color: var(--text);
+  background-clip: content-box;
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  transition: background-color 80ms;
+}
+
+.cell.selected {
+  background-color: rgba(46, 196, 182, 0.35);
+}
+
+.cell.sounding {
+  background-color: rgba(46, 196, 182, 0.75);
+}
+
+.pointer {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 3px var(--accent);
+  pointer-events: none;
+}
+
+.start-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 22, 28, 0.6);
+}
+
+.start-overlay[hidden],
+.pointer[hidden] {
+  display: none;
+}
+
+.start {
+  font-size: 1.25rem;
+  padding: 12px 32px;
+  border: none;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--accent-strong);
+  cursor: pointer;
+}
+
+.start:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.status {
+  min-height: 1.5em;
+  margin: 12px 0;
+  color: var(--muted);
+}
+
+.volume {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.volume-bar {
+  flex: 1;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.volume-fill {
+  width: 0;
+  height: 100%;
+  background: var(--accent);
+}
+
+.volume-value {
+  width: 3.5em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
