@@ -1,0 +1,68 @@
+name: Bug
+description: Something isn't working as expected
+title: "[Bug] "
+labels: ["bug"]
+type: Bug
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      placeholder: The note keeps playing after I open my hand.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      multiple: true
+      options:
+        - Chrome
+        - Firefox
+        - Safari
+        - Edge
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Device / OS / camera
+      placeholder: MacBook Air M2, macOS 15, built-in webcam
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Blocker — app unusable
+        - Major — feature broken
+        - Minor — works with a workaround
+        - Cosmetic
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshots / console errors
+      description: Avoid screenshots that show people's faces — crop to the relevant part.
+  - type: input
+    id: related
+    attributes:
+      label: Related user story
+      placeholder: "#12"

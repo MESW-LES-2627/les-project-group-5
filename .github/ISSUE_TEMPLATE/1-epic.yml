@@ -1,0 +1,47 @@
+name: Epic
+description: A large feature area, broken down into user stories (added as sub-issues)
+title: "[Epic] "
+labels: ["epic"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        An epic groups related user stories. After creating it, add the user stories as **sub-issues**.
+        Don't assign an iteration to the epic — assign iterations to its user stories.
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What does this feature area deliver, and why does it matter?
+      placeholder: Let players learn simple melodies through a game that guides each note.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What is included in this epic?
+      placeholder: |
+        - Choosing a melody
+        - Showing the next target note
+        - Hit/miss detection
+        - Score at the end
+    validations:
+      required: true
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: What is explicitly NOT part of this epic?
+      placeholder: Multiplayer, user accounts, uploading custom songs
+  - type: textarea
+    id: done
+    attributes:
+      label: Definition of done
+      description: When is this epic complete?
+      value: |
+        - [ ] All user stories (sub-issues) are closed
+        - [ ] Feature demoed to the team
+        - [ ] Documentation updated
+    validations:
+      required: true

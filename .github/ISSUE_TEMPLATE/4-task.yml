@@ -1,0 +1,30 @@
+name: Task
+description: A technical step needed to deliver a user story (or technical work like CI/setup)
+title: "[Task] "
+labels: ["task"]
+type: Task
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Create this as a **sub-issue of a user story** (or of an epic, for technical work with no user story, e.g. CI setup).
+  - type: textarea
+    id: description
+    attributes:
+      label: What needs to be done
+      placeholder: Map the hand's Y position to a frequency in the selected scale.
+    validations:
+      required: true
+  - type: textarea
+    id: done-when
+    attributes:
+      label: Done when
+      value: |
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Approach, links, dependencies.
