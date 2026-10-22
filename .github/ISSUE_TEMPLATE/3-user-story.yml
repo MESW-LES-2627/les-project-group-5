@@ -1,0 +1,41 @@
+name: User Story
+description: Something a user can do, from the user's point of view
+title: "[US] "
+labels: ["user-story"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Create this as a **sub-issue of an epic**. Split it into tasks (sub-issues) when it enters an iteration.
+  - type: textarea
+    id: story
+    attributes:
+      label: User story
+      description: Who wants what, and why?
+      value: "As a ..., I want ..., so that ..."
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Testable conditions that must be true for the story to be done.
+      value: |
+        - [ ] Given ..., when ..., then ...
+        - [ ] Given ..., when ..., then ...
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Technical notes, design ideas, links, open questions.
+  - type: checkboxes
+    id: dod
+    attributes:
+      label: Definition of done
+      options:
+        - label: All acceptance criteria are met
+        - label: Code reviewed and merged via PR
+        - label: Tests added or updated
+        - label: Works in the deployed version

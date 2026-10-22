@@ -1,0 +1,66 @@
+name: Feature
+description: An idea or request for new functionality, to be discussed and refined into user stories
+title: "[Feature] "
+labels: ["feature"]
+type: Feature
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this to **propose** something new. After the team agrees, it becomes one or more **user stories** (or a new epic, if it's big).
+        Not sure if it's a feature or a bug? If the app does something wrong, it's a bug. If it doesn't do something yet, it's a feature.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or need
+      description: What can't the user do today, or what is hard? Who has this problem?
+      placeholder: Beginners don't know which hand position gives full volume.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What should the app do? Describe the behaviour, not the code.
+      placeholder: Show a small bar next to the hand that fills up as the hand opens.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other ways to solve it, and why you prefer this one.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Instrument
+        - Layouts
+        - Settings
+        - Game
+        - Accounts / security
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: mvp
+    attributes:
+      label: Is it in the MVP?
+      description: Check docs/iterations/0/mvp.md.
+      options:
+        - "Yes, it's part of the MVP"
+        - "No, it's outside the MVP (needs a team decision)"
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: epic
+    attributes:
+      label: Related epic
+      placeholder: "#12"
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Sketches, links, examples from other apps.
