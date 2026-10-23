@@ -12,7 +12,6 @@ A musical instrument that runs in the browser and is played with your hand inste
 
 **Guides:** [How to collaborate](CONTRIBUTING.md) · [How the code works](docs/developer-guide.md) 
 
-**Try it online:** https://cerulean-belekoy-04c928.netlify.app (test deploy of the web app only, so it shows "Server: offline". Use Chrome or Edge with a webcam and play with your right hand.)
 
 ---
 
