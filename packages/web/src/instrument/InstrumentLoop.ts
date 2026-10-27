@@ -32,8 +32,13 @@ export class InstrumentLoop {
     private readonly profile: CalibrationProfile,
     private readonly instrument: Instrument,
     private readonly video: HTMLVideoElement,
-    private readonly dominantHand: Handedness = 'Right',
+    private dominantHand: Handedness = 'Right',
   ) {}
+
+    /** Changes which hand drives the instrument. Takes effect on the next processed frame. */
+  setDominantHand(hand: Handedness): void {
+    this.dominantHand = hand;
+  }
 
   /** Adds a listener. Returns a function that removes it. */
   subscribe(listener: FrameListener): () => void {

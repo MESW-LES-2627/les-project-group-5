@@ -6,6 +6,7 @@ import {
   SingleBoxLayout,
   Scale,
   ScaleType,
+  type Handedness,
 } from '@instrument/domain';
 import { ApiClient } from './api/ApiClient';
 import { SoundOutput } from './audio/SoundOutput';
@@ -25,6 +26,7 @@ if (!root) throw new Error('Missing #app element');
 // Sprint 1: replace SingleBoxLayout with PadGridLayout (task B) here; nothing else needs to change.
 const scale = new Scale('C', ScaleType.MAJOR);
 const layout = new SingleBoxLayout();
+const DEFAULT_HAND: Handedness = 'Right';
 
 const page = new InstrumentPage(root);
 const tracker = new MediaPipeHandTracker();
@@ -36,14 +38,26 @@ const loop = new InstrumentLoop(
     DEFAULT_CALIBRATION_PROFILE,
     new Instrument(layout),
     page.video,
-    'Right',
+    DEFAULT_HAND,
 );
 const sound = new SoundOutput(synth, scale);
 loop.subscribe((frame) => sound.onFrame(frame));
 loop.subscribe((frame) => page.render(frame));
 
+const startInstruction = (hand: Handedness) => `Press Start, allow the camera, and play with your ${hand.toLowerCase()} hand.`;
+
+// The instruction before Start is the only text main.ts replaces on a hand change.
+// After Start, the status line belongs to the start flow and to page.render().
+let started = false;
+
 page.showCells(layout, scale);
-page.setStatus('Press Start, allow the camera, and play with your right hand.');
+page.setHand(DEFAULT_HAND);
+page.setStatus(startInstruction(DEFAULT_HAND));
+
+page.onHandChange((hand) => {
+  loop.setDominantHand(hand);
+  if (!started) page.setStatus(startInstruction(hand));
+});
 
 // Start loading the hand model right away, so Start is quicker. Errors are shown when Start is pressed.
 tracker.init().catch(() => undefined);
@@ -63,6 +77,7 @@ const CAMERA_MESSAGES: Record<CameraProblem, string> = {
 };
 
 page.onStart(async () => {
+  started = true;
   page.setStartEnabled(false);
   try {
     // Audio must be unlocked inside the click, before anything else is awaited.

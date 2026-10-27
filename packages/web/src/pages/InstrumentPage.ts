@@ -1,4 +1,4 @@
-import type { Degree, InstrumentFrame, Layout, Scale } from '@instrument/domain';
+import type { Degree, Handedness, InstrumentFrame, Layout, Scale } from '@instrument/domain';
 
 /**
  * The instrument screen: camera image, the cells, the pointer, a Start button, a status line, a volume bar
@@ -14,8 +14,10 @@ export class InstrumentPage {
   private readonly volumeFill: HTMLElement;
   private readonly volumeValue: HTMLElement;
   private readonly serverStatus: HTMLElement;
+  private readonly handSelector: HTMLSelectElement;
   private cells = new Map<Degree, HTMLElement>();
   private selected: HTMLElement | null = null;
+  private hand: Handedness = 'Right';
 
   constructor(root: HTMLElement) {
     root.innerHTML = `
@@ -24,6 +26,11 @@ export class InstrumentPage {
           <h1>Gesture Web Instrument</h1>
           <span class="server-status">Server: checking…</span>
         </header>
+        <fieldset class="settings hand-selector">
+          <legend>Hand</legend>
+          <label><input type="radio" name="hand" value="Left"> Left</label>
+          <label><input type="radio" name="hand" value="Right" checked> Right</label>
+        </fieldset>
         <div class="stage">
           <video class="camera" autoplay muted playsinline></video>
           <div class="cells"></div>
@@ -47,10 +54,21 @@ export class InstrumentPage {
     this.volumeFill = find(root, '.volume-fill');
     this.volumeValue = find(root, '.volume-value');
     this.serverStatus = find(root, '.server-status');
+    this.handSelector = find(root, '.hand-selector');
   }
 
   onStart(handler: () => void): void {
     this.startButton.addEventListener('click', handler);
+  }
+
+   /** Reports a hand choice made by the user. */
+  onHandChange(handler: (hand: Handedness) => void): void {
+    this.handSelector.addEventListener('change', (event) => {
+      const value = (event.target as HTMLInputElement).value;
+      if (value !== 'Left' && value !== 'Right') return;
+      this.hand = value;
+      handler(value);
+    });
   }
 
   /** Draws one cell per region of the layout, labelled for the scale (for example "1 C"). */
@@ -79,6 +97,13 @@ export class InstrumentPage {
   setStatus(message: string): void {
     this.status.textContent = message;
   }
+
+  /** Shows which hand is selected, for the initial value or to correct the UI after a rejected change. */
+  setHand(hand: Handedness): void {
+    this.hand = hand;
+    const input = this.handSelector.querySelector<HTMLInputElement>(`input[value="${hand}"]`);
+    if (input) input.checked = true;
+  }   
 
   /** Shows the Start button again (for example after an error), with a new label. */
   showStart(label: string): void {
@@ -117,7 +142,7 @@ export class InstrumentPage {
     this.volumeFill.style.width = percent(volume);
     this.volumeValue.textContent = `${Math.round(volume * 100)}%`;
 
-    this.setStatus(frame.handDetected ? '' : 'Show your right hand to the camera.');
+    this.setStatus(frame.handDetected ? '' : `Show your ${this.hand.toLowerCase()} hand to the camera.`);
   }
 }
 
