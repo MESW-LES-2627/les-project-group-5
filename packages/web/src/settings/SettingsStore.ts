@@ -1,6 +1,5 @@
 import type { Handedness } from '@instrument/domain';
 
-const KEY = 'instrument.hand';
 const DEFAULT_HAND: Handedness = 'Right';
 
 type HandListener = (hand: Handedness) => void;
