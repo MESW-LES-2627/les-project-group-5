@@ -14,23 +14,19 @@ export class InstrumentPage {
   private readonly volumeFill: HTMLElement;
   private readonly volumeValue: HTMLElement;
   private readonly serverStatus: HTMLElement;
-  private readonly handSelector: HTMLSelectElement;
   private cells = new Map<Degree, HTMLElement>();
   private selected: HTMLElement | null = null;
   private hand: Handedness = 'Right';
+  private started = false;
 
   constructor(root: HTMLElement) {
     root.innerHTML = `
       <main class="instrument">
         <header>
           <h1>Gesture Web Instrument</h1>
+          <a class="nav-link" href="#/settings">⚙ Settings</a>
           <span class="server-status">Server: checking…</span>
         </header>
-        <fieldset class="settings hand-selector">
-          <legend>Hand</legend>
-          <label><input type="radio" name="hand" value="Left"> Left</label>
-          <label><input type="radio" name="hand" value="Right" checked> Right</label>
-        </fieldset>
         <div class="stage">
           <video class="camera" autoplay muted playsinline></video>
           <div class="cells"></div>
@@ -54,20 +50,12 @@ export class InstrumentPage {
     this.volumeFill = find(root, '.volume-fill');
     this.volumeValue = find(root, '.volume-value');
     this.serverStatus = find(root, '.server-status');
-    this.handSelector = find(root, '.hand-selector');
   }
 
   onStart(handler: () => void): void {
-    this.startButton.addEventListener('click', handler);
-  }
-
-   /** Reports a hand choice made by the user. */
-  onHandChange(handler: (hand: Handedness) => void): void {
-    this.handSelector.addEventListener('change', (event) => {
-      const value = (event.target as HTMLInputElement).value;
-      if (value !== 'Left' && value !== 'Right') return;
-      this.hand = value;
-      handler(value);
+    this.startButton.addEventListener('click', () => {
+      this.started = true;
+      handler();
     });
   }
 
@@ -101,9 +89,10 @@ export class InstrumentPage {
   /** Shows which hand is selected, for the initial value or to correct the UI after a rejected change. */
   setHand(hand: Handedness): void {
     this.hand = hand;
-    const input = this.handSelector.querySelector<HTMLInputElement>(`input[value="${hand}"]`);
-    if (input) input.checked = true;
-  }   
+    if (!this.started) {
+      this.setStatus(`Press Start, allow the camera, and play with your ${hand.toLowerCase()} hand.`);
+    }
+  }
 
   /** Shows the Start button again (for example after an error), with a new label. */
   showStart(label: string): void {

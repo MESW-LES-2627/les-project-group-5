@@ -6,7 +6,6 @@ import {
   SingleBoxLayout,
   Scale,
   ScaleType,
-  type Handedness,
 } from '@instrument/domain';
 import { ApiClient } from './api/ApiClient';
 import { SoundOutput } from './audio/SoundOutput';
@@ -14,7 +13,10 @@ import { WebAudioSynth } from './audio/WebAudioSynth';
 import { Camera, CameraError, type CameraProblem } from './camera/Camera';
 import { InstrumentLoop } from './instrument/InstrumentLoop';
 import { InstrumentPage } from './pages/InstrumentPage';
+import { SettingsStore } from './settings/SettingsStore';
+import { SettingsPage } from './pages/SettingsPage';
 import { MediaPipeHandTracker } from './tracking/MediaPipeHandTracker';
+
 
 // Composition root: the only place that creates the concrete classes and connects them.
 // Everything else receives what it needs through its constructor.
@@ -22,13 +24,28 @@ import { MediaPipeHandTracker } from './tracking/MediaPipeHandTracker';
 const root = document.querySelector<HTMLElement>('#app');
 if (!root) throw new Error('Missing #app element');
 
+// Both screens stay mounted and only one is visible. Removing the instrument page would destroy
+// the video and stop the camera, so the player would have to press Start again after every visit to settings.
+const instrumentRoot = document.createElement('div');
+const settingsRoot = document.createElement('div');
+root.append(instrumentRoot, settingsRoot);
+
+const showRoute = () => {
+  const onSettings = location.hash === '#/settings';
+  instrumentRoot.hidden = onSettings;
+  settingsRoot.hidden = !onSettings;
+};
+addEventListener('hashchange', showRoute);
+showRoute();
+
 // Vertical prototype: one box that plays C, with a fixed scale and hand. Settings come in Sprint 2.
 // Sprint 1: replace SingleBoxLayout with PadGridLayout (task B) here; nothing else needs to change.
 const scale = new Scale('C', ScaleType.MAJOR);
-const layout = new SingleBoxLayout();
-const DEFAULT_HAND: Handedness = 'Right';
+const layout = new SingleBoxLayout(); 
 
-const page = new InstrumentPage(root);
+const page = new InstrumentPage(instrumentRoot);
+const settingsPage = new SettingsPage(settingsRoot);
+const settings = new SettingsStore();
 const tracker = new MediaPipeHandTracker();
 const synth = new WebAudioSynth();
 const camera = new Camera();
@@ -38,27 +55,20 @@ const loop = new InstrumentLoop(
     DEFAULT_CALIBRATION_PROFILE,
     new Instrument(layout),
     page.video,
-    DEFAULT_HAND,
+    settings.hand,
 );
 const sound = new SoundOutput(synth, scale);
 loop.subscribe((frame) => sound.onFrame(frame));
 loop.subscribe((frame) => page.render(frame));
 
-const startInstruction = (hand: Handedness) => `Press Start, allow the camera, and play with your ${hand.toLowerCase()} hand.`;
-
-// The instruction before Start is the only text main.ts replaces on a hand change.
-// After Start, the status line belongs to the start flow and to page.render().
-let started = false;
-
 page.showCells(layout, scale);
-page.setHand(DEFAULT_HAND);
-page.setStatus(startInstruction(DEFAULT_HAND));
-
-page.onHandChange((hand) => {
+settingsPage.setHand(settings.hand);
+page.setHand(settings.hand);
+settingsPage.onHandChange((hand) => settings.setHand(hand));
+settings.subscribe((hand) => {
   loop.setDominantHand(hand);
-  if (!started) page.setStatus(startInstruction(hand));
+  page.setHand(hand);
 });
-
 // Start loading the hand model right away, so Start is quicker. Errors are shown when Start is pressed.
 tracker.init().catch(() => undefined);
 
@@ -77,7 +87,6 @@ const CAMERA_MESSAGES: Record<CameraProblem, string> = {
 };
 
 page.onStart(async () => {
-  started = true;
   page.setStartEnabled(false);
   try {
     // Audio must be unlocked inside the click, before anything else is awaited.
