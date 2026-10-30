@@ -1,0 +1,89 @@
+# Pipeline for the whole repository:
+# - pull request:       lint, type check and all tests. Nothing is deployed.
+# - push to staging:    the same checks, then deploy the web app and the API to Vercel as "preview".
+# - push to main:       the same checks, then deploy to Vercel as "production".
+# Vercel's own Git deploys are turned off in vercel.json, so this pipeline is the only way code gets deployed.
+#
+# Deploys need three repository secrets (Settings > Secrets and variables > Actions):
+# VERCEL_TOKEN (vercel.com > Account Settings > Tokens), VERCEL_ORG_ID and VERCEL_PROJECT_ID (.vercel/project.json after `vercel link`).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [staging, main]
+
+# A newer push to the same branch cancels the run that is still going.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+  deploy:
+    # Only after the checks pass, and only for pushes (staging or main), never for pull requests.
+    needs: check
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      # main deploys to production; staging deploys to preview.
+      VERCEL_ENVIRONMENT: ${{ github.ref_name == 'main' && 'production' || 'preview' }}
+      # Vercel needs --prod to build and deploy for production.
+      VERCEL_PROD_FLAG: ${{ github.ref_name == 'main' && '--prod' || '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      # Must run before `vercel build`: Vercel looks for functions in api/ when the build starts.
+      - name: Bundle the server into api/index.js
+        run: npm run build:api
+
+      - name: Install the Vercel CLI
+        run: npm install --global vercel@65.8.0
+
+      - name: Download the Vercel project settings
+        run: vercel pull --yes --environment=$VERCEL_ENVIRONMENT --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build
+        run: vercel build $VERCEL_PROD_FLAG --token=${{ secrets.VERCEL_TOKEN }}
+
+      # Vercel Hobby blocks deploys whose latest commit author isn't the project owner,
+      # even from the CLI, because the CLI sends git metadata. Removing .git here means
+      # the deploy is attributed to the token owner only.
+      - name: Strip git metadata
+        run: rm -rf .git
+
+      - name: Deploy
+        run: |
+          url=$(vercel deploy --prebuilt $VERCEL_PROD_FLAG --token=${{ secrets.VERCEL_TOKEN }})
+          echo "Deployed to $url ($VERCEL_ENVIRONMENT)" >> "$GITHUB_STEP_SUMMARY"
