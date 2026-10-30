@@ -16,7 +16,8 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "typecheck": "tsc -p packages/domain && tsc -p packages/web && tsc -p packages/server",
-    "check": "npm run lint && npm run typecheck && npm test"
+    "check": "npm run lint && npm run typecheck && npm test",
+    "build:api": "npm run build -w @instrument/server"
   },
   "devDependencies": {
     "eslint": "^10.13.0",

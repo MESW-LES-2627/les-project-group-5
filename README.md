@@ -159,6 +159,32 @@ npx vitest run -t "starts a note"
 - [ ] The volume bar follows how open the hand is.
 - [ ] Blocking the camera shows a clear message and a "Try again" button.
 
+## Deploy
+
+The web app and the API deploy together to [Vercel](https://vercel.com/), as one project on one address, from the GitHub Action in `.github/workflows/ci.yml`:
+
+| Event | What runs |
+|---|---|
+| Pull request | Lint, type check and all tests. Nothing is deployed. |
+| Push to `staging` | The same checks, then a deploy to the Vercel **preview** environment. |
+| Push to `main` | The same checks, then a deploy to Vercel **production**. |
+
+If a check fails, nothing is deployed. The deploy link is in the summary of the "CI" run.
+
+How the two parts are served (settings in `vercel.json`):
+
+```mermaid
+flowchart LR
+  browser["Browser"] -- "pages, JS, MediaPipe files" --> static["Vercel static files<br/>packages/web/dist"]
+  browser -- "/api/..." --> fn["Vercel function<br/>api/index.js"]
+  fn --> app["buildApp()<br/>packages/server/src/vercel.ts"]
+```
+
+- `npm run build:api` bundles the server (entry point `packages/server/src/vercel.ts`) into `api/index.js`. That file is generated, so it is not in git.
+- On Vercel the server does not listen on a port. Vercel calls it once per `/api` request, and it may be stopped between requests. Files written to disk are lost, so the SQLite database will need another home before it goes live.
+
+To try the production build on your machine: `npm run build:api && vercel build && vercel deploy --prebuilt` (needs `vercel login` and `vercel link` once).
+
 ## Troubleshooting
 
 | Problem | What to do |

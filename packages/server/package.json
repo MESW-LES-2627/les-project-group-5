@@ -6,13 +6,15 @@
   "description": "The server: optional accounts and saved data. Fastify only in the controllers.",
   "scripts": {
     "dev": "tsx watch src/main.ts",
-    "start": "tsx src/main.ts"
+    "start": "tsx src/main.ts",
+    "build": "vite build"
   },
   "dependencies": {
     "@instrument/domain": "*",
     "fastify": "^5.12.7"
   },
   "devDependencies": {
-    "tsx": "^4.23.15"
+    "tsx": "^4.23.15",
+    "vite": "^8.3.4"
   }
 }
