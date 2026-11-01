@@ -1,4 +1,4 @@
-import type { Degree, InstrumentFrame, Layout, Scale } from '@instrument/domain';
+import type { Degree, Handedness, InstrumentFrame, Layout, Scale } from '@instrument/domain';
 
 /**
  * The instrument screen: camera image, the cells, the pointer, a Start button, a status line, a volume bar
@@ -16,12 +16,15 @@ export class InstrumentPage {
   private readonly serverStatus: HTMLElement;
   private cells = new Map<Degree, HTMLElement>();
   private selected: HTMLElement | null = null;
+  private hand: Handedness = 'Right';
+  private started = false;
 
   constructor(root: HTMLElement) {
     root.innerHTML = `
       <main class="instrument">
         <header>
           <h1>Gesture Web Instrument</h1>
+          <a class="nav-link" href="#/settings">⚙ Settings</a>
           <span class="server-status">Server: checking…</span>
         </header>
         <div class="stage">
@@ -50,7 +53,10 @@ export class InstrumentPage {
   }
 
   onStart(handler: () => void): void {
-    this.startButton.addEventListener('click', handler);
+    this.startButton.addEventListener('click', () => {
+      this.started = true;
+      handler();
+    });
   }
 
   /** Draws one cell per region of the layout, labelled for the scale (for example "1 C"). */
@@ -78,6 +84,14 @@ export class InstrumentPage {
 
   setStatus(message: string): void {
     this.status.textContent = message;
+  }
+
+  /** Shows which hand is selected, for the initial value or to correct the UI after a rejected change. */
+  setHand(hand: Handedness): void {
+    this.hand = hand;
+    if (!this.started) {
+      this.setStatus(`Press Start, allow the camera, and play with your ${hand.toLowerCase()} hand.`);
+    }
   }
 
   /** Shows the Start button again (for example after an error), with a new label. */
@@ -117,7 +131,7 @@ export class InstrumentPage {
     this.volumeFill.style.width = percent(volume);
     this.volumeValue.textContent = `${Math.round(volume * 100)}%`;
 
-    this.setStatus(frame.handDetected ? '' : 'Show your right hand to the camera.');
+    this.setStatus(frame.handDetected ? '' : `Show your ${this.hand.toLowerCase()} hand to the camera.`);
   }
 }
 
