@@ -13,6 +13,7 @@ const FINGERTIPS = [HandLandmark.INDEX_TIP, HandLandmark.MIDDLE_TIP, HandLandmar
  *   or with how far the hand is from the camera. The thumb is left out: it moves sideways more than it opens.
  */
 export class HandFeatureExtractor {
+  /** Reads the pointer and openness from one hand. Throws a RangeError if a landmark list doesn't have 21 points. */
   extract(hand: TrackedHand): HandFeatures {
     checkLandmarks(hand.landmarks, 'landmarks');
     checkLandmarks(hand.worldLandmarks, 'worldLandmarks');

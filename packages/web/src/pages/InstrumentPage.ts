@@ -6,6 +6,7 @@ import type { Degree, Handedness, InstrumentFrame, Layout, Scale } from '@instru
  * It only draws what it is told. It has no rules about notes or sound.
  */
 export class InstrumentPage {
+  /** The camera image. The camera plays into it and the tracker reads frames from it. */
   readonly video: HTMLVideoElement;
   private readonly cellsElement: HTMLElement;
   private readonly pointer: HTMLElement;
@@ -52,6 +53,7 @@ export class InstrumentPage {
     this.serverStatus = find(root, '.server-status');
   }
 
+  /** Runs the handler when the player presses Start. */
   onStart(handler: () => void): void {
     this.startButton.addEventListener('click', () => {
       this.started = true;
@@ -77,11 +79,13 @@ export class InstrumentPage {
     }
   }
 
+  /** Shows whether the server can be reached. */
   setServerStatus(online: boolean): void {
     this.serverStatus.textContent = online ? 'Server: online' : 'Server: offline';
     this.serverStatus.classList.toggle('online', online);
   }
 
+  /** Shows a message under the play area. An empty message clears it. */
   setStatus(message: string): void {
     this.status.textContent = message;
   }
@@ -106,10 +110,12 @@ export class InstrumentPage {
     this.startButton.parentElement!.hidden = false;
   }
 
+  /** Hides the Start button, once the instrument is running. */
   hideStart(): void {
     this.startButton.parentElement!.hidden = true;
   }
 
+  /** Enables or disables the Start button, for example while the camera is opening. */
   setStartEnabled(enabled: boolean): void {
     this.startButton.disabled = !enabled;
   }

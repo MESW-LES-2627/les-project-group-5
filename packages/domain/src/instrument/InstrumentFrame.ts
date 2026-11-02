@@ -3,9 +3,23 @@ import type { Degree } from '../music/Degree';
 
 /** What happens to the sound in this frame. */
 export type NoteChange =
-  | { readonly kind: 'start'; readonly degree: Degree } // a new note starts (stopping the previous one)
-  | { readonly kind: 'stop' } // the current note stops
-  | { readonly kind: 'none' }; // nothing changes (a note may keep sounding)
+  /** A new note starts (stopping the previous one). */
+  | {
+      /** Says which kind of change this is. */
+      readonly kind: 'start';
+      /** The degree of the new note. */
+      readonly degree: Degree;
+    }
+  /** The current note stops. */
+  | {
+      /** Says which kind of change this is. */
+      readonly kind: 'stop';
+    }
+  /** Nothing changes (a note may keep sounding). */
+  | {
+      /** Says which kind of change this is. */
+      readonly kind: 'none';
+    };
 
 /** The state of the instrument after one camera frame: everything the sound and the screen need. */
 export interface InstrumentFrame {
@@ -19,5 +33,6 @@ export interface InstrumentFrame {
   readonly volume: number;
   /** True while a note is sounding. */
   readonly sounding: boolean;
+  /** What the sound must do in this frame: start a note, stop it, or nothing. */
   readonly change: NoteChange;
 }

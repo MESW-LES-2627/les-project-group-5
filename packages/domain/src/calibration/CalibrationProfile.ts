@@ -10,11 +10,15 @@ import type { HandControls } from './HandControls';
  */
 export class CalibrationProfile {
   constructor(
+    /** Range of the raw pointer x that covers the play area from left to right. */
     readonly pointerX: ControlCalibration,
+    /** Range of the raw pointer y that covers the play area from top to bottom. */
     readonly pointerY: ControlCalibration,
+    /** Range of hand openness, from closed fist (silent) to open hand (full volume). */
     readonly openness: ControlCalibration,
   ) {}
 
+  /** Turns the raw hand features into controls from 0 to 1, using this person's ranges. */
   apply(features: HandFeatures): HandControls {
     return {
       pointer: {

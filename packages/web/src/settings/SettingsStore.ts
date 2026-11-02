@@ -13,6 +13,7 @@ export class SettingsStore {
   private readonly listeners = new Set<HandListener>();
   private readonly cameraPreviewListeners = new Set<CameraPreviewListener>();
 
+  /** The hand that plays the instrument. */
   get hand(): Handedness {
     return this.current;
   }
@@ -21,6 +22,7 @@ export class SettingsStore {
     return this.currentCameraPreview;
   }
 
+  /** Changes the hand and tells every listener. Does nothing if the hand is the same. */
   setHand(hand: Handedness): void {
     if (hand === this.current) return;
     this.current = hand;
