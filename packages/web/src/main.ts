@@ -69,6 +69,10 @@ settings.subscribe((hand) => {
   loop.setDominantHand(hand);
   page.setHand(hand);
 });
+settingsPage.setCameraPreview(settings.cameraPreview);
+page.setCameraPreviewVisible(settings.cameraPreview);
+settingsPage.onCameraPreviewChange((visible) => settings.setCameraPreview(visible));
+settings.subscribeCameraPreview((visible) => page.setCameraPreviewVisible(visible));
 // Start loading the hand model right away, so Start is quicker. Errors are shown when Start is pressed.
 tracker.init().catch(() => undefined);
 
