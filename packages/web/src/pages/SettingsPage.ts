@@ -6,17 +6,43 @@ export class SettingsPage {
 
   constructor(root: HTMLElement) {
     root.innerHTML = `
-      <main class="settings-page">
-        <header>
-          <h1>Settings</h1>
-          <a class="nav-link" href="#/">← Back to instrument</a>
+      <div class="app-shell">
+        <header class="app-header">
+          <a class="brand" href="#/">Gesture Web Instrument</a>
+          <nav aria-label="Main navigation">
+            <a href="#/">Instrument</a>
+            <a class="active" href="#/settings" aria-current="page">
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M4 6h16M4 18h16M8 3v6M16 15v6" /><circle cx="8" cy="6" r="2" /><circle cx="16" cy="18" r="2" /></svg>
+              Settings
+            </a>
+          </nav>
         </header>
-        <fieldset class="settings hand-selector">
-          <legend>Hand</legend>
-          <label><input type="radio" name="hand" value="Left"> Left</label>
-          <label><input type="radio" name="hand" value="Right" checked> Right</label>
-        </fieldset>
-      </main>`;
+        <main class="settings-page">
+          <div class="settings-heading">
+            <a class="back-button" href="#/" aria-label="Back to instrument">
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="m15 18-6-6 6-6" /></svg>
+            </a>
+            <div>
+              <p>Customize your setup</p>
+              <h1>Settings</h1>
+            </div>
+          </div>
+          <div class="settings-panel">
+            <section>
+              <div class="section-title">
+                <h2>Dominant hand</h2>
+                <p>Choose which hand controls the instrument.</p>
+              </div>
+              <fieldset class="settings hand-selector">
+                <legend class="visually-hidden">Hand</legend>
+                <label><input type="radio" name="hand" value="Right" checked> Right hand</label>
+                <label><input type="radio" name="hand" value="Left"> Left hand</label>
+              </fieldset>
+            </section>
+          </div>
+          <a class="done-button" href="#/">Done</a>
+        </main>
+      </div>`;
     this.handSelector = find(root, '.hand-selector');
   }
 

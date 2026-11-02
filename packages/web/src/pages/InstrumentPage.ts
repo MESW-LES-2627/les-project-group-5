@@ -21,27 +21,38 @@ export class InstrumentPage {
 
   constructor(root: HTMLElement) {
     root.innerHTML = `
-      <main class="instrument">
-        <header>
-          <h1>Gesture Web Instrument</h1>
-          <a class="nav-link" href="#/settings">⚙ Settings</a>
-          <span class="server-status">Server: checking…</span>
+      <div class="app-shell">
+        <header class="app-header">
+          <a class="brand" href="#/">Gesture Web Instrument</a>
+          <nav aria-label="Main navigation">
+            <a class="active" href="#/" aria-current="page">Instrument</a>
+            <a href="#/settings">
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M4 6h16M4 18h16M8 3v6M16 15v6" /><circle cx="8" cy="6" r="2" /><circle cx="16" cy="18" r="2" /></svg>
+              Settings
+            </a>
+          </nav>
         </header>
-        <div class="stage">
-          <video class="camera" autoplay muted playsinline></video>
-          <div class="cells"></div>
-          <div class="pointer" hidden></div>
-          <div class="start-overlay">
-            <button type="button" class="start">Start</button>
+        <main class="instrument">
+          <p class="status" role="status"></p>
+          <div class="stage">
+            <video class="camera" autoplay muted playsinline></video>
+            <div class="cells"></div>
+            <div class="pointer" hidden></div>
+            <div class="start-overlay">
+              <button type="button" class="start">Start</button>
+            </div>
           </div>
-        </div>
-        <p class="status" role="status"></p>
-        <div class="volume">
-          <span>Volume</span>
-          <div class="volume-bar"><div class="volume-fill"></div></div>
-          <span class="volume-value">0%</span>
-        </div>
-      </main>`;
+        </main>
+        <footer class="status-bar">
+          <span class="server-status">Server: checking…</span>
+          <div class="volume">
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M11 5 6 9H3v6h3l5 4Z" /><path d="M15 9a4 4 0 0 1 0 6M18 6a8 8 0 0 1 0 12" /></svg>
+            <span class="volume-label">Volume</span>
+            <div class="volume-bar"><div class="volume-fill"></div></div>
+            <span class="volume-value">0%</span>
+          </div>
+        </footer>
+      </div>`;
     this.video = find(root, 'video.camera');
     this.cellsElement = find(root, '.cells');
     this.pointer = find(root, '.pointer');
