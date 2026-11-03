@@ -1,7 +1,7 @@
 import type { Handedness } from '@instrument/domain';
 
 const DEFAULT_HAND: Handedness = 'Right';
-const DEFAULT_CAMERA_PREVIEW = true;
+const default_camera_preview = true;
 
 type HandListener = (hand: Handedness) => void;
 type CameraPreviewListener = (visible: boolean) => void;
@@ -9,7 +9,7 @@ type CameraPreviewListener = (visible: boolean) => void;
 /** Holds the player's settings. Pages report changes to it; the loop and the instrument page listen to it. */
 export class SettingsStore {
   private current: Handedness = DEFAULT_HAND;
-  private current_camera_preview = DEFAULT_CAMERA_PREVIEW;
+  private currentCameraPreview = default_camera_preview;
   private readonly listeners = new Set<HandListener>();
   private readonly camera_preview_listeners = new Set<CameraPreviewListener>();
 
@@ -18,7 +18,7 @@ export class SettingsStore {
   }
 
   get cameraPreview(): boolean {
-    return this.current_camera_preview;
+    return this.currentCameraPreview;
   }
 
   setHand(hand: Handedness): void {
@@ -28,8 +28,8 @@ export class SettingsStore {
   }
 
   setCameraPreview(visible: boolean): void {
-    if (visible === this.current_camera_preview) return;
-    this.current_camera_preview = visible;
+    if (visible === this.currentCameraPreview) return;
+    this.currentCameraPreview = visible;
     for (const listener of [...this.camera_preview_listeners]) listener(visible);
   }
 
