@@ -85,11 +85,13 @@ The full explanation, with the real-time pipeline step by step, is in the [devel
 │   │       └── api/           # ApiClient (the only code that talks to the server)
 │   └── server/            # Fastify server on :3000
 │       ├── .env               # Supabase keys (not in git, see "How to run")
-│       └── src/
-│           ├── main.ts        # Composition root: reads .env, creates the Supabase client, starts the server
+│       └── src/           # One folder per feature (see developer guide, "The server")
+│           ├── main.ts        # Composition root: reads config, creates the Supabase client, starts the server
 │           ├── app.ts         # buildApp(): creates the app with all routes (used by tests too)
-│           ├── controllers/   # HTTP routes (HealthController)
-│           └── database/      # DatabaseStatus interface, SupabaseDatabaseStatus
+│           ├── config/        # env.ts: reads and checks .env values
+│           ├── shared/        # Code used by several features (supabase/createSupabaseClient)
+│           └── features/
+│               └── health/    # HealthController, DatabaseStatus, SupabaseDatabaseStatus
 ├── scripts/
 │   ├── dev.mjs                # `npm run dev`: starts server and web together
 │   └── copy-mediapipe-wasm.mjs # Runs after `npm install`

@@ -12,6 +12,17 @@ const webAudioOnlyInSynth = ['AudioContext', 'OfflineAudioContext'].map((name) =
   message: 'Only WebAudioSynth may use the Web Audio API. Use the Synth interface.',
 }));
 
+const serverHttpFiles = ['packages/server/src/**/*Controller.ts', 'packages/server/src/app.ts'];
+const serverSupabaseFiles = ['packages/server/src/**/Supabase*.ts', 'packages/server/src/shared/supabase/**/*.ts'];
+const noFastify = {
+  group: ['fastify', '@fastify/*'],
+  message: 'Only controllers (and app.ts) may use Fastify. Services and repositories must not know about HTTP.',
+};
+const noSupabase = {
+  group: ['@supabase/*'],
+  message: 'Only Supabase adapters (Supabase*.ts) and shared/supabase may use Supabase. Depend on an interface instead.',
+};
+
 export default defineConfig(
   {
     ignores: ['**/node_modules/**', '**/dist/**', 'packages/web/public/**'],
@@ -59,14 +70,20 @@ export default defineConfig(
       ],
     },
   },
+  // Server: only controllers (and app.ts) use Fastify, only Supabase adapters use Supabase.
+  // The three blocks below cover separate files on purpose: in ESLint, a later block with the same rule
+  // replaces the earlier one instead of adding to it.
   {
     files: ['packages/server/src/**/*.ts'],
-    ignores: ['packages/server/src/controllers/**', 'packages/server/src/app.ts', 'packages/server/src/**/*.test.ts'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        { patterns: [{ group: ['fastify', '@fastify/*'], message: 'Only controllers (and app.ts) may use Fastify. Services and repositories must not know about HTTP.' }] },
-      ],
-    },
+    ignores: [...serverHttpFiles, ...serverSupabaseFiles, 'packages/server/src/**/*.test.ts'],
+    rules: { 'no-restricted-imports': ['error', { patterns: [noFastify, noSupabase] }] },
+  },
+  {
+    files: serverHttpFiles,
+    rules: { 'no-restricted-imports': ['error', { patterns: [noSupabase] }] },
+  },
+  {
+    files: serverSupabaseFiles,
+    rules: { 'no-restricted-imports': ['error', { patterns: [noFastify] }] },
   },
 );

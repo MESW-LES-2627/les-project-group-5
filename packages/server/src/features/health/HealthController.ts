@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import type { DatabaseStatus } from '../database/DatabaseStatus';
+import type { DatabaseStatus } from './DatabaseStatus';
 
 /**
  * GET /api/health: tells the browser that the server is running and whether the database answers.
