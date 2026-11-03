@@ -11,7 +11,7 @@ export class SettingsStore {
   private current: Handedness = DEFAULT_HAND;
   private currentCameraPreview = default_camera_preview;
   private readonly listeners = new Set<HandListener>();
-  private readonly camera_preview_listeners = new Set<CameraPreviewListener>();
+  private readonly cameraPreviewListeners = new Set<CameraPreviewListener>();
 
   get hand(): Handedness {
     return this.current;
@@ -30,7 +30,7 @@ export class SettingsStore {
   setCameraPreview(visible: boolean): void {
     if (visible === this.currentCameraPreview) return;
     this.currentCameraPreview = visible;
-    for (const listener of [...this.camera_preview_listeners]) listener(visible);
+    for (const listener of [...this.cameraPreviewListeners]) listener(visible);
   }
 
   /** Returns a function that removes the listener. */
@@ -41,7 +41,7 @@ export class SettingsStore {
 
   /** Returns a function that removes the listener. */
   subscribeCameraPreview(listener: CameraPreviewListener): () => void {
-    this.camera_preview_listeners.add(listener);
-    return () => this.camera_preview_listeners.delete(listener);
+    this.cameraPreviewListeners.add(listener);
+    return () => this.cameraPreviewListeners.delete(listener);
   }
 }
