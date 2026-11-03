@@ -94,6 +94,11 @@ export class InstrumentPage {
     }
   }
 
+  /** Shows or hides the camera image. */
+  setCameraPreviewVisible(visible: boolean): void {
+    this.video.classList.toggle('camera-hidden', !visible);
+  }
+
   /** Shows the Start button again (for example after an error), with a new label. */
   showStart(label: string): void {
     this.startButton.textContent = label;

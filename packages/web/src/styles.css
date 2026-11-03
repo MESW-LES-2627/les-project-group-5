@@ -21,6 +21,10 @@ body {
   padding: 16px;
 }
 
+.settings + .settings {
+  margin-top: 12px;
+}
+
 header {
   display: flex;
   align-items: baseline;
@@ -63,6 +67,10 @@ h1 {
   object-fit: cover;
   transform: scaleX(-1);
   opacity: 0.45;
+}
+
+.camera.camera-hidden {
+  opacity: 0;
 }
 
 .cells {
