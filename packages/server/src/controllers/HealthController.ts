@@ -1,11 +1,15 @@
 import type { FastifyInstance } from 'fastify';
+import type { DatabaseStatus } from '../database/DatabaseStatus';
 
 /**
- * GET /api/health: tells the browser that the server is running.
- * It has no rules and no data, so it needs no service or repository.
- * Later controllers receive their services through the constructor and only translate HTTP to and from them.
+ * GET /api/health: tells the browser that the server is running and whether the database answers.
+ * `status` stays "ok" while the server runs, even if the database is offline: the browser uses it to know
+ * the server is reachable, and `database` says separately if saved data can work.
+ * It has no rules, so it needs no service; it only asks the database status.
  */
 export class HealthController {
+  constructor(private readonly database: DatabaseStatus) {}
+
   register(app: FastifyInstance): void {
     app.get(
       '/api/health',
@@ -14,13 +18,19 @@ export class HealthController {
           response: {
             200: {
               type: 'object',
-              properties: { status: { type: 'string', enum: ['ok'] } },
-              required: ['status'],
+              properties: {
+                status: { type: 'string', enum: ['ok'] },
+                database: { type: 'string', enum: ['online', 'offline'] }
+              },
+              required: ['status', 'database'],
             },
           },
         },
       },
-      async () => ({ status: 'ok' as const }),
+      async () => ({
+        status: 'ok' as const,
+        database: (await this.database.isOnline()) ? ('online' as const) : ('offline' as const)
+      }),
     );
   }
 }
