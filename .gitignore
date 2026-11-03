@@ -17,3 +17,5 @@ coverage/
 
 # MediaPipe WASM files, copied from node_modules on `npm install`
 packages/web/public/mediapipe/
+# Generated code documentation (npm run docs)
+docs/code-doc/

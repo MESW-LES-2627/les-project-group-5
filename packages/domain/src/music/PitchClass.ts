@@ -21,5 +21,5 @@ export const PITCH_CLASSES = [
   'B',  // Si
 ] as const;
 
-// Restricts PitchClass to the exact note names listed above.
+/** One of the 12 note names in PITCH_CLASSES. Restricts PitchClass to the exact note names listed above. */
 export type PitchClass = (typeof PITCH_CLASSES)[number];

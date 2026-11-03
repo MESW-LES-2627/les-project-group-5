@@ -6,6 +6,7 @@ import type { FastifyInstance } from 'fastify';
  * Later controllers receive their services through the constructor and only translate HTTP to and from them.
  */
 export class HealthController {
+  /** Adds the health route to the Fastify app. */
   register(app: FastifyInstance): void {
     app.get(
       '/api/health',
