@@ -22,6 +22,6 @@ Guidance for AI coding assistants in this repository. Product scope: `docs/itera
 2. MediaPipe sits behind a `HandTracker` interface. Only its adapter imports MediaPipe.
 3. Audio sits behind a `Synth` interface. Only its adapter uses the Web Audio API.
 4. `web` and `server` depend on `domain`. `domain` depends on nothing.
-5. Server: `controller → service → repository`. Services depend on repository interfaces. Only repositories and database adapters (e.g. `SupabaseDatabaseStatus`) import `@supabase/supabase-js`.
+5. Server: one folder per feature in `packages/server/src/features/<feature>/`, with `controller → service → repository` inside it. Services depend on repository interfaces. Features don't import each other; shared code goes in `shared/`. Only `Supabase*.ts` files and `shared/supabase/` import `@supabase/supabase-js`; only `*Controller.ts` and `app.ts` import Fastify (ESLint enforces both).
 6. The browser talks to the server only through `ApiClient`.
 7. Use a design pattern only where it has a real reason in the code.
