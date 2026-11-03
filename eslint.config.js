@@ -39,7 +39,7 @@ export default defineConfig(
           patterns: [
             { group: ['@mediapipe/*'], message: 'The domain must not use MediaPipe. Use the HandTracker interface in the web package.' },
             { group: ['fastify', '@fastify/*'], message: 'The domain must not use Fastify. HTTP belongs to the server controllers.' },
-            { group: ['better-sqlite3', 'sqlite3'], message: 'The domain must not use the database. Use a repository interface.' },
+            { group: ['@supabase/*'], message: 'The domain must not use the database. Use a repository interface.' },
             { group: ['@instrument/web', '@instrument/server', '**/web/**', '**/server/**'], message: 'The domain must not depend on the web or server packages.' },
           ],
         },

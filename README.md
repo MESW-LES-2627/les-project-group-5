@@ -25,6 +25,7 @@ A musical instrument that runs in the browser and is played with your hand inste
 | [MediaPipe Hand Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker) (`@mediapipe/tasks-vision`) | Finds the hand in each camera frame and returns 21 points (wrist, finger joints, fingertips). |
 | [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) | Built into the browser. Generates the sound of the note. |
 | [Fastify](https://fastify.dev/) | The web server framework. Only used in the server's HTTP layer (controllers). |
+| [Supabase](https://supabase.com/) (`@supabase/supabase-js`) | Hosted Postgres database for the optional accounts and saved data. Only the server talks to it. |
 | [Vitest](https://vitest.dev/) | Runs the automated tests. |
 | [ESLint](https://eslint.org/) + [typescript-eslint](https://typescript-eslint.io/) | Finds code problems and **enforces our architecture rules** (for example, "the domain can't use the browser"). |
 
@@ -39,7 +40,7 @@ flowchart LR
   end
   subgraph Server
     server["packages/server<br/>Fastify controllers,<br/>services, repositories"]
-    db[("Database <br/>(planned)")]
+    db[("Supabase<br/>(Postgres)")]
   end
   domain["packages/domain<br/>the rules: music, hand, calibration,<br/>instrument, layouts, game"]
 
@@ -83,10 +84,12 @@ The full explanation, with the real-time pipeline step by step, is in the [devel
 │   │       ├── pages/         # InstrumentPage (draws the screen)
 │   │       └── api/           # ApiClient (the only code that talks to the server)
 │   └── server/            # Fastify server on :3000
+│       ├── .env               # Supabase keys (not in git, see "How to run")
 │       └── src/
-│           ├── main.ts        # Starts the server
+│           ├── main.ts        # Composition root: reads .env, creates the Supabase client, starts the server
 │           ├── app.ts         # buildApp(): creates the app with all routes (used by tests too)
-│           └── controllers/   # HTTP routes (HealthController)
+│           ├── controllers/   # HTTP routes (HealthController)
+│           └── database/      # DatabaseStatus interface, SupabaseDatabaseStatus
 ├── scripts/
 │   ├── dev.mjs                # `npm run dev`: starts server and web together
 │   └── copy-mediapipe-wasm.mjs # Runs after `npm install`
@@ -101,6 +104,7 @@ The full explanation, with the real-time pipeline step by step, is in the [devel
 - **Node.js 24** or newer. Check with `node -v`. If you use [nvm](https://github.com/nvm-sh/nvm), run `nvm use`: it reads the version from `.nvmrc`.
 - **Chrome or Edge** on a computer (Android Chrome and iPhone Safari are supported too, but test on desktop first).
 - A **webcam**.
+- Access to the team's **Supabase** project (for the server keys).
 
 ## How to run
 
@@ -110,6 +114,15 @@ cd les-project-group-5
 npm install      # installs everything for all packages
 npm run dev      # starts the server and the web app
 ```
+
+Before the first `npm run dev`, create `packages/server/.env` with the Supabase keys (Supabase dashboard → Project Settings → API Keys):
+
+```bash
+SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_SECRET_KEY=sb_secret_...   # or the legacy service_role key
+```
+
+This file is in `.gitignore`: **never commit it**, and never put the secret key in the web app. The server stops at start-up with a clear message if a value is missing. Node loads the file itself (`--env-file-if-exists` in `packages/server/package.json`), so no extra library is needed.
 
 - `npm install` also runs `scripts/copy-mediapipe-wasm.mjs`, which copies MediaPipe's files into `packages/web/public/mediapipe/` so the browser can load them. That folder is not in git: it is recreated on every install.
 - `npm run dev` starts **two programs**: the server at http://127.0.0.1:3000 and the web app at **http://localhost:5173**. Each line in the terminal starts with `[server]` or `[web]` so you know who wrote it. Press **Ctrl+C** once to stop both.
@@ -126,6 +139,7 @@ The browser only talks to Vite. Vite forwards every `/api` request to the server
 Open http://localhost:5173. You should see:
 
 1. "Server: online" at the top (it turns to "offline" within 10 seconds if the server stops; the instrument keeps working).
+   You can also open http://localhost:5173/api/health: it answers `{"status":"ok","database":"online"}`. `database` is `offline` if Supabase can't be reached; the server still runs.
 2. A **Start** button. Press it and allow the camera.
 3. Your camera image with a box in the middle. Point your **right index finger** at the box and **open your hand**: a note (C) plays, louder as you open the hand. Close the hand or leave the box and it stops.
 
@@ -149,7 +163,7 @@ npx vitest run packages/domain/src/music/Scale.test.ts
 npx vitest run -t "starts a note"
 ```
 
-**What the tests cover:** rules in `domain` (unit tests), the instrument loop and sound output with fakes (no camera or speakers), `ApiClient` with a fake `fetch`, and server routes with `app.inject` (no network). See [Testing](docs/developer-guide.md#7-testing) in the developer guide.
+**What the tests cover:** rules in `domain` (unit tests), the instrument loop and sound output with fakes (no camera or speakers), `ApiClient` with a fake `fetch`, and server routes with `app.inject` and a fake `DatabaseStatus` (no network, no real database). See [Testing](docs/developer-guide.md#7-testing) in the developer guide.
 
 **Manual test (camera and sound can't be tested automatically).** For every change that touches them, check in Chrome:
 
@@ -194,6 +208,8 @@ To try the production build on your machine: `npm run build:api && vercel build 
 | "This page can't use the camera" | Open the app from `http://localhost:5173`, not from an IP address. Browsers only allow the camera on `localhost` or `https://`. |
 | "Hand tracking could not be loaded" | Run `npm install` again (it re-copies the MediaPipe files), then reload the page. |
 | "Server: offline" | Check the `[server]` lines in the terminal for an error. The instrument works anyway. |
+| `Missing SUPABASE_URL` / `Missing SUPABASE_SECRET_KEY` | Create `packages/server/.env` with both values (see "How to run"). |
+| `/api/health` says `"database":"offline"` | Check the URL and key in `packages/server/.env`, your internet connection, and that the Supabase project is not paused. |
 | `EADDRINUSE` (port in use) | Another `npm run dev` is still running. Close it, or find it with `lsof -i :5173` / `lsof -i :3000`. |
 | Strange errors after `git pull` | Run `npm install` (someone may have added a dependency). |
 | `npm install` fails / syntax errors | Check `node -v` is 24 or newer. |
