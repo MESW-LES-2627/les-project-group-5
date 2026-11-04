@@ -1,50 +1,91 @@
 @startuml
+' Look: soft colours, rounded corners, curved lines, small grey labels.
 skinparam shadowing false
-skinparam ArrowColor #444444
+skinparam roundCorner 12
 skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
 skinparam componentStyle uml2
+skinparam ArrowColor #6B7280
+skinparam ArrowThickness 1.1
+skinparam ArrowFontSize 11
+skinparam ArrowFontColor #4B5563
+skinparam nodeBorderColor #9CA3AF
+skinparam packageBorderColor #9CA3AF
+skinparam interfaceBorderColor #6B7280
+skinparam interfaceBackgroundColor #FFFFFF
+skinparam actorBorderColor #6B7280
+skinparam actorBackgroundColor #FEF3C7
+skinparam databaseBorderColor #9CA3AF
+skinparam cloudBorderColor #9CA3AF
 skinparam component {
   BackgroundColor #FFFFFF
-  BorderColor #555555
+  BorderColor #6B7280
 }
-skinparam nodesep 45
+skinparam component<<planned>> {
+  BackgroundColor #F3F4F6
+  BorderColor #B0B5BD
+  FontColor #6B7280
+  StereotypeFontColor #9CA3AF
+}
+skinparam component<<external>> {
+  BackgroundColor #FDF2F8
+  BorderColor #D1A3BD
+  StereotypeFontColor #9C6B87
+}
+skinparam nodesep 50
 skinparam ranksep 55
 
 actor Player
 
-node "Browser" #F3F8FF {
-  component "Player App\n(instrument, game\nand account pages)" as App
+node "Browser" #EFF6FF {
+  component "Player App\n(instrument and\nsettings pages)" as App
+  component "Settings\n(SettingsStore)" as Set
+  component "Game\n(exercises, attempts)" as Ear <<planned>>
   component "Instrument\n(layouts, scale, notes)" as Instr
-  component "Game\n(exercises, attempts)" as Ear
   component "Hand Tracking" as Track
   component "Sound" as Sound
 }
 
-node "Server" #F2FBF2 {
-  component "Accounts\n(sign up, login,\npreferences, progress)" as Acc
-  component "Email Sender" as Mail
-  database "Accounts DB" as DB
-  () "Accounts API\n(REST)" as AAPI
+node "Vercel" #ECFDF5 {
+  package "API (serverless function)" #F7FEF9 {
+    () "Health API\n(GET /api/health)" as HAPI
+    () "Accounts API\n(REST)" as AAPI
+    component "Health" as Health
+    component "Accounts\n(sign up, login,\npreferences, progress)" as Acc <<planned>>
+    () "DatabaseStatus" as DBS
+    component "Database access\n(pg pool)" as DBA
+    component "Email Sender" as Mail <<planned>>
+  }
+  component "Static site\n(built web app)" as Site
 }
 
-cloud "Email provider" as SMTP #FFF0F6
-component "Webcam" as Cam <<external>> #FFF0F6
-component "MediaPipe" as MP <<external>> #FFF0F6
-component "Web Audio" as WA <<external>> #FFF0F6
+component "Webcam" as Cam <<external>>
+component "MediaPipe" as MP <<external>>
+component "Web Audio" as WA <<external>>
+database "Postgres\n(hosted on Supabase)" as PG #FDF2F8
+cloud "Email provider" as SMTP #FDF2F8
 
-Player --> App
-App ..> Instr
-App ..> Ear
-Ear ..> Instr
-Instr ..> Track
-Instr ..> Sound
-Ear ..> Sound
-Track ..> Cam
-Track ..> MP
-Sound ..> WA
-AAPI - Acc
+Player -down-> App : uses
+App .down.> Set
+App .down.> Ear
+App .down.> Instr
+Ear .down.> Instr
+Ear .down.> Sound
+Instr .down.> Track
+Instr .down.> Sound
+Track .down.> Cam
+Track .down.> MP
+Sound .down.> WA
+
+App ..> HAPI
 App ..> AAPI
-Acc ..> DB
-Acc ..> Mail
-Mail --> SMTP
+HAPI -down- Health
+AAPI -down- Acc
+Health .down.> DBS
+DBS - DBA
+Acc .down.> DBA
+Acc .down.> Mail
+DBA -down-> PG : SQL
+Mail -down-> SMTP
+Site .[norank].> App : serves
 @enduml

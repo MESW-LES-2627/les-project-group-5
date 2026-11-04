@@ -94,9 +94,10 @@ Ask these questions in order:
 | Is it a **rule** that could be explained on paper, with no camera, sound, screen or network? | `packages/domain/src/<area>/` | Which pad is at a point; how many stars an attempt gets; when a login is blocked |
 | Does it use a **browser API or a library** (camera, MediaPipe, Web Audio, `localStorage`)? | An **adapter** in `packages/web/src/`, behind an interface | `WebAudioSynth implements Synth` |
 | Does it **draw** something or react to clicks? | A page in `packages/web/src/pages/` | `InstrumentPage` |
-| Does it **call the server**? | A method on `ApiClient` in `packages/web/src/api/` | `isServerOnline()` |
-| Is it an **HTTP route**? | A controller in `packages/server/src/controllers/` | `HealthController` |
-| Is it server logic or database access? | A service / repository in `packages/server/src/` (see [6](#6-the-server)) | `AccountService`, `SqliteUserRepository` (future) |
+| Does it **call the server**? | A method on `ApiClient` in `packages/web/src/api/` | `checkHealth()` |
+| Is it an **HTTP route**? | A controller in its feature folder, `packages/server/src/features/<feature>/` | `features/health/HealthController` |
+| Is it server logic or database access? | A service / repository in the same feature folder (see [6](#6-the-server)) | `AccountService`, `PostgresUserRepository` (future) |
+| Is it server code **shared by several features**? | `packages/server/src/shared/` (or `config/` for settings read at start-up) | `createDatabasePool`, `readConfig` |
 | Does it **create objects and connect them**? | Only in `main.ts` (web) or `buildApp` (server) | — |
 
 Folders are grouped by **topic** (`music`, `hand`, `audio`, …), not by kind of file. Tests sit **next to** the code they test (`Scale.ts` + `Scale.test.ts`). Anything the other packages need from `domain` must be **exported from [`packages/domain/src/index.ts`](../packages/domain/src/index.ts)**.
@@ -111,17 +112,34 @@ These rules come from [CLAUDE.md](../CLAUDE.md). Most of them are **checked auto
 | 2 | Only `MediaPipeHandTracker` imports MediaPipe | ESLint on `packages/web/src` | *"Only MediaPipeHandTracker may import MediaPipe. Use the HandTracker interface."* |
 | 3 | Only `WebAudioSynth` uses Web Audio | ESLint bans `AudioContext` elsewhere in web | *"Only WebAudioSynth may use the Web Audio API. Use the Synth interface."* |
 | 4 | `web` and `server` depend on `domain`; `domain` depends on nothing | ESLint bans imports of web/server from domain | *"The domain must not depend on the web or server packages."* |
-| 5 | Server: controller → service → repository; services use repository interfaces | ESLint bans Fastify outside `controllers/` and `app.ts` | *"Only controllers (and app.ts) may use Fastify…"* |
+| 5 | Server: controller → service → repository; services use repository interfaces | ESLint bans Fastify outside `*Controller.ts` and `app.ts`, and `pg` outside `Postgres*.ts` and `shared/database/` | *"Only controllers (and app.ts) may use Fastify…"* |
 | 6 | The browser talks to the server only through `ApiClient` | **Convention** (not checked by lint): code review | — |
 | 7 | Use a design pattern only where there is a real reason | Code review | — |
 
 ## 6. The server
 
-The server only exists for the optional accounts. Today it has one route, `GET /api/health`, used by the page to show "Server: online".
+The server only exists for the optional accounts. Today it has one route, `GET /api/health`, used by the page to show "Server: online" and "Database: online".
 
 - [`app.ts`](../packages/server/src/app.ts): `buildApp()` creates the Fastify app and registers every controller, **without** starting it. Tests use it directly with `app.inject(...)` (no network, no port).
-- [`main.ts`](../packages/server/src/main.ts): calls `buildApp()` and starts listening on port 3000.
-- [`controllers/HealthController.ts`](../packages/server/src/controllers/HealthController.ts): one class per group of routes, with a `register(app)` method.
+- [`main.ts`](../packages/server/src/main.ts): the composition root. Reads the configuration ([`config/env.ts`](../packages/server/src/config/env.ts)), creates the database connection pool ([`shared/database/createDatabasePool.ts`](../packages/server/src/shared/database/createDatabasePool.ts)) and the objects each feature needs, calls `buildApp()` and starts listening on port 3000.
+- [`features/health/`](../packages/server/src/features/health/): the health feature. `HealthController` (one class per group of routes, with a `register(app)` method) asks a `DatabaseStatus` interface whether the database answers; `PostgresDatabaseStatus` implements it with `SELECT 1`.
+
+**Folders: one per feature.** The server will grow (accounts, saved settings, progress), so code is grouped **by feature first, then by layer** inside the feature:
+
+```text
+packages/server/src/
+├── main.ts, app.ts       # wiring
+├── config/               # settings read at start-up (.env)
+├── shared/               # code used by several features (the database pool)
+└── features/
+    ├── health/           # HealthController, DatabaseStatus, PostgresDatabaseStatus (+ tests)
+    └── accounts/         # (future) AccountController, AccountService, UserRepository, PostgresUserRepository
+```
+
+- Everything about one feature sits in one folder, so a change to "accounts" touches one folder and teammates working on different features rarely conflict.
+- File names keep the role suffix (`*Controller`, `*Service`, `*Repository`, `Postgres*`) so the layer is clear without layer folders. The lint rules use these names.
+- **Features don't import each other's files.** If two features need the same thing, move it to `shared/`.
+- Tests sit next to the file they test. `app.test.ts` only has app-wide tests (unknown route → 404).
 
 **In development**, the browser opens `http://localhost:5173` (Vite). Vite forwards every request starting with `/api` to the server on port 3000 ([`vite.config.ts`](../packages/web/vite.config.ts)). So the browser sees one address: no CORS problems, and cookies just work.
 
@@ -132,14 +150,14 @@ flowchart LR
   http["HTTP request"] --> c["Controller<br/>(Fastify: reads the request,<br/>sends the response)"]
   c --> s["Service<br/>(the use case: sign up, log in…)"]
   s --> ri["Repository interface<br/>(UserRepository)"]
-  sql["UserRepository<br/>(hand-written SQL)"] -. implements .-> ri
+  sql["PostgresUserRepository<br/>(hand-written SQL)"] -. implements .-> ri
   s --> d["domain rules<br/>(e.g. LoginAttemptPolicy)"]
 ```
 
 - The **controller** only translates HTTP ↔ service calls. No rules here.
 - The **service** does the work. It knows nothing about HTTP (no Fastify import, enforced) and talks to the database only through a **repository interface**.
-- The **repository** is the only place with SQL. We write the SQL by hand: no ORM, no query builder.
-- Everything is connected with **constructors** in `buildApp`: `new AccountController(new AccountService(new SqliteUserRepository(db)))`. Tests pass an in-memory fake repository instead.
+- The **repository** is the only place with SQL. We write the SQL by hand with `pg` (`pool.query('SELECT … WHERE email = $1', [email])`, always with `$1` parameters, never by joining strings). No ORM, no query builder, no `supabase-js` (enforced by lint).
+- Everything is connected with **constructors** in `main.ts` / `buildApp`: `new AccountController(new AccountService(new PostgresUserRepository(pool)))`. Tests pass an in-memory fake repository instead.
 
 ## 7. Testing
 
@@ -170,7 +188,7 @@ describe('Scale', () => {                      // a group of tests about one thi
 | Web Audio | A small class that implements `Synth` and records the calls | [`SoundOutput.test.ts`](../packages/web/src/audio/SoundOutput.test.ts) |
 | A layout | An object with `regions` and `hitTest` (left half = 1, right half = 2) | [`Instrument.test.ts`](../packages/domain/src/instrument/Instrument.test.ts) |
 | `fetch` / the server | A function that returns a fixed `Response` | [`ApiClient.test.ts`](../packages/web/src/api/ApiClient.test.ts) |
-| The network | `app.inject({ method: 'GET', url: '/api/health' })` | [`app.test.ts`](../packages/server/src/app.test.ts) |
+| The network | `app.inject({ method: 'GET', url: '/api/health' })` | [`HealthController.test.ts`](../packages/server/src/features/health/HealthController.test.ts) |
 
 **What must have tests** (from the [Definition of done](iterations/0/definition-of-done.md)): unit tests for every rule in `domain` (required); integration tests for every server route; a manual test (see the README checklist) for anything that depends on the camera or on sound.
 
@@ -220,12 +238,13 @@ export { PadGridLayout } from './layouts/PadGridLayout';
 ### Recipe: a new server feature
 
 1. Write the **domain rule** and its tests, if there is one (for example `LoginAttemptPolicy` for US-E2-01).
-2. Define a **repository interface** with only the methods the service needs (`findByEmail`, `save`).
-3. Write the **service** using the interface, and test it with an in-memory fake repository.
-4. Write the **Database repository** that implements the interface with hand-written SQL.
-5. Write the **controller**: read the request, call the service, send the response. Test it with `app.inject`.
-6. **Wire** it in `buildApp` through constructors.
-7. Add a method to **`ApiClient`** for the browser to call it, and test it with a fake `fetch`.
+2. Create the feature folder `packages/server/src/features/<feature>/`. Steps 3–6 put their files there.
+3. Define a **repository interface** with only the methods the service needs (`findByEmail`, `save`).
+4. Write the **service** using the interface, and test it with an in-memory fake repository.
+5. Write the **Postgres repository** (`Postgres<Name>Repository`) that implements the interface with hand-written SQL on the shared pool.
+6. Write the **controller**: read the request, call the service, send the response. Test it with `app.inject`.
+7. **Wire** it in `main.ts` / `buildApp` through constructors.
+8. Add a method to **`ApiClient`** for the browser to call it, and test it with a fake `fetch`.
 
 ### Recipe: wrapping a new browser API or library
 

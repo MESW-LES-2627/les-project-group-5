@@ -7,8 +7,9 @@ coverage/
 *.sqlite
 *.sqlite-journal
 .env
-.env.*
+.env.local
 .secrets
+staging-push.json
 
 # OS and editor files
 .DS_Store
@@ -19,7 +20,6 @@ coverage/
 # MediaPipe WASM files, copied from node_modules on `npm install`
 packages/web/public/mediapipe/
 .vercel
-.env*
 
 # Server bundle for Vercel, created by `npm run build:api`
 api/

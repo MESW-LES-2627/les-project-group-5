@@ -622,6 +622,38 @@ a:focus-visible {
     font-size: 0.9rem;
     pointer-events: auto;
   }
+
+
+/* Server and database status side by side. */
+.connection {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+}
+
+/* A dot shows the state: grey while offline or checking, green when it answers. */
+.status-light {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-light::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #5f5c58;
+}
+
+.status-light.online {
+  color: var(--ok);
+}
+
+.status-light.online::before {
+  background: var(--ok);
+  box-shadow: 0 0 9px var(--ok);
+}
   .status-bar {
     grid-template-columns: 1fr;
     gap: 8px;

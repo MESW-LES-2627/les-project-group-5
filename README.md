@@ -25,6 +25,7 @@ A musical instrument that runs in the browser and is played with your hand inste
 | [MediaPipe Hand Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker) (`@mediapipe/tasks-vision`) | Finds the hand in each camera frame and returns 21 points (wrist, finger joints, fingertips). |
 | [Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API) | Built into the browser. Generates the sound of the note. |
 | [Fastify](https://fastify.dev/) | The web server framework. Only used in the server's HTTP layer (controllers). |
+| [PostgreSQL](https://www.postgresql.org/) on [Supabase](https://supabase.com/) + [`pg`](https://node-postgres.com/) | Hosted database for the optional accounts and saved data. Only the server talks to it, with hand-written SQL through `pg` (no `supabase-js`, no Supabase Auth). |
 | [Vitest](https://vitest.dev/) | Runs the automated tests. |
 | [ESLint](https://eslint.org/) + [typescript-eslint](https://typescript-eslint.io/) | Finds code problems and **enforces our architecture rules** (for example, "the domain can't use the browser"). |
 
@@ -39,7 +40,7 @@ flowchart LR
   end
   subgraph Server
     server["packages/server<br/>Fastify controllers,<br/>services, repositories"]
-    db[("Database <br/>(planned)")]
+    db[("Supabase<br/>(Postgres)")]
   end
   domain["packages/domain<br/>the rules: music, hand, calibration,<br/>instrument, layouts, game"]
 
@@ -83,10 +84,14 @@ The full explanation, with the real-time pipeline step by step, is in the [devel
 │   │       ├── pages/         # InstrumentPage (draws the screen)
 │   │       └── api/           # ApiClient (the only code that talks to the server)
 │   └── server/            # Fastify server on :3000
-│       └── src/
-│           ├── main.ts        # Starts the server
+│       ├── .env               # DATABASE_URL (not in git, see "How to run")
+│       └── src/           # One folder per feature (see developer guide, "The server")
+│           ├── main.ts        # Composition root: reads config, creates the database pool, starts the server
 │           ├── app.ts         # buildApp(): creates the app with all routes (used by tests too)
-│           └── controllers/   # HTTP routes (HealthController)
+│           ├── config/        # env.ts: reads and checks .env values
+│           ├── shared/        # Code used by several features (database/createDatabasePool)
+│           └── features/
+│               └── health/    # HealthController, DatabaseStatus, PostgresDatabaseStatus
 ├── scripts/
 │   ├── dev.mjs                # `npm run dev`: starts server and web together
 │   └── copy-mediapipe-wasm.mjs # Runs after `npm install`
@@ -101,6 +106,7 @@ The full explanation, with the real-time pipeline step by step, is in the [devel
 - **Node.js 24** or newer. Check with `node -v`. If you use [nvm](https://github.com/nvm-sh/nvm), run `nvm use`: it reads the version from `.nvmrc`.
 - **Chrome or Edge** on a computer (Android Chrome and iPhone Safari are supported too, but test on desktop first).
 - A **webcam**.
+- Access to the team's **Supabase** project (for the database connection string).
 
 ## How to run
 
@@ -108,8 +114,17 @@ The full explanation, with the real-time pipeline step by step, is in the [devel
 git clone https://github.com/MESW-LES-2627/les-project-group-5.git
 cd les-project-group-5
 npm install      # installs everything for all packages
+cp packages/server/.env.example packages/server/.env
 npm run dev      # starts the server and the web app
 ```
+
+Before the first `npm run dev`, create `packages/server/.env` with the database connection string:
+
+```bash
+DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres
+```
+
+This file is in `.gitignore`: **never commit it**, because the string contains the database password. Never put it in the web app. On Vercel, set `DATABASE_URL` in the project's environment variables instead. The server stops at start-up with a clear message if a value is missing. Node loads the file itself (`--env-file-if-exists` in `packages/server/package.json`), so no extra library is needed.
 
 - `npm install` also runs `scripts/copy-mediapipe-wasm.mjs`, which copies MediaPipe's files into `packages/web/public/mediapipe/` so the browser can load them. That folder is not in git: it is recreated on every install.
 - `npm run dev` starts **two programs**: the server at http://127.0.0.1:3000 and the web app at **http://localhost:5173**. Each line in the terminal starts with `[server]` or `[web]` so you know who wrote it. Press **Ctrl+C** once to stop both.
@@ -125,7 +140,8 @@ The browser only talks to Vite. Vite forwards every `/api` request to the server
 
 Open http://localhost:5173. You should see:
 
-1. "Server: online" at the top (it turns to "offline" within 10 seconds if the server stops; the instrument keeps working).
+1. "Server: online" and "Database: online" in the bottom bar (they turn to "offline" within 10 seconds if the server or the database stops; the instrument keeps working).
+   You can also open http://localhost:5173/api/health: it answers `{"status":"ok","database":"online"}`. `database` is `offline` if the database can't be reached; the server still runs.
 2. A **Start** button. Press it and allow the camera.
 3. Your camera image with a box in the middle. Point your **right index finger** at the box and **open your hand**: a note (C) plays, louder as you open the hand. Close the hand or leave the box and it stops.
 
@@ -149,7 +165,7 @@ npx vitest run packages/domain/src/music/Scale.test.ts
 npx vitest run -t "starts a note"
 ```
 
-**What the tests cover:** rules in `domain` (unit tests), the instrument loop and sound output with fakes (no camera or speakers), `ApiClient` with a fake `fetch`, and server routes with `app.inject` (no network). See [Testing](docs/developer-guide.md#7-testing) in the developer guide.
+**What the tests cover:** rules in `domain` (unit tests), the instrument loop and sound output with fakes (no camera or speakers), `ApiClient` with a fake `fetch`, and server routes with `app.inject` and a fake `DatabaseStatus` (no network, no real database). See [Testing](docs/developer-guide.md#7-testing) in the developer guide.
 
 **Manual test (camera and sound can't be tested automatically).** For every change that touches them, check in Chrome:
 
@@ -181,7 +197,7 @@ flowchart LR
 ```
 
 - `npm run build:api` bundles the server (entry point `packages/server/src/vercel.ts`) into `api/index.js`. That file is generated, so it is not in git.
-- On Vercel the server does not listen on a port. Vercel calls it once per `/api` request, and it may be stopped between requests. Files written to disk are lost, so the SQLite database will need another home before it goes live.
+- On Vercel the server does not listen on a port. Vercel calls it once per `/api` request, and it may be stopped between requests.
 
 To try the production build on your machine: `npm run build:api && vercel build && vercel deploy --prebuilt` (needs `vercel login` and `vercel link` once).
 
@@ -194,6 +210,9 @@ To try the production build on your machine: `npm run build:api && vercel build 
 | "This page can't use the camera" | Open the app from `http://localhost:5173`, not from an IP address. Browsers only allow the camera on `localhost` or `https://`. |
 | "Hand tracking could not be loaded" | Run `npm install` again (it re-copies the MediaPipe files), then reload the page. |
 | "Server: offline" | Check the `[server]` lines in the terminal for an error. The instrument works anyway. |
+| "Database: offline" (server online) | The server can't reach the database: see the `"database":"offline"` row below. |
+| `Missing DATABASE_URL` | Create `packages/server/.env` with the connection string (see "How to run"). |
+| `/api/health` says `"database":"offline"` | Check `DATABASE_URL` in `packages/server/.env` (password replaced, transaction pooler on port 6543), your internet connection, and that the Supabase project is not paused. The `[server]` log shows the connection error. |
 | `EADDRINUSE` (port in use) | Another `npm run dev` is still running. Close it, or find it with `lsof -i :5173` / `lsof -i :3000`. |
 | Strange errors after `git pull` | Run `npm install` (someone may have added a dependency). |
 | `npm install` fails / syntax errors | Check `node -v` is 24 or newer. |

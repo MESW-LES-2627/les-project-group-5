@@ -117,14 +117,11 @@ tracker.init().catch((error: unknown) => {
   console.error('Could not preload the hand tracking model.', error);
 });
 
-// Show whether the server is reachable. The instrument works either way; the server is only needed for accounts.
+// Show whether the server and its database are reachable. The instrument works either way;
+// they are only needed for accounts and saved data.
 const SERVER_CHECK_INTERVAL_MS = 10_000;
 const api = new ApiClient();
-const checkServer = async () => {
-  const online = await api.isServerOnline();
-  page.setServerStatus(online);
-  settingsPage.setServerStatus(online);
-};
+const checkServer = async () => page.setHealthStatus(await api.checkHealth());
 void checkServer();
 setInterval(checkServer, SERVER_CHECK_INTERVAL_MS);
 

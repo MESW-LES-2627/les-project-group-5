@@ -1,10 +1,10 @@
 import type { Degree, Handedness, InstrumentFrame, Layout, Scale } from '@instrument/domain';
+import type { HealthStatus } from '../api/ApiClient';
 import { solfegeOf } from './solfege';
 
 /**
- * The instrument screen: a header, the camera image with the cells (pads) and the pointer, a Start button,
- * a hint line, and a bottom bar with the scale, the volume and the dominant hand.
- * Also shows whether the server is reachable.
+ * The instrument screen: camera image, the cells, the pointer, a Start button, a status line, a volume bar
+ * and whether the server and its database are reachable.
  * It only draws what it is told. It has no rules about notes or sound.
  */
 export class InstrumentPage {
@@ -16,6 +16,7 @@ export class InstrumentPage {
   private readonly volumeFill: HTMLElement;
   private readonly volumeValue: HTMLElement;
   private readonly serverStatus: HTMLElement;
+  private readonly databaseStatus: HTMLElement;
   private readonly debug: HTMLElement | null;
   private readonly scaleName: HTMLElement;
   private readonly handName: HTMLElement;
@@ -54,7 +55,10 @@ export class InstrumentPage {
           </div>
         </main>
         <footer class="status-bar">
-          <div class="status-copy"><span class="live-dot"></span><strong class="scale-name"></strong><span>· 8 notes</span></div>
+          <div class="connection">
+            <span class="status-light server-status">Server: checking…</span>
+            <span class="status-light database-status">Database: checking…</span>
+          </div>
           <div class="volume">
             <label>Volume</label>
             <div class="volume-bar"><div class="volume-fill"></div></div>
@@ -71,6 +75,7 @@ export class InstrumentPage {
     this.volumeFill = find(root, '.volume-fill');
     this.volumeValue = find(root, '.volume-value');
     this.serverStatus = find(root, '.server-status');
+    this.databaseStatus = find(root, '.database-status');
     // With ?debug at the end of the address, show the live numbers of the hand (to find why a note does not play).
     this.debug = new URLSearchParams(window.location.search).has('debug') ? find(root, '.debug') : null;
     this.debug?.removeAttribute('hidden');
@@ -106,16 +111,18 @@ export class InstrumentPage {
     }
   }
 
-  /** Fills the bottom bar: the scale (for example "C MAJOR") and which hand plays. */
+    /** Fills the bottom bar: the scale (for example "C MAJOR") and which hand plays. */
   showInfo(scale: Scale, hand: Handedness): void {
     this.scaleName.textContent = `${scale.root} ${scale.type.name}`;
     this.handLabel = hand.toLowerCase();
     this.handName.textContent = `${hand} hand`;
   }
 
-  setServerStatus(online: boolean): void {
-    this.serverStatus.textContent = online ? 'Server: online' : 'Server: offline';
-    this.serverStatus.classList.toggle('online', online);
+
+  /** Shows whether the server and its database can be reached. */
+  setHealthStatus(health: HealthStatus): void {
+    showLight(this.serverStatus, 'Server', health.server);
+    showLight(this.databaseStatus, 'Database', health.database);
   }
 
   setStatus(message: string): void {
@@ -182,6 +189,12 @@ export class InstrumentPage {
 
     this.setStatus(frame.handDetected ? HINT : `Show your ${this.handLabel} hand to the camera.`);
   }
+}
+
+/** Writes "Name: online/offline" and turns the dot green when online. */
+function showLight(element: HTMLElement, name: string, online: boolean): void {
+  element.textContent = `${name}: ${online ? 'online' : 'offline'}`;
+  element.classList.toggle('online', online);
 }
 
 /** The hint in the middle of the screen while playing; one line only. */
