@@ -1,12 +1,10 @@
+import type { NoteSound } from './NoteSounds';
 import type { Synth } from './Synth';
 
-/** Choose a soft but clear tone shape for the instrument's sound. */
-const WAVEFORM: OscillatorType = 'triangle';
-/** Remove high-pitched parts above this point to make the tone less harsh. */
+/** Starting brightness of the filter; every note then sets its own (see NoteSounds). */
 const FILTER_CUTOFF_HZ = 3000;
-/** Fade times for starting and stopping a note, which helps prevent clicks. */
-const ATTACK_SECONDS = 0.01;
-const RELEASE_SECONDS = 0.05;
+/** How quickly the filter moves to a note's brightness; very short, so the change is not heard as a click. */
+const FILTER_SMOOTHING_SECONDS = 0.005;
 /** How quickly volume follows movement; smoothing prevents abrupt level changes. */
 const VOLUME_SMOOTHING_SECONDS = 0.03;
 
@@ -16,6 +14,8 @@ interface Voice {
   readonly oscillator: OscillatorNode;
   /** Controls the note's fade in and fade out. */
   readonly envelope: GainNode;
+  /** How long this note fades out when it stops. */
+  readonly releaseSeconds: number;
 }
 
 /**
@@ -59,7 +59,7 @@ export class WebAudioSynth implements Synth {
   }
 
   /** Start a tone at the requested frequency, replacing any note already playing. */
-  noteOn(frequencyHz: number): void {
+  noteOn(frequencyHz: number, sound: NoteSound): void {
     const { context, filter } = this.ready();
     // Fade out the previous tone before replacing it.
     this.releaseVoice();
@@ -67,18 +67,20 @@ export class WebAudioSynth implements Synth {
     const now = context.currentTime;
     // An oscillator generates a repeating sound wave; its frequency sets the pitch.
     const oscillator = context.createOscillator();
-    oscillator.type = WAVEFORM;
+    oscillator.type = sound.waveform;
     oscillator.frequency.value = frequencyHz;
 
     // The envelope controls how quickly this note fades in and out.
     const envelope = context.createGain();
     envelope.gain.setValueAtTime(0, now);
-    envelope.gain.linearRampToValueAtTime(1, now + ATTACK_SECONDS);
+    envelope.gain.linearRampToValueAtTime(1, now + sound.attackSeconds);
+    // The filter is shared by all notes, so it takes the brightness of the new note.
+    filter.frequency.setTargetAtTime(sound.cutoffHz, now, FILTER_SMOOTHING_SECONDS);
 
     // Send this note through its fade control and the shared filter to the output.
     oscillator.connect(envelope).connect(filter);
     oscillator.start(now);
-    this.voice = { oscillator, envelope };
+    this.voice = { oscillator, envelope, releaseSeconds: sound.releaseSeconds };
   }
 
   /** Fade out and stop whichever note is currently playing. */
@@ -99,13 +101,13 @@ export class WebAudioSynth implements Synth {
     if (!this.voice || !this.context) {
       return;
     }
-    const { oscillator, envelope } = this.voice;
+    const { oscillator, envelope, releaseSeconds } = this.voice;
     const now = this.context.currentTime;
     // Replace any pending fade instructions with a short fade to silence.
     envelope.gain.cancelScheduledValues(now);
     envelope.gain.setValueAtTime(envelope.gain.value, now);
-    envelope.gain.linearRampToValueAtTime(0, now + RELEASE_SECONDS);
-    oscillator.stop(now + RELEASE_SECONDS);
+    envelope.gain.linearRampToValueAtTime(0, now + releaseSeconds);
+    oscillator.stop(now + releaseSeconds);
     // Disconnect the per-note audio components after the fade has finished.
     oscillator.onended = () => {
       oscillator.disconnect();

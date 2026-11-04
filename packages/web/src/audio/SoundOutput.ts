@@ -1,4 +1,5 @@
 import type { InstrumentFrame, Scale } from '@instrument/domain';
+import { NOTE_SOUNDS } from './NoteSounds';
 import type { Synth } from './Synth';
 
 /**
@@ -23,7 +24,8 @@ export class SoundOutput {
   onFrame(frame: InstrumentFrame): void {
     if (frame.change.kind === 'start') {
       // A newly started degree needs a new sound at that degree's frequency.
-      this.synth.noteOn(this.scale.frequencyOf(frame.change.degree));
+      // Each degree also has its own sound (see NOTE_SOUNDS).
+      this.synth.noteOn(this.scale.frequencyOf(frame.change.degree), NOTE_SOUNDS[frame.change.degree]);
     } else if (frame.change.kind === 'stop') {
       // Stop the current note when the instrument reports that it has stopped.
       this.synth.noteOff();
