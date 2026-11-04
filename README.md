@@ -114,10 +114,11 @@ The full explanation, with the real-time pipeline step by step, is in the [devel
 git clone https://github.com/MESW-LES-2627/les-project-group-5.git
 cd les-project-group-5
 npm install      # installs everything for all packages
+cp packages/server/.env.example packages/server/.env
 npm run dev      # starts the server and the web app
 ```
 
-Before the first `npm run dev`, create `packages/server/.env` with the database connection string (Supabase dashboard → **Connect** → **Transaction pooler**, then replace `[YOUR-PASSWORD]`):
+Before the first `npm run dev`, create `packages/server/.env` with the database connection string:
 
 ```bash
 DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres
@@ -196,7 +197,7 @@ flowchart LR
 ```
 
 - `npm run build:api` bundles the server (entry point `packages/server/src/vercel.ts`) into `api/index.js`. That file is generated, so it is not in git.
-- On Vercel the server does not listen on a port. Vercel calls it once per `/api` request, and it may be stopped between requests. Files written to disk are lost, so the SQLite database will need another home before it goes live.
+- On Vercel the server does not listen on a port. Vercel calls it once per `/api` request, and it may be stopped between requests.
 
 To try the production build on your machine: `npm run build:api && vercel build && vercel deploy --prebuilt` (needs `vercel login` and `vercel link` once).
 
