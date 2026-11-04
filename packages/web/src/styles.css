@@ -167,14 +167,21 @@ svg {
   text-transform: uppercase;
 }
 
-/* A dot shows the state: grey while offline or checking, green when the server answers. */
-.server-status {
+/* Server and database status side by side. */
+.connection {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+}
+
+/* A dot shows the state: grey while offline or checking, green when it answers. */
+.status-light {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.server-status::before {
+.status-light::before {
   content: '';
   width: 6px;
   height: 6px;
@@ -182,11 +189,11 @@ svg {
   background: #5f5c58;
 }
 
-.server-status.online {
+.status-light.online {
   color: var(--ok);
 }
 
-.server-status.online::before {
+.status-light.online::before {
   background: var(--ok);
   box-shadow: 0 0 9px var(--ok);
 }
