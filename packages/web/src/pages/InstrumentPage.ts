@@ -22,6 +22,8 @@ export class InstrumentPage {
   private handLabel = 'right';
   private cells = new Map<Degree, HTMLElement>();
   private selected: HTMLElement | null = null;
+  private hand: Handedness = 'Right';
+  private started = false;
 
   constructor(root: HTMLElement) {
     root.innerHTML = `
@@ -31,9 +33,12 @@ export class InstrumentPage {
           <span class="server-status">Server: checking…</span>
           <nav aria-label="Main navigation">
             <button type="button" class="active" aria-current="page">Instrument</button>
-            <!-- The Game and Settings pages come in later sprints, so these two do nothing yet. -->
+            <!-- The Game page is not available yet. -->
             <button type="button" disabled title="Coming soon">Game</button>
-            <button type="button" disabled title="Coming soon">Settings</button>
+            <a href="#/settings">
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M4 6h16M4 18h16M8 3v6M16 15v6" /><circle cx="8" cy="6" r="2" /><circle cx="16" cy="18" r="2" /></svg>
+              Settings
+            </a>
           </nav>
         </header>
         <main class="stage-area">
@@ -74,7 +79,10 @@ export class InstrumentPage {
   }
 
   onStart(handler: () => void): void {
-    this.startButton.addEventListener('click', handler);
+     this.startButton.addEventListener('click', () => {
+      this.started = true;
+      handler();
+    });
   }
 
   /** Draws one pad per region of the layout, with the note letter and its name (for example "C" and "Dó"). */
@@ -89,6 +97,8 @@ export class InstrumentPage {
       cell.innerHTML = `<strong>${note}</strong><span>${solfegeOf(note)}</span>`;
       cell.style.left = percent(region.x);
       cell.style.top = percent(region.y);
+      cell.style.setProperty('--cell-center-x', percent(region.x + region.width / 2));
+      cell.style.setProperty('--cell-center-y', percent(region.y + region.height / 2));
       cell.style.width = percent(region.width);
       cell.style.height = percent(region.height);
       this.cellsElement.append(cell);
@@ -110,6 +120,20 @@ export class InstrumentPage {
 
   setStatus(message: string): void {
     this.status.textContent = message;
+  }
+
+
+  /** Shows which hand is selected, for the initial value or to correct the UI after a rejected change. */
+  setHand(hand: Handedness): void {
+    this.hand = hand;
+    if (!this.started) {
+      this.setStatus(`Press Start, allow the camera, and play with your ${hand.toLowerCase()} hand.`);
+    }
+  }
+
+  /** Shows or hides the camera image. */
+  setCameraPreviewVisible(visible: boolean): void {
+    this.video.classList.toggle('camera-hidden', !visible);
   }
 
   /** Shows the Start button again (for example after an error), with a new label. */

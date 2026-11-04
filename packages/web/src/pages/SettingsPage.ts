@@ -4,16 +4,18 @@ import type { Handedness } from '@instrument/domain';
 export class SettingsPage {
   private readonly handSelector: HTMLElement;
   private readonly cameraPreviewSelector: HTMLElement;
+  private readonly serverStatus: HTMLElement;
 
   constructor(root: HTMLElement) {
     root.innerHTML = `
       <div class="app-shell">
         <header class="app-header">
-          <a class="brand" href="#/">Gesture Web Instrument</a>
+          <div class="brand">Web-based Gesture Instrument</div>
+          <span class="server-status">Server: checking…</span>
           <nav aria-label="Main navigation">
             <a href="#/">Instrument</a>
+            <button type="button" disabled title="Coming soon">Game</button>
             <a class="active" href="#/settings" aria-current="page">
-              <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M4 6h16M4 18h16M8 3v6M16 15v6" /><circle cx="8" cy="6" r="2" /><circle cx="16" cy="18" r="2" /></svg>
               Settings
             </a>
           </nav>
@@ -56,6 +58,12 @@ export class SettingsPage {
       </div>`;
     this.handSelector = find(root, '.hand-selector');
     this.cameraPreviewSelector = find(root, '.preview-setting input[type="checkbox"]');
+    this.serverStatus = find(root, '.server-status');
+  }
+
+  setServerStatus(online: boolean): void {
+    this.serverStatus.textContent = online ? 'Server: online' : 'Server: offline';
+    this.serverStatus.classList.toggle('online', online);
   }
 
   /** Reports a hand choice made by the user. */

@@ -12,8 +12,6 @@ const PAD_WIDTH = 0.2;
 const PAD_HEIGHT = (PAD_WIDTH * 4) / 3;
 /** Distance between the left sides of two neighbour pads in the same row (a bit more than PAD_WIDTH leaves a gap). */
 const COLUMN_STEP = 0.23;
-/** The bottom row is moved to the right by this much; this is what makes the zigzag. */
-const BOTTOM_ROW_SHIFT = 0.03;
 const LEFT = 0.04;
 const TOP_ROW_Y = 0.2;
 const BOTTOM_ROW_Y = TOP_ROW_Y + PAD_HEIGHT + 0.05;
@@ -24,7 +22,7 @@ const REGIONS: readonly Region[] = DEGREES.map((degree) => {
   const inBottomRow = degree % 2 === 0;
   return {
     degree,
-    x: LEFT + column * COLUMN_STEP + (inBottomRow ? BOTTOM_ROW_SHIFT : 0),
+    x: LEFT + column * COLUMN_STEP,
     y: inBottomRow ? BOTTOM_ROW_Y : TOP_ROW_Y,
     width: PAD_WIDTH,
     height: PAD_HEIGHT,
@@ -32,10 +30,10 @@ const REGIONS: readonly Region[] = DEGREES.map((degree) => {
 });
 
 /**
- * Two alternating rows of 4 pads (zigzag), from the design:
+ * Two aligned rows of 4 pads, with alternating degrees:
  *
  *   1   3   5   7
- *     2   4   6   8
+ *   2   4   6   8
  *
  * The pads do not cover the whole play area, so the space between pads selects no degree.
  */

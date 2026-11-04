@@ -33,4 +33,10 @@ export class SoundOutput {
     // Keep the sound level in sync with the instrument; force silence if no note is sounding.
     this.synth.setVolume(frame.sounding ? frame.volume : 0);
   }
+
+  /** Stops the current note when the instrument screen is hidden. */
+  stop(): void {
+    this.synth.noteOff();
+    this.synth.setVolume(0);
+  }
 }

@@ -19,9 +19,10 @@ describe("ZigzagLayout", () => {
     expect(bottomRow[0].y).toBeGreaterThan(topRow[0].y);
   });
 
-  it("moves the bottom row to the right of the top row, like a zigzag", () => {
-    expect(regions[1].x).toBeGreaterThan(regions[0].x); // 2 is right of 1
-    expect(regions[1].x).toBeLessThan(regions[2].x); // but still left of 3
+  it("aligns the columns in both rows", () => {
+    for (let column = 0; column < 4; column += 1) {
+      expect(regions[column * 2 + 1].x).toBe(regions[column * 2].x);
+    }
   });
 
   it("keeps every pad inside the play area", () => {

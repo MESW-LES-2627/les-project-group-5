@@ -63,6 +63,12 @@ describe('SoundOutput', () => {
     new SoundOutput(synth, new HundredsScale()).onFrame(frame({ change: { kind: 'stop' }, sounding: false, volume: 0.3 }));
     expect(synth.calls).toEqual(['noteOff', 'volume 0']);
   });
+
+  it('stops and silences the sound when leaving the instrument screen', () => {
+    const synth = new RecordingSynth();
+    new SoundOutput(synth, new HundredsScale()).stop();
+    expect(synth.calls).toEqual(['noteOff', 'volume 0']);
+  });
 });
 
 // Each pad should be recognisable by ear, so no two degrees may share exactly the same sound.
