@@ -1,31 +1,54 @@
 @startuml
-skinparam classAttributeIconSize 0
+' Look: soft colours, rounded corners, curved lines, small grey labels.
 skinparam shadowing false
-skinparam ArrowColor #444444
+skinparam roundCorner 12
 skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam classAttributeIconSize 0
+skinparam classFontStyle bold
+skinparam classAttributeFontSize 12
+skinparam ArrowColor #6B7280
+skinparam ArrowThickness 1.1
+skinparam ArrowFontSize 11
+skinparam ArrowFontColor #4B5563
 skinparam packageStyle rectangle
+skinparam packageFontSize 14
+skinparam packageBorderColor #9CA3AF
 skinparam class {
   BackgroundColor #FFFFFF
-  BorderColor #555555
+  BorderColor #6B7280
 }
 hide empty members
 hide circle
-skinparam linetype polyline
-skinparam nodesep 60
-skinparam ranksep 60
+skinparam nodesep 55
+skinparam ranksep 50
 
-class Player #FFF8C4
+class Player #FEF3C7
 
-package "Playing" #F3F8FF {
-  class HandGesture {
+package "Playing" #EFF6FF {
+  class CalibrationProfile as "Calibration Profile" {
+    pointer range (min, max)
+    openness range (min, max)
+  }
+  class HandGesture as "Hand Gesture" {
     pointing position
     hand openness
   }
   class Instrument
+  class Preferences {
+    dominant hand
+    camera preview on/off
+    key, scale, layout
+    sensitivity
+  }
+  class Pad
   class Layout {
     kind : Grid | Piano
   }
-  class Pad
+  class Note {
+    pitch
+    volume
+  }
   class Scale {
     key : C, D, ...
     mode : Major | Minor
@@ -33,25 +56,16 @@ package "Playing" #F3F8FF {
   class Degree {
     number : 1..8
   }
-  class Note {
-    pitch
-    volume
-  }
 }
 
-package "Accounts" #F2FBF2 {
+package "Accounts" #ECFDF5 {
   class Account {
     email
     email confirmed
   }
-  class Preferences {
-    key, scale, layout
-    dominant hand
-    sensitivity
-  }
 }
 
-package "Game" #FFF8EE {
+package "Game" #FFF7ED {
   class Progress {
     unlocked level
     best result per exercise
@@ -70,29 +84,32 @@ package "Game" #FFF8EE {
 }
 
 ' Player and the three areas
-Player "1" -- "*" HandGesture : makes >
-Player "1" -- "1" Instrument : plays >
-Player "1" -- "0..1" Account : owns >
-Player "1" -- "*" Attempt : makes >
-Player "1" -- "1" Progress : has >
+Player "1" -down- "1" CalibrationProfile : calibrated with >
+Player "1" -down- "*" HandGesture : makes >
+Player "1" -down- "1" Instrument : plays >
+Player "1" -down- "1" Preferences : chooses >
+Player "1" -down- "0..1" Account : owns >
+Player "1" -down- "1" Progress : has >
+Player "1" -down- "*" Attempt : makes >
 
 ' Playing
-HandGesture "*" -- "0..1" Pad : points at >
-Instrument "1" -- "1" Layout : arranged as >
-Instrument "1" -- "1" Scale : tuned to >
-Instrument "1" -- "*" Note : produces >
-Layout "1" *-- "8" Pad
-Scale "1" *-- "8" Degree
-Pad "1" -- "1" Degree : stands for >
-Note "*" -- "1" Degree : of >
+CalibrationProfile "1" -right- "*" HandGesture : normalizes >
+HandGesture "*" -down- "0..1" Pad : points at >
+Preferences .left.> Instrument : configures
+Instrument "1" -down- "1" Layout : arranged as >
+Instrument "1" -down- "*" Note : produces >
+Instrument "1" -down- "1" Scale : tuned to >
+Layout "1" *-down- "8" Pad
+Pad "1" -down- "1" Degree : stands for >
+Note "*" -down- "1" Degree : of >
+Scale "1" *-down- "8" Degree
 
 ' Accounts
-Account "1" *-- "1" Preferences : keeps >
-Account "1" -- "0..1" Progress : saves >
-Preferences ..> Instrument : configures
+Account "1" -down- "0..1" Preferences : saves >
+Account "1" -down- "0..1" Progress : saves >
 
 ' Game
-Attempt "*" -- "1" Exercise : tries >
-Exercise "1" *-- "1" Melody
-Progress "1" -- "*" Exercise : unlocks >
+Progress "1" -down- "*" Exercise : unlocks >
+Attempt "*" -down- "1" Exercise : tries >
+Exercise "1" *-down- "1" Melody
 @enduml
