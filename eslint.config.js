@@ -13,14 +13,14 @@ const webAudioOnlyInSynth = ['AudioContext', 'OfflineAudioContext'].map((name) =
 }));
 
 const serverHttpFiles = ['packages/server/src/**/*Controller.ts', 'packages/server/src/app.ts'];
-const serverSupabaseFiles = ['packages/server/src/**/Supabase*.ts', 'packages/server/src/shared/supabase/**/*.ts'];
+const serverDatabaseFiles = ['packages/server/src/**/Postgres*.ts', 'packages/server/src/shared/database/**/*.ts'];
 const noFastify = {
   group: ['fastify', '@fastify/*'],
   message: 'Only controllers (and app.ts) may use Fastify. Services and repositories must not know about HTTP.',
 };
-const noSupabase = {
-  group: ['@supabase/*'],
-  message: 'Only Supabase adapters (Supabase*.ts) and shared/supabase may use Supabase. Depend on an interface instead.',
+const noDatabase = {
+  group: ['pg', '@supabase/*'],
+  message: 'Only Postgres adapters (Postgres*.ts) and shared/database may use the database driver. Depend on an interface instead.',
 };
 
 export default defineConfig(
@@ -50,7 +50,7 @@ export default defineConfig(
           patterns: [
             { group: ['@mediapipe/*'], message: 'The domain must not use MediaPipe. Use the HandTracker interface in the web package.' },
             { group: ['fastify', '@fastify/*'], message: 'The domain must not use Fastify. HTTP belongs to the server controllers.' },
-            { group: ['@supabase/*'], message: 'The domain must not use the database. Use a repository interface.' },
+            { group: ['pg', '@supabase/*'], message: 'The domain must not use the database. Use a repository interface.' },
             { group: ['@instrument/web', '@instrument/server', '**/web/**', '**/server/**'], message: 'The domain must not depend on the web or server packages.' },
           ],
         },
@@ -77,20 +77,20 @@ export default defineConfig(
       ],
     },
   },
-  // Server: only controllers (and app.ts) use Fastify, only Supabase adapters use Supabase.
+  // Server: only controllers (and app.ts) use Fastify, only Postgres adapters use the database driver.
   // The three blocks below cover separate files on purpose: in ESLint, a later block with the same rule
   // replaces the earlier one instead of adding to it.
   {
     files: ['packages/server/src/**/*.ts'],
-    ignores: [...serverHttpFiles, ...serverSupabaseFiles, 'packages/server/src/**/*.test.ts'],
-    rules: { 'no-restricted-imports': ['error', { patterns: [noFastify, noSupabase] }] },
+    ignores: [...serverHttpFiles, ...serverDatabaseFiles, 'packages/server/src/**/*.test.ts'],
+    rules: { 'no-restricted-imports': ['error', { patterns: [noFastify, noDatabase] }] },
   },
   {
     files: serverHttpFiles,
-    rules: { 'no-restricted-imports': ['error', { patterns: [noSupabase] }] },
+    rules: { 'no-restricted-imports': ['error', { patterns: [noDatabase] }] },
   },
   {
-    files: serverSupabaseFiles,
+    files: serverDatabaseFiles,
     rules: { 'no-restricted-imports': ['error', { patterns: [noFastify] }] },
   },
 );
