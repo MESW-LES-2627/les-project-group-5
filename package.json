@@ -17,10 +17,13 @@
     "lint": "eslint .",
     "typecheck": "tsc -p packages/domain && tsc -p packages/web && tsc -p packages/server",
     "check": "npm run lint && npm run typecheck && npm test",
-    "build:api": "npm run build -w @instrument/server"
+    "build:api": "npm run build -w @instrument/server",
+    "docs": "typedoc"
   },
   "devDependencies": {
     "eslint": "^10.13.0",
+    "typedoc": "^0.28.20",
+    "typedoc-plugin-markdown": "^4.14.1",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.72.0",
     "vitest": "^5.0.5"

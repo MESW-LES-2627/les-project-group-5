@@ -7,12 +7,14 @@ import type { HandTracker } from './HandTracker';
  */
 export class FakeHandTracker implements HandTracker {
   private hands: TrackedHand[] = [];
+  /** True after init() was called, so tests can check it. */
   initialized = false;
 
   async init(): Promise<void> {
     this.initialized = true;
   }
 
+  /** Sets the hands that the next detect() calls will return. */
   setHands(hands: TrackedHand[]): void {
     this.hands = hands;
   }

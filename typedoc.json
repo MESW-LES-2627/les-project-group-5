@@ -1,0 +1,10 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "Gesture Web Instrument",
+  "entryPointStrategy": "packages",
+  "entryPoints": ["packages/domain", "packages/web", "packages/server"],
+  "packageOptions": {
+    "includeVersion": false
+  },
+  "out": "docs/code-doc"
+}

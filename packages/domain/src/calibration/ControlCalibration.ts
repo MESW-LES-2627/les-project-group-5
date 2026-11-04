@@ -6,7 +6,9 @@
  */
 export class ControlCalibration {
   constructor(
+    /** Raw value that becomes 0. */
     readonly min: number,
+    /** Raw value that becomes 1. Must be greater than `min`. */
     readonly max: number,
   ) {
     if (!Number.isFinite(min) || !Number.isFinite(max)) {
@@ -17,6 +19,7 @@ export class ControlCalibration {
     }
   }
 
+  /** Scales a raw value into 0–1, clamping values outside the range. */
   normalize(raw: number): number {
     const scaled = (raw - this.min) / (this.max - this.min);
     return Math.min(1, Math.max(0, scaled));

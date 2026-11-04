@@ -23,3 +23,5 @@ packages/web/public/mediapipe/
 
 # Server bundle for Vercel, created by `npm run build:api`
 api/
+# Generated code documentation (npm run docs)
+docs/code-doc/

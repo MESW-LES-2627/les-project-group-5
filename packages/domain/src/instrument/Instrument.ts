@@ -24,10 +24,15 @@ export class Instrument {
     private readonly volumeThreshold = DEFAULT_VOLUME_THRESHOLD,
   ) {}
 
+  /** Changes the cells used to pick notes. Takes effect on the next update. */
   setLayout(layout: Layout): void {
     this.layout = layout;
   }
 
+  /**
+   * Works out the new state from this frame's hand controls (null when no hand was found),
+   * and remembers which note is playing for the next frame.
+   */
   update(controls: HandControls | null): InstrumentFrame {
     if (!controls) {
       return this.frame(false, null, null, 0, this.stopIfPlaying());

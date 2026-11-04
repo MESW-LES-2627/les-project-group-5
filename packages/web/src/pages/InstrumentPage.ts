@@ -1,4 +1,4 @@
-import type { Degree, InstrumentFrame, Layout, Scale } from '@instrument/domain';
+import type { Degree, Handedness, InstrumentFrame, Layout, Scale } from '@instrument/domain';
 
 /**
  * The instrument screen: camera image, the cells, the pointer, a Start button, a status line, a volume bar
@@ -6,6 +6,7 @@ import type { Degree, InstrumentFrame, Layout, Scale } from '@instrument/domain'
  * It only draws what it is told. It has no rules about notes or sound.
  */
 export class InstrumentPage {
+  /** The camera image. The camera plays into it and the tracker reads frames from it. */
   readonly video: HTMLVideoElement;
   private readonly cellsElement: HTMLElement;
   private readonly pointer: HTMLElement;
@@ -16,29 +17,43 @@ export class InstrumentPage {
   private readonly serverStatus: HTMLElement;
   private cells = new Map<Degree, HTMLElement>();
   private selected: HTMLElement | null = null;
+  private hand: Handedness = 'Right';
+  private started = false;
 
   constructor(root: HTMLElement) {
     root.innerHTML = `
-      <main class="instrument">
-        <header>
-          <h1>Gesture Web Instrument</h1>
-          <span class="server-status">Server: checking…</span>
+      <div class="app-shell">
+        <header class="app-header">
+          <a class="brand" href="#/">Gesture Web Instrument</a>
+          <nav aria-label="Main navigation">
+            <a class="active" href="#/" aria-current="page">Instrument</a>
+            <a href="#/settings">
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M4 6h16M4 18h16M8 3v6M16 15v6" /><circle cx="8" cy="6" r="2" /><circle cx="16" cy="18" r="2" /></svg>
+              Settings
+            </a>
+          </nav>
         </header>
-        <div class="stage">
-          <video class="camera" autoplay muted playsinline></video>
-          <div class="cells"></div>
-          <div class="pointer" hidden></div>
-          <div class="start-overlay">
-            <button type="button" class="start">Start</button>
+        <main class="instrument">
+          <p class="status" role="status"></p>
+          <div class="stage">
+            <video class="camera" autoplay muted playsinline></video>
+            <div class="cells"></div>
+            <div class="pointer" hidden></div>
+            <div class="start-overlay">
+              <button type="button" class="start">Start</button>
+            </div>
           </div>
-        </div>
-        <p class="status" role="status"></p>
-        <div class="volume">
-          <span>Volume</span>
-          <div class="volume-bar"><div class="volume-fill"></div></div>
-          <span class="volume-value">0%</span>
-        </div>
-      </main>`;
+        </main>
+        <footer class="status-bar">
+          <span class="server-status">Server: checking…</span>
+          <div class="volume">
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M11 5 6 9H3v6h3l5 4Z" /><path d="M15 9a4 4 0 0 1 0 6M18 6a8 8 0 0 1 0 12" /></svg>
+            <span class="volume-label">Volume</span>
+            <div class="volume-bar"><div class="volume-fill"></div></div>
+            <span class="volume-value">0%</span>
+          </div>
+        </footer>
+      </div>`;
     this.video = find(root, 'video.camera');
     this.cellsElement = find(root, '.cells');
     this.pointer = find(root, '.pointer');
@@ -49,8 +64,12 @@ export class InstrumentPage {
     this.serverStatus = find(root, '.server-status');
   }
 
+  /** Runs the handler when the player presses Start. */
   onStart(handler: () => void): void {
-    this.startButton.addEventListener('click', handler);
+    this.startButton.addEventListener('click', () => {
+      this.started = true;
+      handler();
+    });
   }
 
   /** Draws one cell per region of the layout, labelled for the scale (for example "1 C"). */
@@ -71,13 +90,28 @@ export class InstrumentPage {
     }
   }
 
+  /** Shows whether the server can be reached. */
   setServerStatus(online: boolean): void {
     this.serverStatus.textContent = online ? 'Server: online' : 'Server: offline';
     this.serverStatus.classList.toggle('online', online);
   }
 
+  /** Shows a message under the play area. An empty message clears it. */
   setStatus(message: string): void {
     this.status.textContent = message;
+  }
+
+  /** Shows which hand is selected, for the initial value or to correct the UI after a rejected change. */
+  setHand(hand: Handedness): void {
+    this.hand = hand;
+    if (!this.started) {
+      this.setStatus(`Press Start, allow the camera, and play with your ${hand.toLowerCase()} hand.`);
+    }
+  }
+
+  /** Shows or hides the camera image. */
+  setCameraPreviewVisible(visible: boolean): void {
+    this.video.classList.toggle('camera-hidden', !visible);
   }
 
   /** Shows the Start button again (for example after an error), with a new label. */
@@ -87,10 +121,12 @@ export class InstrumentPage {
     this.startButton.parentElement!.hidden = false;
   }
 
+  /** Hides the Start button, once the instrument is running. */
   hideStart(): void {
     this.startButton.parentElement!.hidden = true;
   }
 
+  /** Enables or disables the Start button, for example while the camera is opening. */
   setStartEnabled(enabled: boolean): void {
     this.startButton.disabled = !enabled;
   }
@@ -117,7 +153,7 @@ export class InstrumentPage {
     this.volumeFill.style.width = percent(volume);
     this.volumeValue.textContent = `${Math.round(volume * 100)}%`;
 
-    this.setStatus(frame.handDetected ? '' : 'Show your right hand to the camera.');
+    this.setStatus(frame.handDetected ? '' : `Show your ${this.hand.toLowerCase()} hand to the camera.`);
   }
 }
 

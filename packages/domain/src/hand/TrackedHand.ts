@@ -1,10 +1,14 @@
 /** One hand point found by the tracker. */
 export interface Landmark {
+  /** Horizontal position. */
   readonly x: number;
+  /** Vertical position. */
   readonly y: number;
+  /** Depth: how close the point is to the camera. */
   readonly z: number;
 }
 
+/** Which of the player's hands: the real hand, not the mirrored one on screen. */
 export type Handedness = "Left" | "Right";
 
 /**
