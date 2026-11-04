@@ -32,4 +32,9 @@ describe("TwoColumnLayout", () => {
     expect(layout.hitTest({ x: 0.5, y: -0.1 })).toBeNull();
     expect(layout.hitTest({ x: 1.1, y: 0.87 })).toBeNull();
   });
+
+  it("selects nothing in the gap between two pads", () => {
+    expect(layout.hitTest({ x: 0.5, y: 0.32 })).toBeNull(); // between the two columns
+    expect(layout.hitTest({ x: 0.34, y: 0.41 })).toBeNull(); // between the first two rows
+  });
 });

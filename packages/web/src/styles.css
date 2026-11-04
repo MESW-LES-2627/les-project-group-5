@@ -735,18 +735,10 @@ svg {
     border-radius: 13px;
   }
 
+  /* On a phone the play area is not 4:3, so a region is not a square and can't be a circle.
+     The pad fills its region exactly (rounded, as the template's phone pads), so the drawn pad is the hit area. */
   .stage .cell {
-    left: var(--cell-center-x) !important;
-    top: var(--cell-center-y) !important;
-    width: clamp(60px, 20vw, 80px) !important;
-    height: auto !important;
-    aspect-ratio: 1;
-    transform: translate(-50%, -50%);
-  }
-
-  .stage .cell.selected,
-  .stage .cell.sounding {
-    transform: translate(-50%, calc(-50% - 3px)) scale(0.98);
+    border-radius: 13px;
   }
 
   .stage .cell strong {

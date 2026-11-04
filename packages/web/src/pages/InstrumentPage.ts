@@ -99,8 +99,6 @@ export class InstrumentPage {
       cell.innerHTML = `<strong>${note}</strong><span>${solfegeOf(note)}</span>`;
       cell.style.left = percent(region.x);
       cell.style.top = percent(region.y);
-      cell.style.setProperty('--cell-center-x', percent(region.x + region.width / 2));
-      cell.style.setProperty('--cell-center-y', percent(region.y + region.height / 2));
       cell.style.width = percent(region.width);
       cell.style.height = percent(region.height);
       this.cellsElement.append(cell);
