@@ -121,7 +121,11 @@ tracker.init().catch((error: unknown) => {
 // they are only needed for accounts and saved data.
 const SERVER_CHECK_INTERVAL_MS = 10_000;
 const api = new ApiClient();
-const checkServer = async () => page.setHealthStatus(await api.checkHealth());
+const checkServer = async () => {
+  const health = await api.checkHealth();
+  page.setHealthStatus(health);
+  settingsPage.setServerStatus(health.server);
+};
 void checkServer();
 setInterval(checkServer, SERVER_CHECK_INTERVAL_MS);
 

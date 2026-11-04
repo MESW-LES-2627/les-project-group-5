@@ -16,6 +16,7 @@ export class InstrumentPage {
   private readonly volumeFill: HTMLElement;
   private readonly volumeValue: HTMLElement;
   private readonly serverStatus: HTMLElement;
+  private readonly footerServerStatus: HTMLElement;
   private readonly databaseStatus: HTMLElement;
   private readonly debug: HTMLElement | null;
   private readonly scaleName: HTMLElement;
@@ -55,6 +56,11 @@ export class InstrumentPage {
           </div>
         </main>
         <footer class="status-bar">
+          <div class="status-copy">
+            <span class="live-dot"></span>
+            <strong class="scale-name"></strong>
+            <span>· 8 notes</span>
+          </div>
           <div class="connection">
             <span class="status-light server-status">Server: checking…</span>
             <span class="status-light database-status">Database: checking…</span>
@@ -74,7 +80,8 @@ export class InstrumentPage {
     this.status = find(root, '.status');
     this.volumeFill = find(root, '.volume-fill');
     this.volumeValue = find(root, '.volume-value');
-    this.serverStatus = find(root, '.server-status');
+    this.serverStatus = find(root, '.app-header .server-status');
+    this.footerServerStatus = find(root, '.connection .server-status');
     this.databaseStatus = find(root, '.database-status');
     // With ?debug at the end of the address, show the live numbers of the hand (to find why a note does not play).
     this.debug = new URLSearchParams(window.location.search).has('debug') ? find(root, '.debug') : null;
@@ -122,6 +129,7 @@ export class InstrumentPage {
   /** Shows whether the server and its database can be reached. */
   setHealthStatus(health: HealthStatus): void {
     showLight(this.serverStatus, 'Server', health.server);
+    showLight(this.footerServerStatus, 'Server', health.server);
     showLight(this.databaseStatus, 'Database', health.database);
   }
 
