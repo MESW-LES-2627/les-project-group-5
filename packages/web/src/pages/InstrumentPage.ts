@@ -1,5 +1,6 @@
 import type { Degree, Handedness, InstrumentFrame, Layout, Scale } from '@instrument/domain';
 import type { HealthStatus } from '../api/ApiClient';
+import { appHeader } from './appHeader';
 import { solfegeOf } from './solfege';
 
 /**
@@ -16,7 +17,6 @@ export class InstrumentPage {
   private readonly volumeFill: HTMLElement;
   private readonly volumeValue: HTMLElement;
   private readonly serverStatus: HTMLElement;
-  private readonly footerServerStatus: HTMLElement;
   private readonly databaseStatus: HTMLElement;
   private readonly debug: HTMLElement | null;
   private readonly scaleName: HTMLElement;
@@ -29,20 +29,8 @@ export class InstrumentPage {
 
   constructor(root: HTMLElement) {
     root.innerHTML = `
-      <div class="app">
-        <header class="app-header">
-          <div class="brand">Web-based Gesture Instrument</div>
-          <span class="server-status">Server: checking…</span>
-          <nav aria-label="Main navigation">
-            <button type="button" class="active" aria-current="page">Instrument</button>
-            <!-- The Game page is not available yet. -->
-            <button type="button" disabled title="Coming soon">Game</button>
-            <a href="#/settings">
-              <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M4 6h16M4 18h16M8 3v6M16 15v6" /><circle cx="8" cy="6" r="2" /><circle cx="16" cy="18" r="2" /></svg>
-              Settings
-            </a>
-          </nav>
-        </header>
+      <div class="app-shell">
+        ${appHeader('instrument')}
         <main class="stage-area">
           <div class="stage">
             <video class="camera" autoplay muted playsinline></video>
@@ -61,16 +49,19 @@ export class InstrumentPage {
             <strong class="scale-name"></strong>
             <span>· 8 notes</span>
           </div>
-          <div class="connection">
-            <span class="status-light server-status">Server: checking…</span>
-            <span class="status-light database-status">Database: checking…</span>
-          </div>
           <div class="volume">
-            <label>Volume</label>
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M11 5 6 9H3v6h3l5 4Z" /><path d="M15 9a4 4 0 0 1 0 6M18 6a8 8 0 0 1 0 12" /></svg>
+            <span>Volume</span>
             <div class="volume-bar"><div class="volume-fill"></div></div>
             <output class="volume-value">0%</output>
           </div>
-          <div class="hand-status"><span>Dominant hand</span><strong class="hand-name"></strong></div>
+          <div class="status-right">
+            <div class="hand-status"><span>Dominant hand</span><strong class="hand-name"></strong></div>
+            <div class="connection">
+              <span class="status-light server-status">Server: checking…</span>
+              <span class="status-light database-status">Database: checking…</span>
+            </div>
+          </div>
         </footer>
       </div>`;
     this.video = find(root, 'video.camera');
@@ -80,8 +71,7 @@ export class InstrumentPage {
     this.status = find(root, '.status');
     this.volumeFill = find(root, '.volume-fill');
     this.volumeValue = find(root, '.volume-value');
-    this.serverStatus = find(root, '.app-header .server-status');
-    this.footerServerStatus = find(root, '.connection .server-status');
+    this.serverStatus = find(root, '.server-status');
     this.databaseStatus = find(root, '.database-status');
     // With ?debug at the end of the address, show the live numbers of the hand (to find why a note does not play).
     this.debug = new URLSearchParams(window.location.search).has('debug') ? find(root, '.debug') : null;
@@ -129,7 +119,6 @@ export class InstrumentPage {
   /** Shows whether the server and its database can be reached. */
   setHealthStatus(health: HealthStatus): void {
     showLight(this.serverStatus, 'Server', health.server);
-    showLight(this.footerServerStatus, 'Server', health.server);
     showLight(this.databaseStatus, 'Database', health.database);
   }
 
