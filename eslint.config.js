@@ -14,7 +14,14 @@ const webAudioOnlyInSynth = ['AudioContext', 'OfflineAudioContext'].map((name) =
 
 export default defineConfig(
   {
-    ignores: ['**/node_modules/**', '**/dist/**', 'packages/web/public/**', 'docs/code-doc/**'],
+    ignores: [
+      '**/node_modules/**',
+      '**/dist/**',
+      'packages/web/public/**',
+      'docs/code-doc/**',
+      '.vercel/**',
+      'api/**',
+    ],
   },
   tseslint.configs.recommended,
   {
