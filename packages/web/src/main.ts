@@ -76,10 +76,11 @@ settings.subscribeCameraPreview((visible) => page.setCameraPreviewVisible(visibl
 // Start loading the hand model right away, so Start is quicker. Errors are shown when Start is pressed.
 tracker.init().catch(() => undefined);
 
-// Show whether the server is reachable. The instrument works either way; the server is only needed for accounts.
+// Show whether the server and its database are reachable. The instrument works either way;
+// they are only needed for accounts and saved data.
 const SERVER_CHECK_INTERVAL_MS = 10_000;
 const api = new ApiClient();
-const checkServer = async () => page.setServerStatus(await api.isServerOnline());
+const checkServer = async () => page.setHealthStatus(await api.checkHealth());
 void checkServer();
 setInterval(checkServer, SERVER_CHECK_INTERVAL_MS);
 

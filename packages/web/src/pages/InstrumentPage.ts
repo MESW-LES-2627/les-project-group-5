@@ -1,8 +1,9 @@
 import type { Degree, Handedness, InstrumentFrame, Layout, Scale } from '@instrument/domain';
+import type { HealthStatus } from '../api/ApiClient';
 
 /**
  * The instrument screen: camera image, the cells, the pointer, a Start button, a status line, a volume bar
- * and whether the server is reachable.
+ * and whether the server and its database are reachable.
  * It only draws what it is told. It has no rules about notes or sound.
  */
 export class InstrumentPage {
@@ -15,6 +16,7 @@ export class InstrumentPage {
   private readonly volumeFill: HTMLElement;
   private readonly volumeValue: HTMLElement;
   private readonly serverStatus: HTMLElement;
+  private readonly databaseStatus: HTMLElement;
   private cells = new Map<Degree, HTMLElement>();
   private selected: HTMLElement | null = null;
   private hand: Handedness = 'Right';
@@ -45,7 +47,10 @@ export class InstrumentPage {
           </div>
         </main>
         <footer class="status-bar">
-          <span class="server-status">Server: checking…</span>
+          <div class="connection">
+            <span class="status-light server-status">Server: checking…</span>
+            <span class="status-light database-status">Database: checking…</span>
+          </div>
           <div class="volume">
             <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M11 5 6 9H3v6h3l5 4Z" /><path d="M15 9a4 4 0 0 1 0 6M18 6a8 8 0 0 1 0 12" /></svg>
             <span class="volume-label">Volume</span>
@@ -62,6 +67,7 @@ export class InstrumentPage {
     this.volumeFill = find(root, '.volume-fill');
     this.volumeValue = find(root, '.volume-value');
     this.serverStatus = find(root, '.server-status');
+    this.databaseStatus = find(root, '.database-status');
   }
 
   /** Runs the handler when the player presses Start. */
@@ -90,10 +96,10 @@ export class InstrumentPage {
     }
   }
 
-  /** Shows whether the server can be reached. */
-  setServerStatus(online: boolean): void {
-    this.serverStatus.textContent = online ? 'Server: online' : 'Server: offline';
-    this.serverStatus.classList.toggle('online', online);
+  /** Shows whether the server and its database can be reached. */
+  setHealthStatus(health: HealthStatus): void {
+    showLight(this.serverStatus, 'Server', health.server);
+    showLight(this.databaseStatus, 'Database', health.database);
   }
 
   /** Shows a message under the play area. An empty message clears it. */
@@ -155,6 +161,12 @@ export class InstrumentPage {
 
     this.setStatus(frame.handDetected ? '' : `Show your ${this.hand.toLowerCase()} hand to the camera.`);
   }
+}
+
+/** Writes "Name: online/offline" and turns the dot green when online. */
+function showLight(element: HTMLElement, name: string, online: boolean): void {
+  element.textContent = `${name}: ${online ? 'online' : 'offline'}`;
+  element.classList.toggle('online', online);
 }
 
 function find<T extends HTMLElement>(root: HTMLElement, selector: string): T {
