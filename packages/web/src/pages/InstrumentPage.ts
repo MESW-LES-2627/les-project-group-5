@@ -22,11 +22,11 @@ export class InstrumentPage {
   private readonly debug: HTMLElement | null;
   private readonly scaleName: HTMLElement;
   private readonly handName: HTMLElement;
-  private handLabel = 'right';
+  // private handLabel = this.settings.hand;;
   private cells = new Map<Degree, HTMLElement>();
   private selected: HTMLElement | null = null;
   private settings = new SettingsStore();
-  private hand: Handedness = this.settings.hand;
+  private handLabel = this.settings.hand.toString();
   private started = false;
 
   constructor(root: HTMLElement) {
@@ -112,7 +112,7 @@ export class InstrumentPage {
   showInfo(scale: Scale, hand: Handedness): void {
     this.scaleName.textContent = `${scale.root} ${scale.type.name}`;
     this.handLabel = hand.toLowerCase();
-    this.handName.textContent = `${hand} hand`;
+    this.handName.textContent = `${this.handLabel} hand`;
   }
 
 
