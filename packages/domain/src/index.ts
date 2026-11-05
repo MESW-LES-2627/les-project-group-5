@@ -11,6 +11,9 @@ export { ScaleType } from "./music/ScaleType";
 export type { Point } from "./geometry/Point";
 export type { Layout } from "./layouts/Layout";
 export { SingleBoxLayout } from './layouts/SingleBoxLayout';
+export { PadGridLayout } from './layouts/PadGridLayout';
+export { ZigzagLayout } from './layouts/ZigzagLayout';
+export { TwoColumnLayout } from './layouts/TwoColumnLayout';
 export type { Region } from './layouts/Region';
 
 export type { Handedness, Landmark, TrackedHand } from './hand/TrackedHand';

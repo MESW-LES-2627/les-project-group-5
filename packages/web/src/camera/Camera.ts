@@ -13,25 +13,40 @@ export class CameraError extends Error {
 
 /** Opens the front camera and shows it in a video element. */
 export class Camera {
+  private stream: MediaStream | null = null;
+
   /** Asks for the front camera and starts playing it in the video element. Throws a CameraError on failure. */
   async open(video: HTMLVideoElement): Promise<void> {
+    this.stop(video);
     // getUserMedia only exists on secure pages (https or localhost).
     if (!navigator.mediaDevices?.getUserMedia) {
       throw new CameraError('unsupported');
     }
-    let stream: MediaStream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({
+      this.stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
         audio: false,
       });
     } catch (error) {
       throw new CameraError(toProblem(error));
     }
-    video.srcObject = stream;
-    video.muted = true;
-    video.playsInline = true;
-    await video.play();
+    try {
+      video.srcObject = this.stream;
+      video.muted = true;
+      video.playsInline = true;
+      await video.play();
+    } catch (error) {
+      this.stop(video);
+      throw new CameraError(toProblem(error));
+    }
+  }
+
+  /** Stops the active camera stream and releases the video element. */
+  stop(video: HTMLVideoElement): void {
+    this.stream?.getTracks().forEach((track) => track.stop());
+    this.stream = null;
+    video.pause();
+    video.srcObject = null;
   }
 }
 

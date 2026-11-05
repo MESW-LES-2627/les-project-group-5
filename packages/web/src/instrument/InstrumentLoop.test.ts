@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { DEFAULT_CALIBRATION_PROFILE, HandFeatureExtractor, Instrument, type InstrumentFrame, type Layout } from '@instrument/domain';
 import { makeHand } from '@instrument/domain/testing';
 import { FakeHandTracker } from '../tracking/FakeHandTracker';
@@ -92,6 +92,33 @@ describe('InstrumentLoop', () => {
     video.currentTime = 2;
     loop.tick(1033);
     expect(frames[1]).toMatchObject({ handDetected: true, degree: 2 });
+  });
+
+  it('reports a frame-processing error and stops the animation loop', () => {
+    const { tracker, video, loop } = setup();
+    const onError = vi.fn();
+    let nextFrame: FrameRequestCallback | undefined;
+    const requestFrame = vi.fn((callback: FrameRequestCallback) => {
+      nextFrame = callback;
+      return 1;
+    });
+    vi.stubGlobal('requestAnimationFrame', requestFrame);
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    tracker.detect = () => {
+      throw new Error('tracking failed');
+    };
+    video.currentTime = 1;
+    loop.subscribeError(onError);
+
+    try {
+      loop.start();
+      nextFrame?.(1000);
+      expect(onError).toHaveBeenCalledOnce();
+      expect(onError.mock.calls[0][0]).toMatchObject({ message: 'tracking failed' });
+      expect(requestFrame).toHaveBeenCalledOnce();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
 });

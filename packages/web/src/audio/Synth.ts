@@ -1,3 +1,5 @@
+import type { NoteSound } from './NoteSounds';
+
 /**
  * Describes the basic actions needed to play one note at a time.
  * SoundOutput uses this interface without needing to know how audio is created.
@@ -12,9 +14,10 @@ export interface Synth {
 
   /**
    * Play a note at the given frequency in hertz (nº of oscillations per second).
+   * The sound says how the note sounds (wave shape, brightness, fade times).
    * Replace any note that is already playing.
    */
-  noteOn(frequencyHz: number): void;
+  noteOn(frequencyHz: number, sound: NoteSound): void;
 
   /** Fade out and stop the note that is currently playing. */
   noteOff(): void;

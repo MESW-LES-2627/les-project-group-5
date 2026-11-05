@@ -1,23 +1,18 @@
 import type { Handedness } from '@instrument/domain';
+import { appHeader } from './appHeader';
 
 /** The settings screen. It only draws the choices and reports changes; it doesn't store anything. */
 export class SettingsPage {
   private readonly handSelector: HTMLElement;
-  private readonly cameraPreviewSelector: HTMLElement;
+  private readonly cameraPreviewInput: HTMLInputElement;
+  private readonly serverStatus: HTMLElement;
 
   constructor(root: HTMLElement) {
+    // The hand choice uses real radio buttons styled as the template's two-button switch,
+    // so the keyboard and screen readers keep working without extra code.
     root.innerHTML = `
       <div class="app-shell">
-        <header class="app-header">
-          <a class="brand" href="#/">Gesture Web Instrument</a>
-          <nav aria-label="Main navigation">
-            <a href="#/">Instrument</a>
-            <a class="active" href="#/settings" aria-current="page">
-              <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M4 6h16M4 18h16M8 3v6M16 15v6" /><circle cx="8" cy="6" r="2" /><circle cx="16" cy="18" r="2" /></svg>
-              Settings
-            </a>
-          </nav>
-        </header>
+        ${appHeader('settings')}
         <main class="settings-page">
           <div class="settings-heading">
             <a class="back-button" href="#/" aria-label="Back to instrument">
@@ -27,6 +22,7 @@ export class SettingsPage {
               <p>Customize your setup</p>
               <h1>Settings</h1>
             </div>
+            <span class="status-light server-status">Server: checking…</span>
           </div>
           <div class="settings-panel">
             <section>
@@ -34,10 +30,10 @@ export class SettingsPage {
                 <h2>Dominant hand</h2>
                 <p>Choose which hand controls the instrument.</p>
               </div>
-              <fieldset class="settings hand-selector">
+              <fieldset class="segmented hand-selector">
                 <legend class="visually-hidden">Hand</legend>
-                <label><input type="radio" name="hand" value="Left"> Left hand</label>
-                <label><input type="radio" name="hand" value="Right" checked> Right hand</label>
+                <label><input type="radio" name="hand" value="Right" checked><span>Right hand</span></label>
+                <label><input type="radio" name="hand" value="Left"><span>Left hand</span></label>
               </fieldset>
             </section>
             <section>
@@ -45,17 +41,23 @@ export class SettingsPage {
                 <h2>Camera preview</h2>
                 <p>Choose whether the camera image shows behind the cells.</p>
               </div>
-              <fieldset class="settings toggle-setting preview-setting">
-                <legend class="visually-hidden">Camera</legend>
-                <label><input type="checkbox" name="preview" checked> Show camera preview</label>
-              </fieldset>
+              <label class="toggle">
+                <input type="checkbox" name="preview" checked>
+                <span>Show camera preview</span>
+              </label>
             </section>
           </div>
           <a class="done-button" href="#/">Done</a>
         </main>
       </div>`;
     this.handSelector = find(root, '.hand-selector');
-    this.cameraPreviewSelector = find(root, '.preview-setting input[type="checkbox"]');
+    this.cameraPreviewInput = find(root, '.toggle input[type="checkbox"]');
+    this.serverStatus = find(root, '.server-status');
+  }
+
+  setServerStatus(online: boolean): void {
+    this.serverStatus.textContent = online ? 'Server: online' : 'Server: offline';
+    this.serverStatus.classList.toggle('online', online);
   }
 
   /** Reports a hand choice made by the user. */
@@ -69,10 +71,7 @@ export class SettingsPage {
 
   /** Reports a camera preview choice made by the user. */
   onCameraPreviewChange(handler: (visible: boolean) => void): void {
-    this.cameraPreviewSelector.addEventListener('change', (event) => {
-      const checked = (event.target as HTMLInputElement).checked;
-      handler(checked);
-    });
+    this.cameraPreviewInput.addEventListener('change', () => handler(this.cameraPreviewInput.checked));
   }
 
   /** Shows which hand is selected. */
@@ -83,13 +82,12 @@ export class SettingsPage {
 
   /** Shows whether the camera preview is selected. */
   setCameraPreview(visible: boolean): void {
-    const input = this.cameraPreviewSelector.querySelector<HTMLInputElement>('input');
-    if (input) input.checked = visible;
+    this.cameraPreviewInput.checked = visible;
   }
 }
 
 function find<T extends HTMLElement>(root: HTMLElement, selector: string): T {
   const element = root.querySelector<T>(selector);
-  if (!element) throw new Error(`InstrumentPage: missing element ${selector}`);
+  if (!element) throw new Error(`SettingsPage: missing element ${selector}`);
   return element;
 }
