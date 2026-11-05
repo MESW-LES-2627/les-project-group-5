@@ -4,16 +4,16 @@
 
 :root {
   --bg: #0d0d0d;
-  --surface: #22211f;
+  --surface: rgba(30, 29, 27, 0.58);
+  --line: rgba(255, 255, 255, 0.1);
   --text: #f7f4ef;
   --muted: #a8a5a1;
   --dim: #817e7a;
-  --line: rgba(255, 255, 255, 0.1);
   --orange: #ff7a1a;
   --orange-strong: #f36d13;
   --ok: #83ae75;
   --mono: 'DM Mono', ui-monospace, monospace;
-  font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-family: 'Manrope', system-ui, sans-serif;
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
