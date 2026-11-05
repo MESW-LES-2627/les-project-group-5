@@ -58,7 +58,7 @@ export class InstrumentPage {
             <output class="volume-value">0%</output>
           </div>
           <div class="status-right">
-            <div class="hand-status"><span>Dominant hand</span><strong class="hand-name"></strong></div>
+            <div class="hand-status"><span>Dominant hand</span><strong class="hand-name"> </strong></div>
             <div class="connection">
               <span class="status-light server-status">Server: checking…</span>
               <span class="status-light database-status">Database: checking…</span>
@@ -129,7 +129,7 @@ export class InstrumentPage {
 
   /** Shows which hand is selected, for the initial value or to correct the UI after a rejected change. */
   setHand(hand: Handedness): void {
-    this.hand = hand;
+    this.handName.textContent = `${hand} hand`;
     if (!this.started) {
       this.setStatus(`Press Start, allow the camera, and play with your ${hand.toLowerCase()} hand.`);
     }

@@ -11,12 +11,15 @@ export interface Config {
  */
 export function readConfig(): Config {
   return {
-    databaseUrl: requireEnv('DATABASE_URL'),
+    databaseUrl: requireEnv("DATABASE_URL"),
   };
 }
 
 function requireEnv(name: string): string {
   const value = process.env[name];
-  if (!value) throw new Error(`Missing ${name}. Copy it from the Supabase dashboard (Connect button) into packages/server/.env.`);
+  if (!value)
+    throw new Error(
+      `Missing ${name}. Copy it from the Supabase dashboard (Connect button) into packages/server/.env.`,
+    );
   return value;
 }

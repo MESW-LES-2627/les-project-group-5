@@ -116,7 +116,7 @@ settings.subscribeCameraPreview((visible) =>
 );
 
 page.showInfo(scale, settings.hand);
-page.setStatus("Press Start, allow the camera, and play with your right hand.");
+page.setStatus(`Press Start, allow the camera, and play with your ${settings.hand} hand.`);
 
 // Start loading the hand model right away, so Start is quicker. Errors are shown when Start is pressed.
 tracker.init().catch((error: unknown) => {
