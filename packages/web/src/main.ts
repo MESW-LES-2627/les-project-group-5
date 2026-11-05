@@ -6,7 +6,6 @@ import {
   TwoColumnLayout,
   ZigzagLayout,
   Scale,
-  ScaleType,
   type Layout,
 } from "@instrument/domain";
 import { ApiClient } from "./api/ApiClient";
@@ -38,8 +37,10 @@ const showRoute = () => {
 };
 addEventListener("hashchange", showRoute);
 showRoute();
-// The instrument starts with 8 notes in a zigzag of two rows and a fixed scale.
-const scale = new Scale("C", ScaleType.MAJOR);
+
+// The instrument starts with 8 notes in a zigzag of two rows. Key and scale come from the settings.
+const settings = new SettingsStore();
+let currentScale = new Scale(settings.pitch, settings.scale);
 const mobileLayoutQuery = window.matchMedia("(max-width: 720px)");
 let layout: Layout = mobileLayoutQuery.matches
   ? new TwoColumnLayout()
@@ -47,7 +48,6 @@ let layout: Layout = mobileLayoutQuery.matches
 
 const page = new InstrumentPage(instrumentRoot);
 const settingsPage = new SettingsPage(settingsRoot);
-const settings = new SettingsStore();
 const tracker = new MediaPipeHandTracker();
 const synth = new WebAudioSynth();
 const camera = new Camera();
@@ -60,7 +60,7 @@ const loop = new InstrumentLoop(
   page.video,
   settings.hand,
 );
-const sound = new SoundOutput(synth, scale);
+const sound = new SoundOutput(synth, currentScale);
 loop.subscribe((frame) => sound.onFrame(frame));
 loop.subscribe((frame) => page.render(frame));
 
@@ -92,11 +92,11 @@ addEventListener("hashchange", () => {
   }
 });
 
-page.showCells(layout, scale);
+page.showCells(layout, currentScale);
 mobileLayoutQuery.addEventListener("change", (event) => {
   layout = event.matches ? new TwoColumnLayout() : new ZigzagLayout();
   instrument.setLayout(layout);
-  page.showCells(layout, scale);
+  page.showCells(layout, currentScale);
 });
 
 settingsPage.setHand(settings.hand);
@@ -115,7 +115,22 @@ settings.subscribeCameraPreview((visible) =>
   page.setCameraPreviewVisible(visible),
 );
 
-page.showInfo(scale, settings.hand);
+// One function rebuilds the scale from both settings, so it never works from a half-updated state.
+const applyScale = () => {
+  currentScale = new Scale(settings.pitch, settings.scale);
+  sound.setScale(currentScale);
+  page.showCells(layout, currentScale);
+  page.showInfo(currentScale, settings.hand);
+};
+settings.subscribePitch(applyScale);
+settings.subscribeScale(applyScale);
+
+settingsPage.setPitch(settings.pitch);
+settingsPage.setScale(settings.scale);
+settingsPage.onPitchChange((pitch) => settings.setPitch(pitch));
+settingsPage.onScaleChange((scale) => settings.setScale(scale));
+
+page.showInfo(currentScale, settings.hand);
 page.setStatus(`Press Start, allow the camera, and play with your ${settings.hand} hand.`);
 
 // Start loading the hand model right away, so Start is quicker. Errors are shown when Start is pressed.

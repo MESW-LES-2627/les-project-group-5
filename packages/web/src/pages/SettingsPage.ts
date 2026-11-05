@@ -1,13 +1,25 @@
-import type { Handedness } from '@instrument/domain';
+import { PITCH_CLASSES, ScaleType, type Handedness, type PitchClass } from '@instrument/domain';
 import { appHeader } from './appHeader';
+
+const SCALE_OPTIONS: readonly { type: ScaleType; label: string }[] = [
+  { type: ScaleType.MAJOR, label: 'Major' },
+  { type: ScaleType.NATURAL_MINOR, label: 'Natural minor' },
+];
 
 /** The settings screen. It only draws the choices and reports changes; it doesn't store anything. */
 export class SettingsPage {
   private readonly handSelector: HTMLElement;
+  private readonly pitchSelector: HTMLSelectElement;
+  private readonly scaleSelector: HTMLSelectElement;
   private readonly cameraPreviewInput: HTMLInputElement;
   private readonly serverStatus: HTMLElement;
+  
 
   constructor(root: HTMLElement) {
+        // The option values for the scale are indexes into SCALE_OPTIONS, so this works
+    // whatever the underlying values of ScaleType are.
+    const pitchOptions = PITCH_CLASSES.map((p) => `<option value="${p}">${p}</option>`).join('');
+    const scaleOptions = SCALE_OPTIONS.map((o, i) => `<option value="${i}">${o.label}</option>`).join('');
     // The hand choice uses real radio buttons styled as the template's two-button switch,
     // so the keyboard and screen readers keep working without extra code.
     root.innerHTML = `
@@ -38,6 +50,16 @@ export class SettingsPage {
             </section>
             <section>
               <div class="section-title">
+                <h2>Key and scale</h2>
+                <p>Choose the root note and the type of scale.</p>
+              </div>
+              <div class="scale-controls">
+                <label>Key <select class="root-select">${pitchOptions}</select></label>
+                <label>Scale <select class="scale-type-select">${scaleOptions}</select></label>
+              </div>
+            </section>
+            <section>
+              <div class="section-title">
                 <h2>Camera preview</h2>
                 <p>Choose whether the camera image shows behind the cells.</p>
               </div>
@@ -51,6 +73,8 @@ export class SettingsPage {
         </main>
       </div>`;
     this.handSelector = find(root, '.hand-selector');
+    this.pitchSelector = find(root, '.root-select');
+    this.scaleSelector = find(root, '.scale-type-select');
     this.cameraPreviewInput = find(root, '.toggle input[type="checkbox"]');
     this.serverStatus = find(root, '.server-status');
   }
@@ -74,6 +98,24 @@ export class SettingsPage {
     this.cameraPreviewInput.addEventListener('change', () => handler(this.cameraPreviewInput.checked));
   }
 
+  /** Reports a pitch choice made by the user. */
+  onPitchChange(handler: (pitch: PitchClass) => void): void {
+    this.pitchSelector.addEventListener('change', () => {
+      const value = this.pitchSelector.value as PitchClass;
+      if (!PITCH_CLASSES.includes(value)) return;
+      handler(value);
+    });
+  }
+
+  /** Reports a scale choice made by the user. */
+  onScaleChange(handler: (scale: ScaleType) => void): void {
+    this.scaleSelector.addEventListener('change', () => {
+      const index = parseInt(this.scaleSelector.value, 10);
+      if (isNaN(index) || index < 0 || index >= SCALE_OPTIONS.length) return;
+      handler(SCALE_OPTIONS[index].type);
+    });
+  }
+
   /** Shows which hand is selected. */
   setHand(hand: Handedness): void {
     const input = this.handSelector.querySelector<HTMLInputElement>(`input[value="${hand}"]`);
@@ -83,6 +125,17 @@ export class SettingsPage {
   /** Shows whether the camera preview is selected. */
   setCameraPreview(visible: boolean): void {
     this.cameraPreviewInput.checked = visible;
+  }
+
+  /** Shows which pitch is selected. */
+  setPitch(pitch: PitchClass): void {
+    this.pitchSelector.value = pitch;
+  }
+
+  /** Shows which scale is selected. */
+  setScale(scale: ScaleType): void {
+    const index = SCALE_OPTIONS.findIndex((o) => o.type === scale);
+    if (index >= 0) this.scaleSelector.value = index.toString();
   }
 }
 

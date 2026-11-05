@@ -129,9 +129,10 @@ export class InstrumentPage {
 
   /** Shows which hand is selected, for the initial value or to correct the UI after a rejected change. */
   setHand(hand: Handedness): void {
-    this.handName.textContent = `${hand} hand`;
+    this.handLabel = hand.toLowerCase();
+    this.handName.textContent = `${this.handLabel} hand`;
     if (!this.started) {
-      this.setStatus(`Press Start, allow the camera, and play with your ${hand.toLowerCase()} hand.`);
+      this.setStatus(`Press Start, allow the camera, and play with your ${this.handLabel} hand.`);
     }
   }
 
