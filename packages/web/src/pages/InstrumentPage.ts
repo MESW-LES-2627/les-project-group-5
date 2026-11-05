@@ -2,6 +2,7 @@ import type { Degree, Handedness, InstrumentFrame, Layout, Scale } from '@instru
 import type { HealthStatus } from '../api/ApiClient';
 import { appHeader } from './appHeader';
 import { solfegeOf } from './solfege';
+import { SettingsStore } from '../settings/SettingsStore';
 
 /**
  * The instrument screen: camera image, the cells, the pointer, a Start button, a status line, a volume bar
@@ -24,7 +25,8 @@ export class InstrumentPage {
   private handLabel = 'right';
   private cells = new Map<Degree, HTMLElement>();
   private selected: HTMLElement | null = null;
-  private hand: Handedness = 'Right';
+  private settings = new SettingsStore();
+  private hand: Handedness = this.settings.hand;
   private started = false;
 
   constructor(root: HTMLElement) {
