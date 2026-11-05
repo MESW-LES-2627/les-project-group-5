@@ -13,7 +13,7 @@ Guidance for AI coding assistants in this repository. Product scope: `docs/itera
 
 - TypeScript everywhere, in an npm workspaces monorepo: `packages/domain`, `packages/web`, and later `packages/server`.
 - **Web:** Vite + plain TypeScript (no React or other UI framework), MediaPipe (`@mediapipe/tasks-vision`) for hand tracking, Web Audio API for sound.
-- **Server:** Fastify only in the HTTP layer, SQLite with `better-sqlite3` and hand-written SQL. **No ORM or query builder.** Manual dependency injection through constructors.
+- **Server:** Fastify only in the HTTP layer. Postgres hosted on Supabase, reached with `pg` (node-postgres) and hand-written SQL. **No ORM or query builder. Don't use `@supabase/supabase-js` or Supabase Auth** (project limitation). Manual dependency injection through constructors. `DATABASE_URL` lives in `packages/server/.env` (never committed).
 - **Tools:** Vitest for tests, ESLint with `typescript-eslint` for lint and architecture rules.
 
 ## Architecture rules
@@ -22,6 +22,6 @@ Guidance for AI coding assistants in this repository. Product scope: `docs/itera
 2. MediaPipe sits behind a `HandTracker` interface. Only its adapter imports MediaPipe.
 3. Audio sits behind a `Synth` interface. Only its adapter uses the Web Audio API.
 4. `web` and `server` depend on `domain`. `domain` depends on nothing.
-5. Server: `controller → service → repository`. Services depend on repository interfaces.
+5. Server: one folder per feature in `packages/server/src/features/<feature>/`, with `controller → service → repository` inside it. Services depend on repository interfaces. Features don't import each other; shared code goes in `shared/`. Only `Postgres*.ts` files and `shared/database/` import `pg`; only `*Controller.ts` and `app.ts` import Fastify (ESLint enforces both).
 6. The browser talks to the server only through `ApiClient`.
 7. Use a design pattern only where it has a real reason in the code.

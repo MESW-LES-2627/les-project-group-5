@@ -17,6 +17,7 @@ export class MediaPipeHandTracker implements HandTracker {
   private landmarker: HandLandmarker | null = null;
   private loading: Promise<void> | null = null;
   private lastTimestampMs = -1;
+  private useCpuOnly = false;
 
   /** Safe to call several times: the model is loaded once. If loading fails, the next call tries again. */
   init(): Promise<void> {
@@ -31,6 +32,10 @@ export class MediaPipeHandTracker implements HandTracker {
 
   private async load(): Promise<void> {
     const fileset = await FilesetResolver.forVisionTasks(WASM_PATH);
+    if (this.useCpuOnly) {
+      this.landmarker = await this.create(fileset, 'CPU');
+      return;
+    }
     try {
       this.landmarker = await this.create(fileset, 'GPU');
     } catch {
@@ -47,6 +52,15 @@ export class MediaPipeHandTracker implements HandTracker {
     const timestamp = Math.max(timestampMs, this.lastTimestampMs + 1);
     this.lastTimestampMs = timestamp;
     return toTrackedHands(this.landmarker.detectForVideo(video, timestamp));
+  }
+
+  /** Releases a failed tracker so the next init can retry with the more compatible CPU delegate. */
+  resetForRetry(): void {
+    this.landmarker?.close();
+    this.landmarker = null;
+    this.loading = null;
+    this.lastTimestampMs = -1;
+    this.useCpuOnly = true;
   }
 
   private create(fileset: Awaited<ReturnType<typeof FilesetResolver.forVisionTasks>>, delegate: 'GPU' | 'CPU') {

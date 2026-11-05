@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { DEFAULT_CALIBRATION_PROFILE, HandFeatureExtractor, Instrument, type InstrumentFrame, type Layout } from '@instrument/domain';
 import { makeHand } from '@instrument/domain/testing';
 import { FakeHandTracker } from '../tracking/FakeHandTracker';
@@ -11,6 +11,11 @@ const twoCells: Layout = { regions: () => [], hitTest: (point) => (point.x < 0.5
 function fakeVideo() {
   return { readyState: 4, currentTime: 0 } as { readyState: number; currentTime: number } & HTMLVideoElement;
 }
+
+const bothHands = () => [
+  makeHand({ handedness: 'Right', indexTip: { x: 0.75, y: 0.5 }, reach: 2 }), // degree 1
+  makeHand({ handedness: 'Left', indexTip: { x: 0.25, y: 0.5 }, reach: 2 }),  // degree 2
+];
 
 function setup() {
   const tracker = new FakeHandTracker();
@@ -50,12 +55,16 @@ describe('InstrumentLoop', () => {
     expect(frames).toHaveLength(0);
   });
 
-  it('reports no hand when only the other hand is in view', () => {
+  it.each([
+    ['Right', 'Left'],
+    ['Left', 'Right'],
+  ] as const)('reports no hand when %s is chosen and only %s is in view', (chosen, visible) => {
     const { tracker, video, loop, frames } = setup();
-    tracker.setHands([makeHand({ handedness: 'Left' })]);
+    loop.setDominantHand(chosen);
+    tracker.setHands([makeHand({ handedness: visible, indexTip: { x: 0.75, y: 0.5 }, reach: 2 })]);
     video.currentTime = 1;
     loop.tick(1000);
-    expect(frames[0]).toMatchObject({ handDetected: false, sounding: false });
+    expect(frames[0]).toMatchObject({ handDetected: false, sounding: false, degree: null });
   });
 
   it('stops sending frames to a listener after it unsubscribes', () => {
@@ -70,4 +79,46 @@ describe('InstrumentLoop', () => {
     loop.tick(1033);
     expect(received).toHaveLength(1);
   });
+
+  it('follows the hand chosen with setDominantHand and ignores the other', () => {
+    const { tracker, video, loop, frames } = setup();
+    tracker.setHands(bothHands());
+
+    video.currentTime = 1;
+    loop.tick(1000);
+    expect(frames[0]).toMatchObject({ handDetected: true, degree: 1 });
+
+    loop.setDominantHand('Left');
+    video.currentTime = 2;
+    loop.tick(1033);
+    expect(frames[1]).toMatchObject({ handDetected: true, degree: 2 });
+  });
+
+  it('reports a frame-processing error and stops the animation loop', () => {
+    const { tracker, video, loop } = setup();
+    const onError = vi.fn();
+    let nextFrame: FrameRequestCallback | undefined;
+    const requestFrame = vi.fn((callback: FrameRequestCallback) => {
+      nextFrame = callback;
+      return 1;
+    });
+    vi.stubGlobal('requestAnimationFrame', requestFrame);
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    tracker.detect = () => {
+      throw new Error('tracking failed');
+    };
+    video.currentTime = 1;
+    loop.subscribeError(onError);
+
+    try {
+      loop.start();
+      nextFrame?.(1000);
+      expect(onError).toHaveBeenCalledOnce();
+      expect(onError.mock.calls[0][0]).toMatchObject({ message: 'tracking failed' });
+      expect(requestFrame).toHaveBeenCalledOnce();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
 });

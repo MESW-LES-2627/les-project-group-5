@@ -8,7 +8,9 @@ import {
 } from '@instrument/domain';
 import type { HandTracker } from '../tracking/HandTracker';
 
+/** Something that receives every instrument frame, like the sound output or the page. */
 export type FrameListener = (frame: InstrumentFrame) => void;
+export type FrameErrorListener = (error: unknown) => void;
 
 /** The video has data for the current frame (HTMLMediaElement.HAVE_CURRENT_DATA). */
 const HAVE_CURRENT_DATA = 2;
@@ -23,6 +25,7 @@ const HAVE_CURRENT_DATA = 2;
  */
 export class InstrumentLoop {
   private readonly listeners: FrameListener[] = [];
+  private readonly errorListeners = new Set<FrameErrorListener>();
   private animationFrame: number | null = null;
   private lastVideoTime = -1;
 
@@ -32,8 +35,13 @@ export class InstrumentLoop {
     private readonly profile: CalibrationProfile,
     private readonly instrument: Instrument,
     private readonly video: HTMLVideoElement,
-    private readonly dominantHand: Handedness = 'Right',
+    private dominantHand: Handedness = 'Right',
   ) {}
+
+  /** Changes which hand drives the instrument. Takes effect on the next processed frame. */
+  setDominantHand(hand: Handedness): void {
+    this.dominantHand = hand;
+  }
 
   /** Adds a listener. Returns a function that removes it. */
   subscribe(listener: FrameListener): () => void {
@@ -44,15 +52,29 @@ export class InstrumentLoop {
     };
   }
 
+  /** Adds a listener for errors that stop real-time processing. */
+  subscribeError(listener: FrameErrorListener): () => void {
+    this.errorListeners.add(listener);
+    return () => this.errorListeners.delete(listener);
+  }
+
+  /** Starts processing camera frames. Calling it again while running does nothing. */
   start(): void {
     if (this.animationFrame !== null) return;
     const step = (now: number) => {
-      this.tick(now);
+      try {
+        this.tick(now);
+      } catch (error) {
+        this.animationFrame = null;
+        for (const listener of this.errorListeners) listener(error);
+        return;
+      }
       this.animationFrame = requestAnimationFrame(step);
     };
     this.animationFrame = requestAnimationFrame(step);
   }
 
+  /** Stops processing camera frames. */
   stop(): void {
     if (this.animationFrame !== null) {
       cancelAnimationFrame(this.animationFrame);

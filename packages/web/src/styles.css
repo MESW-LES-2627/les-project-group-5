@@ -1,59 +1,191 @@
+/* Look taken from the layout template (packages/layout) and the Figma design "Web-based Gesture Instrument":
+   dark warm background, orange for the notes, green for "online". */
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap');
+
 :root {
-  --bg: #14161c;
-  --surface: #1f232c;
-  --text: #f2f3f5;
-  --muted: #a3a9b6;
-  --accent: #2ec4b6;
-  --accent-strong: #19a99c;
-  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --bg: #0d0d0d;
+  --surface: rgba(30, 29, 27, 0.58);
+  --line: rgba(255, 255, 255, 0.1);
+  --text: #f7f4ef;
+  --muted: #a8a5a1;
+  --dim: #817e7a;
+  --orange: #ff7a1a;
+  --orange-strong: #f36d13;
+  --ok: #83ae75;
+  --mono: 'DM Mono', ui-monospace, monospace;
+    font-family: 'Manrope', system-ui, sans-serif;
   color: var(--text);
   background: var(--bg);
+  font-synthesis: none;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
+  min-width: 320px;
+  overflow-x: hidden;
 }
 
-.instrument {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 16px;
+button,
+input {
+  font: inherit;
 }
 
-header {
+button {
+  cursor: pointer;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 3px;
+}
+
+/* The icons are drawn with lines, in the colour of the text around them. */
+svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Page frame: header, content and bottom bar on the full height of the window ---------- */
+
+.app-shell {
+  min-height: 100vh;
   display: flex;
-  align-items: baseline;
+  flex-direction: column;
+  /* The warm light from the top of the template, without the extra background elements. */
+  background:
+    radial-gradient(ellipse 68vw 82vh at 50% -10%, rgba(211, 146, 82, 0.16), transparent 66%),
+    #11100f;
+}
+
+.app-header {
+  height: 86px;
+  flex-shrink: 0;
+  padding: 0 clamp(24px, 4.2vw, 72px);
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin: 0 0 12px;
+  gap: 16px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(9, 9, 8, 0.26);
+  backdrop-filter: blur(18px);
 }
 
-h1 {
-  font-size: 1.25rem;
+.brand {
+  padding: 6px 0;
+  color: inherit;
   font-weight: 600;
-  margin: 0;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+  text-decoration: none;
 }
 
-.server-status {
-  font-size: 0.875rem;
+.app-header nav {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.app-header nav button,
+.app-header nav a {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 11px 15px;
+  border: 1px solid transparent;
+  border-radius: 99px;
   color: var(--muted);
+  background: transparent;
+  font-size: 13px;
+  text-decoration: none;
+  transition: 0.2s ease;
 }
 
-.server-status.online {
-  color: var(--accent);
+.app-header nav a:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
 }
 
-/* The play area. It has the camera's shape (4:3), so the pointer and the cells match the camera image. */
+.app-header nav .active {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.13);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.app-header nav button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* A dot shows the state: grey while offline or checking, green when it answers. */
+.status-light {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-light::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #5f5c58;
+}
+
+.status-light.online {
+  color: var(--ok);
+}
+
+.status-light.online::before {
+  background: var(--ok);
+  box-shadow: 0 0 9px var(--ok);
+}
+
+/* ---------- Instrument page ---------- */
+
+.stage-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px clamp(16px, 4vw, 72px);
+}
+
+/* The play area. It has the camera's shape (4:3), so the pointer and the pads match the camera image. */
 .stage {
   position: relative;
-  width: 100%;
+  width: min(100%, 1040px, calc((100vh - 220px) * 4 / 3));
   aspect-ratio: 4 / 3;
-  background: var(--surface);
-  border-radius: 12px;
+  background: #161514;
+  border: 1px solid var(--line);
+  border-radius: 22px;
   overflow: hidden;
 }
 
-/* Mirrored, so the player sees themselves as in a mirror. */
+/* Mirrored, so the player sees themselves as in a mirror. Clear and bright, so the hand is easy to see behind the pads. */
 .camera {
   position: absolute;
   inset: 0;
@@ -61,57 +193,128 @@ h1 {
   height: 100%;
   object-fit: cover;
   transform: scaleX(-1);
-  opacity: 0.45;
+}
+
+.camera.camera-hidden {
+  visibility: hidden;
+}
+
+/* A dark layer over the camera, so the pads and the text stay easy to read. */
+.stage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(7, 7, 6, 0.08), rgba(8, 8, 7, 0.22));
+  pointer-events: none;
 }
 
 .cells {
   position: absolute;
   inset: 0;
+  z-index: 1;
 }
 
-/* Each cell is placed by the layout; the padding only draws the visual gap between pads. */
+/* Each pad is a circle (the template's zigzag pads): the layout gives it a square place on the 4:3 play area. */
 .cell {
   position: absolute;
-  box-sizing: border-box;
-  padding: 6px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: clamp(1rem, 3vw, 1.75rem);
-  font-weight: 600;
-  color: var(--text);
-  background-clip: content-box;
-  background-color: rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  transition: background-color 80ms;
+  gap: 5px;
+  border-radius: 50%;
+  color: #f3eee8;
+  border: 2px solid rgba(255, 139, 62, 0.6);
+  /* See-through, so the hand behind the pad stays visible. */
+  background: linear-gradient(145deg, rgba(57, 49, 43, 0.28), rgba(24, 23, 21, 0.18));
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.85);
+  transition: transform 0.18s, border-color 0.2s, background 0.2s, box-shadow 0.2s;
 }
 
-.cell.selected {
-  background-color: rgba(46, 196, 182, 0.35);
+.cell strong {
+  font-size: clamp(24px, 3.6vw, 47px);
+  line-height: 1;
+  font-weight: 500;
 }
 
+.cell span {
+  font-size: clamp(10px, 1.1vw, 14px);
+  color: #9f9a94;
+}
+
+/* The pad is selected (the pointer is over it): the template's "playing" look, as soon as it is selected. */
+.cell.selected,
 .cell.sounding {
-  background-color: rgba(46, 196, 182, 0.75);
+  transform: translateY(-5px) scale(0.98);
+  color: #fff;
+  border-color: var(--orange);
+  background: radial-gradient(circle, rgba(255, 124, 31, 0.42), rgba(42, 29, 20, 0.4));
+  box-shadow:
+    0 0 0 1px rgba(255, 109, 10, 0.4),
+    0 0 35px rgba(255, 98, 0, 0.38),
+    inset 0 0 28px rgba(255, 119, 24, 0.15);
 }
 
+.cell.selected span,
+.cell.sounding span {
+  color: #ffd9bd;
+}
+
+/* The pointer follows the hand. Same ring and cross as the template's gesture pointer. */
 .pointer {
   position: absolute;
-  width: 22px;
-  height: 22px;
-  margin: -11px 0 0 -11px;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  border: 1.5px solid rgba(255, 137, 59, 0.92);
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 0 0 3px var(--accent);
+  box-shadow:
+    0 0 0 5px rgba(255, 110, 17, 0.08),
+    0 0 24px rgba(255, 91, 0, 0.5);
   pointer-events: none;
+}
+
+.pointer::before,
+.pointer::after {
+  content: '';
+  position: absolute;
+  background: rgba(255, 176, 119, 0.8);
+}
+
+.pointer::before {
+  width: 8px;
+  height: 1px;
+  left: 17px;
+  top: 20px;
+}
+
+.pointer::after {
+  width: 1px;
+  height: 8px;
+  left: 20px;
+  top: 17px;
+}
+
+.pointer i {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  left: 18px;
+  top: 18px;
+  border-radius: 50%;
+  background: #ff791f;
+  box-shadow: 0 0 10px #ff640a;
 }
 
 .start-overlay {
   position: absolute;
+  z-index: 3;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(20, 22, 28, 0.6);
+  background: rgba(13, 13, 13, 0.6);
 }
 
 .start-overlay[hidden],
@@ -119,49 +322,513 @@ h1 {
   display: none;
 }
 
+/* Same orange pill as the template's "Play melody" button. */
 .start {
-  font-size: 1.25rem;
-  padding: 12px 32px;
-  border: none;
-  border-radius: 999px;
+  padding: 12px 36px;
+  border: 0;
+  border-radius: 99px;
   color: #fff;
-  background: var(--accent-strong);
-  cursor: pointer;
+  background: var(--orange-strong);
+  box-shadow: 0 0 28px rgba(255, 100, 0, 0.22);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .start:disabled {
-  opacity: 0.6;
+  opacity: 0.4;
   cursor: wait;
 }
 
+/* The hint and the messages, in the middle at the top. One line when it is the hint. */
 .status {
-  min-height: 1.5em;
-  margin: 12px 0;
-  color: var(--muted);
+  position: absolute;
+  z-index: 4;
+  top: 7%;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 90%;
+  margin: 0;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #aaa6a0;
+  text-shadow: 0 1px 5px #000;
+}
+
+/* Live numbers for finding problems; shown only when the address ends with ?debug. */
+.debug {
+  position: absolute;
+  z-index: 4;
+  left: 12px;
+  bottom: 10px;
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font: 12px var(--mono);
+  color: #ffd9bd;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.debug[hidden] {
+  display: none;
+}
+
+/* Bottom bar: scale on the left, volume in the middle, hand and connection on the right. */
+.status-bar {
+  min-height: 72px;
+  flex-shrink: 0;
+  padding: 0 clamp(24px, 4.2vw, 72px);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 28px;
+  border-top: 1px solid var(--line);
+  background: rgba(8, 8, 7, 0.68);
+  backdrop-filter: blur(24px);
+  font-size: 10px;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+
+.status-copy,
+.volume,
+.hand-status,
+.status-right,
+.connection {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-copy {
+  justify-self: end;
+}
+
+.status-copy strong {
+  color: #d8d3cc;
+  font-weight: 500;
+}
+
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ff6f0f;
+  box-shadow: 0 0 9px #ff6f0f;
 }
 
 .volume {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  min-width: min(38vw, 430px);
+}
+
+.volume > span {
+  color: #c5c0b9;
 }
 
 .volume-bar {
+  position: relative;
   flex: 1;
-  height: 10px;
-  border-radius: 5px;
-  background: var(--surface);
-  overflow: hidden;
+  height: 3px;
+  border-radius: 3px;
+  background: #3e3c39;
 }
 
 .volume-fill {
+  position: relative;
   width: 0;
   height: 100%;
-  background: var(--accent);
+  border-radius: 3px;
+  background: #ff7417;
+}
+
+/* The round handle at the end of the orange bar. */
+.volume-fill::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  top: -4.5px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #121110;
+  border-radius: 50%;
+  background: var(--orange);
+  box-shadow: 0 0 10px rgba(255, 107, 11, 0.6);
 }
 
 .volume-value {
-  width: 3.5em;
+  min-width: 34px;
+  color: #fff;
+  font: 500 11px var(--mono);
   text-align: right;
-  font-variant-numeric: tabular-nums;
+}
+
+.status-right {
+  justify-self: end;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px 24px;
+}
+
+.hand-status strong {
+  color: var(--ok);
+  font-weight: 500;
+}
+
+.connection {
+  gap: 16px;
+}
+
+/* ---------- Settings page ---------- */
+
+.settings-page {
+  flex: 1;
+  width: min(100% - 40px, 1060px);
+  margin: 0 auto;
+  padding: 46px 0 70px;
+}
+
+.settings-heading {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 34px;
+}
+
+.back-button {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  color: #aaa6a0;
+  background: rgba(255, 255, 255, 0.05);
+  transition: 0.18s;
+}
+
+.back-button:hover {
+  color: #fff;
+  border-color: rgba(255, 122, 26, 0.6);
+}
+
+.settings-heading p {
+  margin: 0 0 3px;
+  color: var(--orange);
+  font: 500 9px var(--mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.settings-heading h1 {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+
+/* Where the template shows "Saved": a small status on the right of the title. */
+.settings-heading .server-status {
+  margin-left: auto;
+  color: var(--dim);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.settings-heading .server-status.online {
+  color: var(--ok);
+}
+
+.settings-panel {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(18, 18, 17, 0.72);
+  backdrop-filter: blur(24px);
+}
+
+.settings-panel section {
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) 2fr;
+  align-items: start;
+  gap: 22px;
+  padding: 34px;
+}
+
+.settings-panel section + section {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.section-title h2 {
+  margin: 0 0 5px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.section-title p {
+  max-width: 230px;
+  margin: 0;
+  color: #787570;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* Two buttons side by side; the radio inside each one is hidden and the chosen one is lit. */
+.segmented {
+  min-width: 0;
+  margin: 0;
+  padding: 4px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.segmented label {
+  position: relative;
+  padding: 12px;
+  border-radius: 7px;
+  color: #77736e;
+  font-size: 11px;
+  text-align: center;
+  cursor: pointer;
+  transition: 0.18s;
+}
+
+.segmented input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.segmented label:hover {
+  color: #d9d4cd;
+}
+
+.segmented label:has(input:checked) {
+  color: #ff9853;
+  background: #3a312a;
+  box-shadow: inset 0 0 0 1px rgba(255, 121, 25, 0.28);
+}
+
+.segmented label:has(input:focus-visible) {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+
+/* An on/off switch, in the same colours as the segmented control. */
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: #d9d4cd;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.toggle input {
+  appearance: none;
+  position: relative;
+  width: 34px;
+  height: 20px;
+  margin: 0;
+  flex-shrink: 0;
+  border-radius: 99px;
+  background: #3e3c39;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+
+.toggle input::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #9c968e;
+  transition: transform 0.18s, background 0.18s;
+}
+
+.toggle input:checked {
+  background: rgba(255, 116, 23, 0.35);
+}
+
+.toggle input:checked::after {
+  transform: translateX(14px);
+  background: var(--orange);
+}
+
+.scale-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.scale-controls label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scale-controls select {
+  padding: 6px 10px;
+  border: 1px solid var(--surface);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+.done-button {
+  display: block;
+  width: fit-content;
+  margin: 22px 0 0 auto;
+  padding: 12px 32px;
+  border-radius: 99px;
+  color: #fff;
+  background: var(--orange-strong);
+  box-shadow: 0 10px 25px rgba(224, 82, 0, 0.2);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.done-button:hover {
+  background: #e9680d;
+}
+
+/* ---------- Phones (same width as the layout switch in main.ts) ---------- */
+
+@media (max-width: 720px) {
+  .app-shell {
+    min-height: 100dvh;
+  }
+
+  .app-header {
+    height: 70px;
+    padding: 0 18px;
+  }
+
+  .brand {
+    max-width: 140px;
+    font-size: 11px;
+    line-height: 1.2;
+  }
+
+  .app-header nav {
+    gap: 2px;
+  }
+
+  .app-header nav button,
+  .app-header nav a {
+    padding: 9px;
+    font-size: 11px;
+  }
+
+  /* As in the template: the brand already goes back to the instrument. */
+  .app-header nav > :first-child {
+    display: none;
+  }
+
+  /* The instrument page fits the screen exactly, so the stage can use all the height that is left. */
+  .app-shell:has(.stage) {
+    height: 100dvh;
+  }
+
+  .stage-area {
+    min-height: 0;
+    padding: 4px 2px;
+  }
+
+  .stage {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    border-radius: 13px;
+  }
+
+  /* On a phone the play area is not 4:3, so a region is not a square and can't be a circle.
+     The pad fills its region exactly (rounded, as the template's phone pads), so the drawn pad is the hit area. */
+  .stage .cell {
+    border-radius: 13px;
+  }
+
+  .stage .cell strong {
+    font-size: clamp(18px, 5vw, 24px);
+  }
+
+  .stage .cell span {
+    font-size: 10px;
+  }
+
+  .stage .status {
+    top: 14%;
+    max-width: 94%;
+    margin-top: 8px;
+    font-size: 10px;
+    line-height: 1.15;
+  }
+
+  .start-overlay {
+    z-index: 5;
+    align-items: flex-start;
+    padding-top: 4px;
+    background: transparent;
+    pointer-events: none;
+  }
+
+  .start-overlay .start {
+    padding: 8px 26px;
+    font-size: 13px;
+    pointer-events: auto;
+  }
+
+  .status-bar {
+    padding: 10px 18px;
+    grid-template-columns: auto 1fr;
+    gap: 8px 14px;
+  }
+
+  .status-copy {
+    justify-self: start;
+    font-size: 8px;
+  }
+
+  .status-copy .live-dot,
+  .status-copy span:last-child,
+  .hand-status {
+    display: none;
+  }
+
+  .volume {
+    min-width: 0;
+  }
+
+  .status-right {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .settings-page {
+    padding: 28px 0 50px;
+  }
+
+  .settings-heading h1 {
+    font-size: 28px;
+  }
+
+  .settings-panel section {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 24px 18px;
+  }
 }

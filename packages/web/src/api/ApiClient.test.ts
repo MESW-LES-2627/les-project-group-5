@@ -6,23 +6,31 @@ function answering(status: number, body: unknown): typeof fetch {
   return async () => new Response(JSON.stringify(body), { status });
 }
 
-describe('ApiClient.isServerOnline', () => {
-  it('is true when the health check answers ok', async () => {
-    expect(await new ApiClient(answering(200, { status: 'ok' })).isServerOnline()).toBe(true);
+describe('ApiClient.checkHealth', () => {
+  it('reports server and database online when both answer', async () => {
+    const api = new ApiClient(answering(200, { status: 'ok', database: 'online' }));
+    expect(await api.checkHealth()).toEqual({ server: true, database: true });
   });
 
-  it('is false when the server answers with an error', async () => {
-    expect(await new ApiClient(answering(502, { status: 'ok' })).isServerOnline()).toBe(false);
+  it('reports the server online but the database offline', async () => {
+    const api = new ApiClient(answering(200, { status: 'ok', database: 'offline' }));
+    expect(await api.checkHealth()).toEqual({ server: true, database: false });
   });
 
-  it('is false when the answer is not the expected one', async () => {
-    expect(await new ApiClient(answering(200, { hello: 'world' })).isServerOnline()).toBe(false);
+  it('reports both offline when the server answers with an error', async () => {
+    const api = new ApiClient(answering(502, { status: 'ok', database: 'online' }));
+    expect(await api.checkHealth()).toEqual({ server: false, database: false });
   });
 
-  it('is false when the server can not be reached', async () => {
+  it('reports both offline when the answer is not the expected one', async () => {
+    const api = new ApiClient(answering(200, { hello: 'world' }));
+    expect(await api.checkHealth()).toEqual({ server: false, database: false });
+  });
+
+  it('reports both offline when the server can not be reached', async () => {
     const failing: typeof fetch = async () => {
       throw new TypeError('Failed to fetch');
     };
-    expect(await new ApiClient(failing).isServerOnline()).toBe(false);
+    expect(await new ApiClient(failing).checkHealth()).toEqual({ server: false, database: false });
   });
 });
