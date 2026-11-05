@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { SettingsStore } from './SettingsStore';
+import { SettingsStore} from './SettingsStore';
+import { ScaleType } from '@instrument/domain';
 
 describe('SettingsStore', () => {
   it('starts with the right hand', () => {
@@ -61,5 +62,29 @@ describe('SettingsStore', () => {
     store.setCameraPreview(false);
     expect(listener).not.toHaveBeenCalled();
   });
+
+  it('starts with the default pitch and scale', () => {
+    const store = new SettingsStore();
+    expect(store.pitch).toBe('C');
+    expect(store.scale).toBe(ScaleType.MAJOR);
+  });
+
+  it('updates the pitch and notifies subscribers', () => {
+    const store = new SettingsStore();
+    const listener = vi.fn();
+    store.subscribePitch(listener);
+    store.setPitch('D');
+    expect(store.pitch).toBe('D');
+    expect(listener).toHaveBeenCalledWith('D');
+  });
+
+  it('updates the scale and notifies subscribers', () => {
+    const store = new SettingsStore();
+    const listener = vi.fn();
+    store.subscribeScale(listener);
+    store.setScale(ScaleType.NATURAL_MINOR);
+    expect(store.scale).toBe(ScaleType.NATURAL_MINOR);
+    expect(listener).toHaveBeenCalledWith(ScaleType.NATURAL_MINOR);
+  }); 
 
 });
