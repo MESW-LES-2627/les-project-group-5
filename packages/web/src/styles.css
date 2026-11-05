@@ -667,6 +667,27 @@ svg {
   background: var(--orange);
 }
 
+.scale-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.scale-controls label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scale-controls select {
+  padding: 6px 10px;
+  border: 1px solid var(--surface);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
 .done-button {
   display: block;
   width: fit-content;
