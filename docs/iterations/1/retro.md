@@ -2,12 +2,17 @@
 
 ## What went well
 
-- TBD
+- Group work/communication;
+- Documentantion;
+- PR reviews;
 
 ## What we should do different
 
-- TBD
+- Time managment;
+- Issues assignment;
+- Better use of AI;
 
 ## Are there any puzzles
 
-- TBD
+- Issue organization;
+- Issue estimation;

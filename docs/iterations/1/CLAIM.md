@@ -1,27 +1,24 @@
-# CLAIM — Iteration X
-Team:&nbsp;  
-Tag: `iter-X`  
-Previous tag: `iter-(X-1)`
-This file lives on the tagged commit at `docs/iterations/X/CLAIM.md`. The review opens this file. We do not hunt the repository. A dead link scores that line at most 4\.&nbsp;
-Iteration 0 is a readiness review. An ugly claim does not cap the mark if the slice runs. From Iteration 1, a missing tag or a missing CLAIM.md caps the team mark at 10\.
+# CLAIM — Iteration 1
+Team:E;  
+Tag: `iter-1`  
+Previous tag: `iter-0`
 ---
 ## Required permalinks
-Use links that work on tag `iter-X`. If something does not exist yet, write `none yet` — do not paste a link that 404s.
 | What | Link |
 | :---- | :---- |
-| MVP&nbsp; | URL |
-| Vision | URL |
-| Definition of Done | URL |
+| MVP&nbsp; | [mvp.md](../0/mvp.md) |
+| Vision | [vision.md](../0/vision.md) |
+| Definition of Done | [definition-of-done.md](../0/definition-of-done.md) |
 |  |  |
-| This tag (`iter-X`) | URL |
+| This tag (`iter-1`) | URL |
 |  |  |
 | Production | URL |
 | Staging | URL |
 |  |  |
 | CI/CD Pipeline | URL |
 |  |  |
-| Stories in this increment | URL |
-| Retrospective | URL |
-| AI log | URL |
+| Stories in this increment | [user-stories](user-stories/) |
+| Retrospective | [retro.md](retro.md) |
+| AI log | [ai-log.md](ai-log.md) |
 &nbsp;
 &nbsp;
