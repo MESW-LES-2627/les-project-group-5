@@ -3,6 +3,8 @@ import type { AccountRepository, NewAccount, StoredConfirmationToken } from './A
 import { AccountEmails } from './AccountEmails';
 import { AccountService } from './AccountService';
 import type { PasswordHasher } from './PasswordHasher';
+import type { AccountForLogin, SessionRepository, SessionUser } from './SessionRepository';
+import { SessionService } from './SessionService';
 
 // Fakes used by the account tests, so they need no database, no slow hashing and send no email.
 
@@ -60,12 +62,43 @@ export class RecordingEmailSender implements EmailSender {
   }
 }
 
-/** An account service built only from fakes, for tests of other routes that just need buildApp to work. */
-export function fakeAccountService(): AccountService {
-  return new AccountService(
-    new InMemoryAccountRepository(),
-    new FakePasswordHasher(),
-    new RecordingEmailSender(),
-    new AccountEmails('https://app.example'),
-  );
+/** Sessions in memory, reading the accounts of an InMemoryAccountRepository. */
+export class InMemorySessionRepository implements SessionRepository {
+  /** Sessions by token hash. */
+  readonly sessions = new Map<string, { userId: string; expiresAt: Date }>();
+
+  constructor(private readonly accounts: InMemoryAccountRepository) {}
+
+  async findAccountForLogin(email: string): Promise<AccountForLogin | null> {
+    const account = this.accounts.accounts.find((existing) => existing.email === email);
+    return account
+      ? { userId: account.id, passwordHash: account.passwordHash, emailConfirmed: account.emailConfirmedAt !== null }
+      : null;
+  }
+
+  async createSession(userId: string, tokenHash: string, expiresAt: Date): Promise<void> {
+    this.sessions.set(tokenHash, { userId, expiresAt });
+  }
+
+  async findSessionUser(tokenHash: string, now: Date): Promise<SessionUser | null> {
+    const session = this.sessions.get(tokenHash);
+    if (!session || session.expiresAt.getTime() <= now.getTime()) return null;
+    const account = this.accounts.accounts.find((existing) => existing.id === session.userId);
+    return account ? { userId: account.id, email: account.email } : null;
+  }
+
+  async deleteSession(tokenHash: string): Promise<void> {
+    this.sessions.delete(tokenHash);
+  }
+}
+
+/** The account part of buildApp's dependencies, built only from fakes, for tests of other routes. */
+export function fakeAccountDependencies() {
+  const accounts = new InMemoryAccountRepository();
+  const passwords = new FakePasswordHasher();
+  return {
+    accounts: new AccountService(accounts, passwords, new RecordingEmailSender(), new AccountEmails('https://app.example')),
+    sessions: new SessionService(new InMemorySessionRepository(accounts), passwords),
+    secureCookies: false,
+  };
 }
