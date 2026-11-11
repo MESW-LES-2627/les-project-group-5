@@ -1,5 +1,6 @@
 /** Which page is open, so the header can mark its link as active. */
-export type CurrentPage = 'instrument' | 'settings' | 'sign-up';
+/** null for pages that have no link in the header, like the email confirmation page. */
+export type CurrentPage = 'instrument' | 'settings' | 'sign-up' | null;
 
 /**
  * The top bar shared by every page (brand on the left, navigation on the right), as in the layout template.
