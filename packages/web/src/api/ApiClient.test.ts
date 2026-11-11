@@ -109,3 +109,61 @@ describe('ApiClient.confirmEmail', () => {
     expect(await new ApiClient(failing).confirmEmail('the-token')).toBe('failed');
   });
 });
+
+describe('ApiClient.logIn', () => {
+  it('sends the email and password as JSON to POST /api/sessions', async () => {
+    let request: { url: string; init?: RequestInit } | undefined;
+    const recording: typeof fetch = async (input, init) => {
+      request = { url: String(input), init };
+      return new Response(JSON.stringify({ email: 'ana@mail.com' }), { status: 200 });
+    };
+    expect(await new ApiClient(recording).logIn('ana@mail.com', 'a long enough password')).toEqual({
+      kind: 'logged-in',
+      email: 'ana@mail.com',
+    });
+    expect(request?.url).toBe('/api/sessions');
+    expect(request?.init?.method).toBe('POST');
+  });
+
+  it.each([
+    [401, { kind: 'invalid' }],
+    [403, { kind: 'not-confirmed' }],
+    [500, { kind: 'failed' }],
+  ] as const)('maps status %i', async (status, answer) => {
+    expect(await new ApiClient(answering(status, {})).logIn('ana@mail.com', 'x')).toEqual(answer);
+  });
+
+  it('reports "failed" when the server can not be reached', async () => {
+    const failing: typeof fetch = async () => {
+      throw new TypeError('Failed to fetch');
+    };
+    expect(await new ApiClient(failing).logIn('ana@mail.com', 'x')).toEqual({ kind: 'failed' });
+  });
+});
+
+describe('ApiClient.currentUser and logOut', () => {
+  it('gives the email of the logged-in user', async () => {
+    expect(await new ApiClient(answering(200, { email: 'ana@mail.com' })).currentUser()).toBe('ana@mail.com');
+  });
+
+  it('gives null for a guest (401)', async () => {
+    expect(await new ApiClient(answering(401, { error: 'not-logged-in' })).currentUser()).toBeNull();
+  });
+
+  it('gives null when the server can not be reached', async () => {
+    const failing: typeof fetch = async () => {
+      throw new TypeError('Failed to fetch');
+    };
+    expect(await new ApiClient(failing).currentUser()).toBeNull();
+  });
+
+  it('logs out with DELETE /api/session', async () => {
+    let method: string | undefined;
+    const recording: typeof fetch = async (_input, init) => {
+      method = init?.method;
+      return new Response(null, { status: 204 });
+    };
+    expect(await new ApiClient(recording).logOut()).toBe(true);
+    expect(method).toBe('DELETE');
+  });
+});

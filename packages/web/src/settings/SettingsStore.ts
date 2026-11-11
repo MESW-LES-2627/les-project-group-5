@@ -63,6 +63,17 @@ export class SettingsStore {
     for (const listener of [...this.scaleListeners]) listener(scale);
   }
 
+  /**
+   * Goes back to the default settings, telling every listener that changes (used when logging out, US-E1-05).
+   * It reuses the setters, so the pages and the instrument update exactly as after a change by the player.
+   */
+  reset(): void {
+    this.setHand(DEFAULT_HAND);
+    this.setCameraPreview(default_camera_preview);
+    this.setPitch(DEFAULT_PITCH);
+    this.setScale(DEFAULT_SCALE);
+  }
+
   /** Returns a function that removes the listener. */
   subscribe(listener: HandListener): () => void {
     this.listeners.add(listener);

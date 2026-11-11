@@ -88,3 +88,22 @@ describe('SettingsStore', () => {
   }); 
 
 });
+describe('SettingsStore.reset', () => {
+  it('goes back to the defaults and tells the listeners', () => {
+    const store = new SettingsStore();
+    store.setHand('Left');
+    store.setCameraPreview(false);
+    store.setPitch('D');
+    store.setScale(ScaleType.NATURAL_MINOR);
+    const handListener = vi.fn();
+    store.subscribe(handListener);
+
+    store.reset();
+
+    expect(store.hand).toBe('Right');
+    expect(store.cameraPreview).toBe(true);
+    expect(store.pitch).toBe('C');
+    expect(store.scale).toBe(ScaleType.MAJOR);
+    expect(handListener).toHaveBeenCalledWith('Right');
+  });
+});

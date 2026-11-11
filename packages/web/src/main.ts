@@ -19,6 +19,7 @@ import { SettingsStore } from "./settings/SettingsStore";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SignUpPage } from "./pages/SignUpPage";
 import { ConfirmEmailPage } from "./pages/ConfirmEmailPage";
+import { LoginPage } from "./pages/LoginPage";
 
 // Composition root: the only place that creates the concrete classes and connects them.
 // Everything else receives what it needs through its constructor.
@@ -32,7 +33,8 @@ const instrumentRoot = document.createElement("div");
 const settingsRoot = document.createElement("div");
 const signUpRoot = document.createElement("div");
 const confirmEmailRoot = document.createElement("div");
-const screens = [instrumentRoot, settingsRoot, signUpRoot, confirmEmailRoot];
+const loginRoot = document.createElement("div");
+const screens = [instrumentRoot, settingsRoot, signUpRoot, confirmEmailRoot, loginRoot];
 root.append(...screens);
 
 // Each address after "#" shows one screen. Any other address shows the instrument.
@@ -41,6 +43,7 @@ const ROUTES: Record<string, HTMLElement> = {
   "#/settings": settingsRoot,
   "#/sign-up": signUpRoot,
   "#/confirm-email": confirmEmailRoot,
+  "#/login": loginRoot,
 };
 const routePath = (): string => location.hash.split("?")[0];
 const routeParameter = (name: string): string =>
@@ -67,6 +70,7 @@ const page = new InstrumentPage(instrumentRoot);
 const settingsPage = new SettingsPage(settingsRoot);
 const signUpPage = new SignUpPage(signUpRoot);
 const confirmEmailPage = new ConfirmEmailPage(confirmEmailRoot);
+const loginPage = new LoginPage(loginRoot);
 const tracker = new MediaPipeHandTracker();
 const synth = new WebAudioSynth();
 const camera = new Camera();
@@ -149,6 +153,11 @@ settingsPage.setPitch(settings.pitch);
 settingsPage.setScale(settings.scale);
 settingsPage.onPitchChange((pitch) => settings.setPitch(pitch));
 settingsPage.onScaleChange((scale) => settings.setScale(scale));
+// Keep the settings page in step when the settings change from elsewhere (for example back to the defaults on log out).
+settings.subscribe((hand) => settingsPage.setHand(hand));
+settings.subscribeCameraPreview((visible) => settingsPage.setCameraPreview(visible));
+settings.subscribePitch((pitch) => settingsPage.setPitch(pitch));
+settings.subscribeScale((scale) => settingsPage.setScale(scale));
 
 page.showInfo(currentScale, settings.hand);
 page.setStatus(`Press Start, allow the camera, and play with your ${settings.hand} hand.`);
@@ -177,6 +186,56 @@ confirmEmailPage.onConfirm(() => api.confirmEmail(routeParameter("token")));
 addEventListener("hashchange", () => {
   if (currentScreen() === confirmEmailRoot) confirmEmailPage.reset();
 });
+
+// ---------- Logging in and out (US-E1-04, US-E1-05) ----------
+
+// The email of the logged-in player, or null for a guest. Asked once when the app opens;
+// the session itself lives in a cookie that only the server can read.
+let loggedInEmail: string | null = null;
+
+/** Shows "Log in / Sign up" to a guest and "Log out" to a logged-in player, in every page's header. */
+const showAccount = (email: string | null) => {
+  loggedInEmail = email;
+  for (const links of document.querySelectorAll<HTMLElement>(".guest-links")) links.hidden = email !== null;
+  for (const links of document.querySelectorAll<HTMLElement>(".user-links")) links.hidden = email === null;
+  // A logged-in player who opens the login page goes to the instrument instead.
+  if (email !== null && routePath() === "#/login") location.hash = "#/";
+};
+
+// After logging in, the player goes back to the page they were on before opening the login page.
+// Account pages are not worth going back to, so those lead to the instrument.
+const NO_RETURN_ROUTES = new Set(["#/login", "#/sign-up", "#/confirm-email"]);
+let returnTo = "#/";
+addEventListener("hashchange", (event) => {
+  if (routePath() !== "#/login") return;
+  if (loggedInEmail !== null) {
+    location.hash = "#/";
+    return;
+  }
+  const previous = new URL(event.oldURL).hash;
+  returnTo = previous && !NO_RETURN_ROUTES.has(previous.split("?")[0]) ? previous : "#/";
+});
+
+loginPage.onSubmit(async (email, password) => {
+  const answer = await api.logIn(email, password);
+  if (answer.kind === "logged-in") {
+    showAccount(answer.email);
+    location.hash = returnTo;
+  }
+  return answer;
+});
+
+// Every page's header has a Log out button, so one listener on the document handles them all.
+document.addEventListener("click", async (event) => {
+  if (!(event.target instanceof Element) || !event.target.closest(".log-out")) return;
+  if (!(await api.logOut())) return;
+  showAccount(null);
+  // Back to a guest with the default settings, on the instrument page (US-E1-05).
+  settings.reset();
+  location.hash = "#/";
+});
+
+void api.currentUser().then(showAccount);
 
 const CAMERA_MESSAGES: Record<CameraProblem, string> = {
   denied:
