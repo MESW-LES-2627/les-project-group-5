@@ -17,6 +17,7 @@ import { InstrumentPage } from "./pages/InstrumentPage";
 import { MediaPipeHandTracker } from "./tracking/MediaPipeHandTracker";
 import { SettingsStore } from "./settings/SettingsStore";
 import { SettingsPage } from "./pages/SettingsPage";
+import { SignUpPage } from "./pages/SignUpPage";
 
 // Composition root: the only place that creates the concrete classes and connects them.
 // Everything else receives what it needs through its constructor.
@@ -24,16 +25,24 @@ import { SettingsPage } from "./pages/SettingsPage";
 const root = document.querySelector<HTMLElement>("#app");
 if (!root) throw new Error("Missing #app element");
 
-// Both screens stay mounted and only one is visible. Removing the instrument page would destroy
-// the video and stop the camera, so the player would have to press Start again after every visit to settings.
+// All screens stay mounted and only one is visible. Removing the instrument page would destroy
+// the video and stop the camera, so the player would have to press Start again after every visit to another page.
 const instrumentRoot = document.createElement("div");
 const settingsRoot = document.createElement("div");
-root.append(instrumentRoot, settingsRoot);
+const signUpRoot = document.createElement("div");
+root.append(instrumentRoot, settingsRoot, signUpRoot);
+
+// Each address after "#" shows one screen. Any other address shows the instrument.
+const ROUTES: Record<string, HTMLElement> = {
+  "#/settings": settingsRoot,
+  "#/sign-up": signUpRoot,
+};
+const currentScreen = (): HTMLElement => ROUTES[location.hash] ?? instrumentRoot;
+const onInstrument = (): boolean => currentScreen() === instrumentRoot;
 
 const showRoute = () => {
-  const onSettings = location.hash === "#/settings";
-  instrumentRoot.hidden = onSettings;
-  settingsRoot.hidden = !onSettings;
+  const visible = currentScreen();
+  for (const screen of [instrumentRoot, settingsRoot, signUpRoot]) screen.hidden = screen !== visible;
 };
 addEventListener("hashchange", showRoute);
 showRoute();
@@ -48,6 +57,7 @@ let layout: Layout = mobileLayoutQuery.matches
 
 const page = new InstrumentPage(instrumentRoot);
 const settingsPage = new SettingsPage(settingsRoot);
+const signUpPage = new SignUpPage(signUpRoot);
 const tracker = new MediaPipeHandTracker();
 const synth = new WebAudioSynth();
 const camera = new Camera();
@@ -81,7 +91,8 @@ loop.subscribeError((error) => {
 showRoute();
 addEventListener("hashchange", () => {
   showRoute();
-  if (location.hash === "#/settings") {
+  // The instrument only runs while its page is visible.
+  if (!onInstrument()) {
     if (instrumentStarted) {
       loop.stop();
       instrument.update(null);
@@ -150,6 +161,8 @@ const checkServer = async () => {
 void checkServer();
 setInterval(checkServer, SERVER_CHECK_INTERVAL_MS);
 
+signUpPage.onSubmit((email, password) => api.signUp(email, password));
+
 const CAMERA_MESSAGES: Record<CameraProblem, string> = {
   denied:
     "Camera access is blocked. Allow the camera in your browser (icon in the address bar), then press Try again.",
@@ -186,5 +199,5 @@ page.onStart(async () => {
   page.hideStart();
   page.setStatus("");
   instrumentStarted = true;
-  if (location.hash !== "#/settings") loop.start();
+  if (onInstrument()) loop.start();
 });

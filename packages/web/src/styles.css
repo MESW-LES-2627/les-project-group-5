@@ -706,6 +706,99 @@ svg {
   background: #e9680d;
 }
 
+/* ---------- Account pages (sign up) ---------- */
+
+.account-page {
+  width: min(100% - 40px, 520px);
+}
+
+.account-panel {
+  padding: 34px;
+}
+
+.account-form {
+  display: grid;
+  gap: 22px;
+}
+
+/* "display: grid" above would otherwise win over the hidden attribute (used after a successful sign-up). */
+.account-form[hidden] {
+  display: none;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.field input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text);
+  background: var(--surface);
+  font: inherit;
+}
+
+.field input[aria-invalid='true'] {
+  border-color: #e0694f;
+}
+
+.password-row {
+  display: flex;
+  gap: 8px;
+}
+
+.show-password {
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--muted);
+  background: var(--surface);
+  font: inherit;
+  cursor: pointer;
+}
+
+.show-password:hover {
+  color: #fff;
+}
+
+.field-hint {
+  color: var(--dim);
+  font-size: 11px;
+}
+
+.field-error,
+.form-message {
+  margin: 0;
+  color: #f08a73;
+  font-size: 12px;
+}
+
+.field-error:empty,
+.form-message:empty {
+  display: none;
+}
+
+.account-form .done-button {
+  margin: 0;
+  border: 0;
+  cursor: pointer;
+}
+
+.account-form .done-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.sent-message {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
 /* ---------- Phones (same width as the layout switch in main.ts) ---------- */
 
 @media (max-width: 720px) {

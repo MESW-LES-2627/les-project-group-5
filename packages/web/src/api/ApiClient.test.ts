@@ -34,3 +34,47 @@ describe('ApiClient.checkHealth', () => {
     expect(await new ApiClient(failing).checkHealth()).toEqual({ server: false, database: false });
   });
 });
+
+describe('ApiClient.signUp', () => {
+  it('sends the email and password as JSON to POST /api/accounts', async () => {
+    let request: { url: string; init?: RequestInit } | undefined;
+    const recording: typeof fetch = async (input, init) => {
+      request = { url: String(input), init };
+      return new Response(JSON.stringify({ status: 'check-your-email' }), { status: 202 });
+    };
+    await new ApiClient(recording).signUp('ana@mail.com', 'a long enough password');
+    expect(request?.url).toBe('/api/accounts');
+    expect(request?.init?.method).toBe('POST');
+    expect(JSON.parse(String(request?.init?.body))).toEqual({ email: 'ana@mail.com', password: 'a long enough password' });
+  });
+
+  it('reports "sent" when the server accepts the sign-up', async () => {
+    const api = new ApiClient(answering(202, { status: 'check-your-email' }));
+    expect(await api.signUp('ana@mail.com', 'a long enough password')).toEqual({ kind: 'sent' });
+  });
+
+  it('reports the rejected fields', async () => {
+    const api = new ApiClient(answering(400, { errors: { email: 'invalid-format', password: 'too-short' } }));
+    expect(await api.signUp('nope', 'short')).toEqual({
+      kind: 'rejected',
+      errors: { email: 'invalid-format', password: 'too-short' },
+    });
+  });
+
+  it('reports "failed" for a 400 without field errors', async () => {
+    const api = new ApiClient(answering(400, { message: 'body must have required property' }));
+    expect(await api.signUp('ana@mail.com', 'a long enough password')).toEqual({ kind: 'failed' });
+  });
+
+  it('reports "failed" when the server has a problem', async () => {
+    const api = new ApiClient(answering(500, {}));
+    expect(await api.signUp('ana@mail.com', 'a long enough password')).toEqual({ kind: 'failed' });
+  });
+
+  it('reports "failed" when the server can not be reached', async () => {
+    const failing: typeof fetch = async () => {
+      throw new TypeError('Failed to fetch');
+    };
+    expect(await new ApiClient(failing).signUp('ana@mail.com', 'a long enough password')).toEqual({ kind: 'failed' });
+  });
+});

@@ -1,5 +1,5 @@
 /** Which page is open, so the header can mark its link as active. */
-export type CurrentPage = 'instrument' | 'settings';
+export type CurrentPage = 'instrument' | 'settings' | 'sign-up';
 
 /**
  * The top bar shared by every page (brand on the left, navigation on the right), as in the layout template.
@@ -20,6 +20,7 @@ export function appHeader(current: CurrentPage): string {
           <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M4 6h16M4 18h16M8 3v6M16 15v6" /><circle cx="8" cy="6" r="2" /><circle cx="16" cy="18" r="2" /></svg>
           Settings
         </a>
+        <a href="#/sign-up" class="${active(current, 'sign-up')}" ${ariaCurrent(current, 'sign-up')}>Sign up</a>
       </nav>
     </header>`;
 }

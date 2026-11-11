@@ -1,14 +1,15 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../../app';
 import type { DatabaseStatus } from './DatabaseStatus';
+import { fakeAccountService } from '../accounts/testDoubles';
 
 /** A database status that answers whatever the test chooses, so tests need no real database. */
 function fakeDatabase(online: boolean): DatabaseStatus {
   return { isOnline: async () => online };
 }
 
-const onlineApp = buildApp({ logger: false, database: fakeDatabase(true) });
-const offlineApp = buildApp({ logger: false, database: fakeDatabase(false) });
+const onlineApp = buildApp({ logger: false, database: fakeDatabase(true), accounts: fakeAccountService() });
+const offlineApp = buildApp({ logger: false, database: fakeDatabase(false), accounts: fakeAccountService() });
 afterAll(async () => {
   await onlineApp.close();
   await offlineApp.close();
