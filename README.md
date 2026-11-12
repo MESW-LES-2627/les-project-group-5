@@ -94,8 +94,11 @@ The full explanation, with the real-time pipeline step by step, is in the [devel
 │               └── health/    # HealthController, DatabaseStatus, PostgresDatabaseStatus
 ├── scripts/
 │   ├── dev.mjs                # `npm run dev`: starts server and web together
-│   └── copy-mediapipe-wasm.mjs # Runs after `npm install`
+│   ├── copy-mediapipe-wasm.mjs # Runs after `npm install`
+│   └── migrate.sh             # Runs the migrations on the local Docker database (see "Run with Docker")
 ├── docs/                  # Vision, MVP, user stories, design models, iteration notes
+├── compose.yaml           # `docker compose up`: web, server and a local PostgreSQL (see "Run with Docker")
+├── Dockerfile             # The development image used by compose.yaml
 ├── eslint.config.js       # Lint + architecture rules
 ├── tsconfig.base.json     # Shared TypeScript settings
 └── vitest.config.ts       # Test settings
@@ -106,7 +109,7 @@ The full explanation, with the real-time pipeline step by step, is in the [devel
 - **Node.js 24** or newer. Check with `node -v`. If you use [nvm](https://github.com/nvm-sh/nvm), run `nvm use`: it reads the version from `.nvmrc`.
 - **Chrome or Edge** on a computer (Android Chrome and iPhone Safari are supported too, but test on desktop first).
 - A **webcam**.
-- Access to the team's **Supabase** project (for the database connection string).
+- Access to the team's **Supabase** project (for the database connection string), **or** [Docker Desktop](https://www.docker.com/products/docker-desktop/) to run everything with a local database (see [Run with Docker](#run-with-docker)).
 
 ## How to run
 
@@ -146,6 +149,41 @@ Open http://localhost:5173. You should see:
 3. Your camera image with a box in the middle. Point your **right index finger** at the box and **open your hand**: a note (C) plays, louder as you open the hand. Close the hand or leave the box and it stops.
 
 You can also run one part only: `npm run dev -w @instrument/web` or `npm run dev -w @instrument/server`.
+
+## Run with Docker
+
+Docker runs the web app, the server **and a local PostgreSQL** with one command, so everyone has the same environment. You don't need Node.js or the Supabase connection string, only [Docker Desktop](https://www.docker.com/products/docker-desktop/) (open it before running the commands).
+
+```bash
+git clone https://github.com/MESW-LES-2627/les-project-group-5.git
+cd les-project-group-5
+docker compose up --build -V   # first time, or after a dependency changes
+docker compose up           # the next times
+```
+
+Open **http://localhost:5173**, as with `npm run dev`. Press **Ctrl+C** to stop.
+
+| Service | What it is | From your computer |
+|---|---|---|
+| `instrument-web` | Vite dev server | http://localhost:5173 |
+| `instrument-server` | Fastify server | Only through the web app (`/api/...`) |
+| `instrument-db` | PostgreSQL 17 | `localhost:5433`, user `postgres`, password `postgres`, database `instrument` |
+| `instrument-migrate` | Runs the migrations, then stops | — |
+
+- **Your code is mounted into the containers**, so saving a file reloads the app, as without Docker. Rebuild (`--build -V`) only when `package.json` or `package-lock.json` changes. `-V` matters: without it, the containers keep the old dependencies from the previous run instead of the new ones in the image.
+- **The data is kept in a Docker volume** (`db-data`): it survives `docker compose down` and restarts.
+- **Migrations run on every `docker compose up`**, before the server starts: every file in `packages/server/migrations/` that hasn't run yet, in number order. So after you pull a new migration, `docker compose up` applies it. Which ones ran is kept in the `schema_migrations` table, so a migration never runs twice. If one fails, the server doesn't start: see the error with `docker compose logs instrument-migrate`.
+- **Run migrations yourself** (with or without the app running):
+
+  | Command | What it does |
+  |---|---|
+  | `docker compose run --rm instrument-migrate` | Runs all migrations that haven't run yet. |
+  | `docker compose run --rm instrument-migrate 003` | Runs only migration 003 (the number, or the full file name `003_create_something.sql`). |
+
+  A migration that already ran is refused. To start again with an empty database (this **deletes all local data**): `docker compose down -v`, then `docker compose up`.
+- These commands are only for the local database. The Supabase databases are still migrated by hand (see [ADR 001](docs/adr/001-database-choice.md)).
+- The server uses the local database, never Supabase: `compose.yaml` sets `DATABASE_URL` and `DATABASE_SSL=false`, which win over `packages/server/.env`.
+- Port already in use? Stop whatever uses it (often `npm run dev` in another terminal) or change the left number in `ports:` in `compose.yaml`.
 
 ## How to test
 

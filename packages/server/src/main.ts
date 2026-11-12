@@ -5,7 +5,10 @@ import { createDependencies } from './createDependencies';
 // Composition root of the server in development: reads the configuration, creates the objects and starts listening.
 // In development, Vite forwards every /api request from the browser to this port (see packages/web/vite.config.ts).
 const PORT = 3000;
+// Only this computer can reach the server, unless HOST says otherwise (Docker sets 0.0.0.0, see compose.yaml).
+const HOST = process.env.HOST ?? '127.0.0.1';
 // The Vite dev server, where the web app runs locally: email links point there unless APP_BASE_URL says otherwise.
+// Also right with Docker: the links open in your browser, and compose.yaml publishes the web app on the same port.
 const LOCAL_APP_URL = 'http://localhost:5173';
 
 const config = readConfig(LOCAL_APP_URL);
@@ -14,4 +17,4 @@ const { dependencies, closeDatabase } = createDependencies(config);
 const app = buildApp({ logger: true, ...dependencies });
 // Close the database connections when the server stops, so Ctrl+C ends cleanly.
 app.addHook('onClose', closeDatabase);
-await app.listen({ port: PORT, host: '127.0.0.1' });
+await app.listen({ port: PORT, host: HOST });

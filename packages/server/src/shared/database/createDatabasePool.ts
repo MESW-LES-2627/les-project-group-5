@@ -17,7 +17,8 @@ export function createDatabasePool(config: Config): pg.Pool {
     query_timeout: TIMEOUT_MS,
     // Supabase requires an encrypted connection. Its certificate is signed by Supabase's own authority,
     // which Node does not know, so we encrypt without checking who signed it.
-    ssl: { rejectUnauthorized: false },
+    // The local Docker database has no SSL, so compose.yaml turns it off (DATABASE_SSL=false).
+    ssl: config.databaseSsl ? { rejectUnauthorized: false } : false,
   });
   // A connection that breaks while unused emits 'error'. Without a listener, Node would stop the whole server.
   pool.on('error', (error) => console.error('Database connection error:', error.message));
