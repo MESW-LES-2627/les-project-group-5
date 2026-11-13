@@ -4,7 +4,7 @@ import {
   HandFeatureExtractor,
   Instrument,
   TwoColumnLayout,
-  ZigzagLayout,
+  PadGridLayout,
   Scale,
   type Layout,
 } from "@instrument/domain";
@@ -53,7 +53,7 @@ let currentScale = new Scale(settings.pitch, settings.scale);
 const mobileLayoutQuery = window.matchMedia("(max-width: 720px)");
 let layout: Layout = mobileLayoutQuery.matches
   ? new TwoColumnLayout()
-  : new ZigzagLayout();
+  : new PadGridLayout();
 
 const page = new InstrumentPage(instrumentRoot);
 const settingsPage = new SettingsPage(settingsRoot);
@@ -105,7 +105,7 @@ addEventListener("hashchange", () => {
 
 page.showCells(layout, currentScale);
 mobileLayoutQuery.addEventListener("change", (event) => {
-  layout = event.matches ? new TwoColumnLayout() : new ZigzagLayout();
+  layout = event.matches ? new TwoColumnLayout() : new PadGridLayout();
   instrument.setLayout(layout);
   page.showCells(layout, currentScale);
 });

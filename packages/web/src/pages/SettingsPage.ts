@@ -44,17 +44,17 @@ export class SettingsPage {
               </div>
               <fieldset class="segmented hand-selector">
                 <legend class="visually-hidden">Hand</legend>
-                <label><input type="radio" name="hand" value="Right" checked><span>Right hand</span></label>
                 <label><input type="radio" name="hand" value="Left"><span>Left hand</span></label>
+                <label><input type="radio" name="hand" value="Right" checked><span>Right hand</span></label>
               </fieldset>
             </section>
             <section>
               <div class="section-title">
-                <h2>Key and scale</h2>
+                <h2>Pitch and scale</h2>
                 <p>Choose the root note and the type of scale.</p>
               </div>
               <div class="scale-controls">
-                <label>Key <select class="root-select">${pitchOptions}</select></label>
+                <label>Pitch <select class="root-select">${pitchOptions}</select></label>
                 <label>Scale <select class="scale-type-select">${scaleOptions}</select></label>
               </div>
             </section>
