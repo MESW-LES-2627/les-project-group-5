@@ -4,6 +4,8 @@ export interface Config {
   databaseUrl: string;
   /** Where the web app is, for the links in emails, without a trailing "/" (for example https://les-project-group-5.vercel.app). */
   appBaseUrl: string;
+  /** Whether to encrypt the database connection. Supabase requires it; the local Docker database has no SSL. */
+  databaseSsl: boolean;
 }
 
 /**
@@ -20,6 +22,8 @@ export function readConfig(defaultAppBaseUrl?: string): Config {
   return {
     databaseUrl: requireEnv("DATABASE_URL"),
     appBaseUrl: appBaseUrl.replace(/\/+$/, ''),
+    // On unless turned off on purpose, so a missing variable can never send the password unencrypted to Supabase.
+    databaseSsl: process.env.DATABASE_SSL !== "false",
   };
 }
 

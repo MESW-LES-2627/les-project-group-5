@@ -1,0 +1,16 @@
+# Files the Docker image never needs (the source code is mounted at run time, see Dockerfile).
+.git
+node_modules
+packages/*/node_modules
+packages/web/public/mediapipe
+dist
+api
+coverage
+docs
+# Secrets must never end up inside an image.
+.env
+.env.local
+**/.env
+.secrets
+.vercel
+staging-push.json
