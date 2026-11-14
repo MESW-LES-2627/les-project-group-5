@@ -3,6 +3,8 @@ import type { Degree } from "../music/Degree";
 import type { Scale } from "../music/Scale";
 import type { Region } from "./Region";
 
+export type LayoutKind = 'pad-grid' | 'single-box';
+
 /**
  * How the 8 degrees of a scale are placed on the play area.
  * Each layout (pad grid, piano, …) is one class that implements this interface,

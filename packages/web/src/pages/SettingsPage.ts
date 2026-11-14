@@ -1,4 +1,4 @@
-import { PITCH_CLASSES, ScaleType, type Handedness, type PitchClass } from '@instrument/domain';
+import { PITCH_CLASSES, ScaleType, type Handedness, type PitchClass, type LayoutKind } from '@instrument/domain';
 import { appHeader } from './appHeader';
 
 const SCALE_OPTIONS: readonly { type: ScaleType; label: string }[] = [
@@ -6,20 +6,28 @@ const SCALE_OPTIONS: readonly { type: ScaleType; label: string }[] = [
   { type: ScaleType.NATURAL_MINOR, label: 'Natural minor' },
 ];
 
+export const LAYOUT_OPTIONS: readonly { kind: LayoutKind; label: string }[] = [
+  { kind: 'pad-grid', label: 'Pad grid' },
+  { kind: 'single-box', label: 'Single box' },
+];
+
+
 /** The settings screen. It only draws the choices and reports changes; it doesn't store anything. */
 export class SettingsPage {
   private readonly handSelector: HTMLElement;
   private readonly pitchSelector: HTMLSelectElement;
   private readonly scaleSelector: HTMLSelectElement;
+  private readonly layoutSelector: HTMLSelectElement;
   private readonly cameraPreviewInput: HTMLInputElement;
   private readonly serverStatus: HTMLElement;
   
 
   constructor(root: HTMLElement) {
-        // The option values for the scale are indexes into SCALE_OPTIONS, so this works
+    // The option values for the scale are indexes into SCALE_OPTIONS, so this works
     // whatever the underlying values of ScaleType are.
     const pitchOptions = PITCH_CLASSES.map((p) => `<option value="${p}">${p}</option>`).join('');
     const scaleOptions = SCALE_OPTIONS.map((o, i) => `<option value="${i}">${o.label}</option>`).join('');
+    const layoutOptions = LAYOUT_OPTIONS.map((o) => `<option value="${o.kind}">${o.label}</option>`).join('');
     // The hand choice uses real radio buttons styled as the template's two-button switch,
     // so the keyboard and screen readers keep working without extra code.
     root.innerHTML = `
@@ -60,6 +68,15 @@ export class SettingsPage {
             </section>
             <section>
               <div class="section-title">
+                <h2>Layout</h2>
+                <p>Choose how the notes are arranged on the instrument page.</p>
+              </div>
+              <div class="scale-controls">
+                <label>Layout <select class="layout-select">${layoutOptions}</select></label>
+              </div>
+            </section>
+            <section>
+              <div class="section-title">
                 <h2>Camera preview</h2>
                 <p>Choose whether the camera image shows behind the cells.</p>
               </div>
@@ -76,6 +93,7 @@ export class SettingsPage {
     this.pitchSelector = find(root, '.root-select');
     this.scaleSelector = find(root, '.scale-type-select');
     this.cameraPreviewInput = find(root, '.toggle input[type="checkbox"]');
+    this.layoutSelector = find(root, '.layout-select');
     this.serverStatus = find(root, '.server-status');
   }
 
@@ -116,6 +134,14 @@ export class SettingsPage {
     });
   }
 
+  /** Reports a layout choice made by the user. */
+  onLayoutChange(handler: (layout: LayoutKind) => void): void {
+    this.layoutSelector.addEventListener('change', () => {
+      const option = LAYOUT_OPTIONS.find((o) => o.kind === this.layoutSelector.value);
+      if (option) handler(option.kind);
+    });
+  }
+
   /** Shows which hand is selected. */
   setHand(hand: Handedness): void {
     const input = this.handSelector.querySelector<HTMLInputElement>(`input[value="${hand}"]`);
@@ -136,6 +162,11 @@ export class SettingsPage {
   setScale(scale: ScaleType): void {
     const index = SCALE_OPTIONS.findIndex((o) => o.type === scale);
     if (index >= 0) this.scaleSelector.value = index.toString();
+  }
+
+  /** Shows which layout is selected. */
+  setLayout(layout: LayoutKind): void {
+    this.layoutSelector.value = layout;
   }
 }
 

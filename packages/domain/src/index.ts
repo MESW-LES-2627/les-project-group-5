@@ -10,6 +10,7 @@ export { ScaleType } from "./music/ScaleType";
 
 export type { Point } from "./geometry/Point";
 export type { Layout } from "./layouts/Layout";
+export type { LayoutKind } from "./layouts/Layout";
 export { SingleBoxLayout } from './layouts/SingleBoxLayout';
 export { PadGridLayout } from './layouts/PadGridLayout';
 export { TwoColumnLayout } from './layouts/TwoColumnLayout';
