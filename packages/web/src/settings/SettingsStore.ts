@@ -1,9 +1,10 @@
-import { ScaleType, type Handedness, type PitchClass } from '@instrument/domain';
+import { ScaleType, type Handedness, type PitchClass, type LayoutKind } from '@instrument/domain';
 
 const DEFAULT_HAND: Handedness = 'Right';
 const default_camera_preview = true;
 const DEFAULT_PITCH: PitchClass = 'C';
 const DEFAULT_SCALE: ScaleType = ScaleType.MAJOR;
+const DEFAULT_LAYOUT: LayoutKind = 'pad-grid';
 
 type HandListener = (hand: Handedness) => void;
 type CameraPreviewListener = (visible: boolean) => void;
@@ -13,11 +14,13 @@ export class SettingsStore {
   private current: Handedness = DEFAULT_HAND;
   private currentCameraPreview = default_camera_preview;
   private currentPitch: PitchClass = DEFAULT_PITCH;
-  private currentScale: ScaleType = DEFAULT_SCALE
+  private currentScale: ScaleType = DEFAULT_SCALE;
+  private currentLayout: LayoutKind = DEFAULT_LAYOUT;
   private readonly listeners = new Set<HandListener>();
   private readonly cameraPreviewListeners = new Set<CameraPreviewListener>();
   private readonly pitchListeners = new Set<(pitch: PitchClass) => void>();
   private readonly scaleListeners = new Set<(scale: ScaleType) => void>();
+  private readonly layoutListeners = new Set<(layout: LayoutKind) => void>();
 
   /** The hand that plays the instrument. */
   get hand(): Handedness {
@@ -28,7 +31,7 @@ export class SettingsStore {
     return this.currentCameraPreview;
   }
 
-    /** The root note of the scale. */
+  /** The root note of the scale. */
   get pitch(): PitchClass {
     return this.currentPitch;
   }
@@ -36,6 +39,11 @@ export class SettingsStore {
   /** Major or natural minor. */
   get scale(): ScaleType {
     return this.currentScale;
+  }
+
+  /** The layout of the instrument page. */
+  get layout(): LayoutKind {
+    return this.currentLayout;
   }
 
   /** Changes the hand and tells every listener. Does nothing if the hand is the same. */
@@ -63,6 +71,12 @@ export class SettingsStore {
     for (const listener of [...this.scaleListeners]) listener(scale);
   }
 
+  setLayout(layout: LayoutKind): void {
+    if (layout === this.currentLayout) return;
+    this.currentLayout = layout;
+    for (const listener of [...this.layoutListeners]) listener(layout);
+  }
+
   /** Returns a function that removes the listener. */
   subscribe(listener: HandListener): () => void {
     this.listeners.add(listener);
@@ -85,6 +99,12 @@ export class SettingsStore {
   subscribeScale(listener: (scale: ScaleType) => void): () => void {
     this.scaleListeners.add(listener);
     return () => this.scaleListeners.delete(listener);
+  }
+
+  /** Returns a function that removes the listener. */
+  subscribeLayout(listener: (layout: LayoutKind) => void): () => void {
+    this.layoutListeners.add(listener);
+    return () => this.layoutListeners.delete(listener);
   }
 
 }

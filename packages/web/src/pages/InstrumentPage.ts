@@ -2,7 +2,6 @@ import type { Degree, Handedness, InstrumentFrame, Layout, Scale } from '@instru
 import type { HealthStatus } from '../api/ApiClient';
 import { appHeader } from './appHeader';
 import { solfegeOf } from './solfege';
-import { SettingsStore } from '../settings/SettingsStore';
 
 /**
  * The instrument screen: camera image, the cells, the pointer, a Start button, a status line, a volume bar
@@ -22,11 +21,9 @@ export class InstrumentPage {
   private readonly debug: HTMLElement | null;
   private readonly scaleName: HTMLElement;
   private readonly handName: HTMLElement;
-  // private handLabel = this.settings.hand;;
   private cells = new Map<Degree, HTMLElement>();
   private selected: HTMLElement | null = null;
-  private settings = new SettingsStore();
-  private handLabel = this.settings.hand.toString();
+  private handLabel = 'right';
   private started = false;
 
   constructor(root: HTMLElement) {
@@ -83,7 +80,7 @@ export class InstrumentPage {
   }
 
   onStart(handler: () => void): void {
-     this.startButton.addEventListener('click', () => {
+    this.startButton.addEventListener('click', () => {
       this.started = true;
       handler();
     });
@@ -115,7 +112,6 @@ export class InstrumentPage {
     this.handName.textContent = `${this.handLabel} hand`;
   }
 
-
   /** Shows whether the server and its database can be reached. */
   setHealthStatus(health: HealthStatus): void {
     showLight(this.serverStatus, 'Server', health.server);
@@ -125,7 +121,6 @@ export class InstrumentPage {
   setStatus(message: string): void {
     this.status.textContent = message;
   }
-
 
   /** Shows which hand is selected, for the initial value or to correct the UI after a rejected change. */
   setHand(hand: Handedness): void {
