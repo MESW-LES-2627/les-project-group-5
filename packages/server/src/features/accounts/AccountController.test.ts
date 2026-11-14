@@ -54,3 +54,40 @@ describe('POST /api/accounts', () => {
     expect(accounts.accounts.some((account) => account.email === 'ana@mail.com')).toBe(false);
   });
 });
+
+describe('POST /api/email-confirmations', () => {
+  /** Signs up and returns the token from the last confirmation email. */
+  async function newToken(email: string): Promise<string> {
+    await signUp({ email, password: 'a long enough password' });
+    const text = emailSender.sent.at(-1)?.text ?? '';
+    return /token=([\w-]+)/.exec(text)?.[1] ?? '';
+  }
+
+  function confirm(body: unknown) {
+    return app.inject({ method: 'POST', url: '/api/email-confirmations', payload: body as object });
+  }
+
+  it('answers 200 "confirmed" for a valid token', async () => {
+    const response = await confirm({ token: await newToken('confirm@mail.com') });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ status: 'confirmed' });
+  });
+
+  it('answers 400 "invalid" when the same token is used again', async () => {
+    const token = await newToken('twice@mail.com');
+    await confirm({ token });
+    const again = await confirm({ token });
+    expect(again.statusCode).toBe(400);
+    expect(again.json()).toEqual({ status: 'invalid' });
+  });
+
+  it('answers 400 "invalid" for a malformed token', async () => {
+    const response = await confirm({ token: 'nope' });
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({ status: 'invalid' });
+  });
+
+  it('answers 400 when the token is missing', async () => {
+    expect((await confirm({})).statusCode).toBe(400);
+  });
+});

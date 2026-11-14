@@ -1,5 +1,5 @@
 import type pg from 'pg';
-import type { AccountRepository, NewAccount } from './AccountRepository';
+import type { AccountRepository, NewAccount, StoredConfirmationToken } from './AccountRepository';
 
 /** Stores accounts in Postgres (tables from migrations/001_create_account_tables.sql). */
 export class PostgresAccountRepository implements AccountRepository {
@@ -33,6 +33,45 @@ export class PostgresAccountRepository implements AccountRepository {
       return true;
     } catch (error) {
       // Undo the half-done work, so we never keep an account without its confirmation token.
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
+  async findConfirmationToken(tokenHash: string): Promise<StoredConfirmationToken | null> {
+    const result = await this.pool.query<{ user_id: string; expires_at: Date }>(
+      'SELECT user_id, expires_at FROM email_confirmation_tokens WHERE token_hash = $1',
+      [tokenHash],
+    );
+    const row = result.rows[0];
+    return row ? { userId: row.user_id, expiresAt: row.expires_at } : null;
+  }
+
+  async confirmEmail(tokenHash: string, confirmedAt: Date): Promise<boolean> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      // Deleting the token is what makes the link work only once. If two clicks arrive together,
+      // only one of them gets the row back, and only that one confirms.
+      const deleted = await client.query<{ user_id: string }>(
+        'DELETE FROM email_confirmation_tokens WHERE token_hash = $1 RETURNING user_id',
+        [tokenHash],
+      );
+      const userId = deleted.rows[0]?.user_id;
+      if (!userId) {
+        await client.query('ROLLBACK');
+        return false;
+      }
+      // COALESCE keeps the first confirmation date if the account was somehow already confirmed.
+      await client.query('UPDATE users SET email_confirmed_at = COALESCE(email_confirmed_at, $2) WHERE id = $1', [
+        userId,
+        confirmedAt,
+      ]);
+      await client.query('COMMIT');
+      return true;
+    } catch (error) {
       await client.query('ROLLBACK');
       throw error;
     } finally {

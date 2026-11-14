@@ -112,3 +112,67 @@ describe('AccountService.signUp', () => {
     });
   });
 });
+
+describe('AccountService.confirmEmail', () => {
+  /** Signs up at NOW and returns the token from the confirmation email. */
+  async function signedUp(clock: { now: Date }) {
+    const accounts = new InMemoryAccountRepository();
+    const emailSender = new RecordingEmailSender();
+    const service = new AccountService(
+      accounts,
+      new FakePasswordHasher(),
+      emailSender,
+      new AccountEmails('https://app.example'),
+      () => clock.now,
+    );
+    await service.signUp('ana@mail.com', PASSWORD);
+    return { accounts, service, token: tokenIn(emailSender.sent[0].text) };
+  }
+
+  it('confirms the account with a valid link', async () => {
+    const clock = { now: NOW };
+    const { accounts, service, token } = await signedUp(clock);
+    clock.now = new Date('2026-11-11T12:00:00Z');
+    expect(await service.confirmEmail(token)).toBe('confirmed');
+    expect(accounts.accounts[0].emailConfirmedAt).toEqual(clock.now);
+  });
+
+  it('works only once', async () => {
+    const { service, token } = await signedUp({ now: NOW });
+    await service.confirmEmail(token);
+    expect(await service.confirmEmail(token)).toBe('invalid');
+  });
+
+  it('still works one second before 24 hours', async () => {
+    const clock = { now: NOW };
+    const { service, token } = await signedUp(clock);
+    clock.now = new Date('2026-11-12T09:59:59Z');
+    expect(await service.confirmEmail(token)).toBe('confirmed');
+  });
+
+  it('says "expired" after 24 hours, and does not confirm', async () => {
+    const clock = { now: NOW };
+    const { accounts, service, token } = await signedUp(clock);
+    clock.now = new Date('2026-11-12T10:00:00Z');
+    expect(await service.confirmEmail(token)).toBe('expired');
+    expect(accounts.accounts[0].emailConfirmedAt).toBeNull();
+  });
+
+  it('keeps saying "expired" for an expired link (it is not deleted)', async () => {
+    const clock = { now: NOW };
+    const { service, token } = await signedUp(clock);
+    clock.now = new Date('2026-11-13T10:00:00Z');
+    await service.confirmEmail(token);
+    expect(await service.confirmEmail(token)).toBe('expired');
+  });
+
+  it('says "invalid" for an unknown token', async () => {
+    const { service } = await signedUp({ now: NOW });
+    expect(await service.confirmEmail('A'.repeat(43))).toBe('invalid');
+  });
+
+  it.each(['', 'short', 'a'.repeat(44), `${'a'.repeat(42)}!`])('says "invalid" for the malformed token "%s"', async (token) => {
+    const { service } = await signedUp({ now: NOW });
+    expect(await service.confirmEmail(token)).toBe('invalid');
+  });
+});
