@@ -3,7 +3,7 @@ import type { EmailSender } from '../../shared/email/EmailSender';
 import type { AccountEmails } from './AccountEmails';
 import type { AccountRepository } from './AccountRepository';
 import type { PasswordHasher } from './PasswordHasher';
-import { createSecretToken } from './SecretToken';
+import { createSecretToken, hashToken, isWellFormedToken } from './SecretToken';
 
 /** How long a confirmation link works (US-E1-02). */
 const CONFIRMATION_LINK_HOURS = 24;
@@ -19,6 +19,12 @@ export interface SignUpErrors {
  * on purpose, it is the same when the email already had an account.
  */
 export type SignUpResult = { outcome: 'accepted' } | { outcome: 'rejected'; errors: SignUpErrors };
+
+/**
+ * The result of opening a confirmation link (US-E1-02). "invalid" covers a link that was already used,
+ * was replaced by a newer one, or is malformed: the page shows one message for all of them.
+ */
+export type ConfirmEmailResult = 'confirmed' | 'expired' | 'invalid';
 
 /** The account rules. Knows nothing about HTTP or the database: it gets those through interfaces. */
 export class AccountService {
@@ -55,5 +61,19 @@ export class AccountService {
       created ? this.emails.confirmation(email, confirmation.token) : this.emails.signUpAttempt(email),
     );
     return { outcome: 'accepted' };
+  }
+
+  /** US-E1-02: uses the token of a confirmation link to activate the account. */
+  async confirmEmail(token: string): Promise<ConfirmEmailResult> {
+    // A malformed token can't be in the database: answer without asking it.
+    if (!isWellFormedToken(token)) return 'invalid';
+    const tokenHash = hashToken(token);
+    const stored = await this.accounts.findConfirmationToken(tokenHash);
+    if (!stored) return 'invalid';
+    // An expired token stays in the database, so the page can say "expired" instead of "invalid".
+    // It is replaced when a new link is sent (US-E1-03).
+    const now = this.now();
+    if (stored.expiresAt.getTime() <= now.getTime()) return 'expired';
+    return (await this.accounts.confirmEmail(tokenHash, now)) ? 'confirmed' : 'invalid';
   }
 }

@@ -78,3 +78,34 @@ describe('ApiClient.signUp', () => {
     expect(await new ApiClient(failing).signUp('ana@mail.com', 'a long enough password')).toEqual({ kind: 'failed' });
   });
 });
+
+describe('ApiClient.confirmEmail', () => {
+  it('sends the token as JSON to POST /api/email-confirmations', async () => {
+    let request: { url: string; init?: RequestInit } | undefined;
+    const recording: typeof fetch = async (input, init) => {
+      request = { url: String(input), init };
+      return new Response(JSON.stringify({ status: 'confirmed' }), { status: 200 });
+    };
+    await new ApiClient(recording).confirmEmail('the-token');
+    expect(request?.url).toBe('/api/email-confirmations');
+    expect(request?.init?.method).toBe('POST');
+    expect(JSON.parse(String(request?.init?.body))).toEqual({ token: 'the-token' });
+  });
+
+  it.each([
+    [200, 'confirmed'],
+    [410, 'expired'],
+    [400, 'invalid'],
+    [500, 'failed'],
+  ] as const)('maps status %i to "%s"', async (status, answer) => {
+    const api = new ApiClient(answering(status, {}));
+    expect(await api.confirmEmail('the-token')).toBe(answer);
+  });
+
+  it('reports "failed" when the server can not be reached', async () => {
+    const failing: typeof fetch = async () => {
+      throw new TypeError('Failed to fetch');
+    };
+    expect(await new ApiClient(failing).confirmEmail('the-token')).toBe('failed');
+  });
+});

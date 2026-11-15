@@ -20,6 +20,7 @@ import { MediaPipeHandTracker } from "./tracking/MediaPipeHandTracker";
 import { SettingsStore } from "./settings/SettingsStore";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SignUpPage } from "./pages/SignUpPage";
+import { ConfirmEmailPage } from "./pages/ConfirmEmailPage";
 
 // Composition root: the only place that creates the concrete classes and connects them.
 // Everything else receives what it needs through its constructor.
@@ -32,19 +33,26 @@ if (!root) throw new Error("Missing #app element");
 const instrumentRoot = document.createElement("div");
 const settingsRoot = document.createElement("div");
 const signUpRoot = document.createElement("div");
-root.append(instrumentRoot, settingsRoot, signUpRoot);
+const confirmEmailRoot = document.createElement("div");
+const screens = [instrumentRoot, settingsRoot, signUpRoot, confirmEmailRoot];
+root.append(...screens);
 
 // Each address after "#" shows one screen. Any other address shows the instrument.
+// Some addresses carry values after "?" (like the token in #/confirm-email?token=...), so only the part before it counts.
 const ROUTES: Record<string, HTMLElement> = {
   "#/settings": settingsRoot,
   "#/sign-up": signUpRoot,
+  "#/confirm-email": confirmEmailRoot,
 };
-const currentScreen = (): HTMLElement => ROUTES[location.hash] ?? instrumentRoot;
+const routePath = (): string => location.hash.split("?")[0];
+const routeParameter = (name: string): string =>
+  new URLSearchParams(location.hash.split("?")[1] ?? "").get(name) ?? "";
+const currentScreen = (): HTMLElement => ROUTES[routePath()] ?? instrumentRoot;
 const onInstrument = (): boolean => currentScreen() === instrumentRoot;
 
 const showRoute = () => {
   const visible = currentScreen();
-  for (const screen of [instrumentRoot, settingsRoot, signUpRoot]) screen.hidden = screen !== visible;
+  for (const screen of screens) screen.hidden = screen !== visible;
 };
 addEventListener("hashchange", showRoute);
 showRoute();
@@ -64,6 +72,7 @@ let layout: Layout = LAYOUTS[settings.layout]();
 const page = new InstrumentPage(instrumentRoot);
 const settingsPage = new SettingsPage(settingsRoot);
 const signUpPage = new SignUpPage(signUpRoot);
+const confirmEmailPage = new ConfirmEmailPage(confirmEmailRoot);
 const tracker = new MediaPipeHandTracker();
 const synth = new WebAudioSynth();
 const camera = new Camera();
@@ -174,6 +183,12 @@ void checkServer();
 setInterval(checkServer, SERVER_CHECK_INTERVAL_MS);
 
 signUpPage.onSubmit((email, password) => api.signUp(email, password));
+
+// The token is read when the button is clicked, from the link that opened the page.
+confirmEmailPage.onConfirm(() => api.confirmEmail(routeParameter("token")));
+addEventListener("hashchange", () => {
+  if (currentScreen() === confirmEmailRoot) confirmEmailPage.reset();
+});
 
 const CAMERA_MESSAGES: Record<CameraProblem, string> = {
   denied:

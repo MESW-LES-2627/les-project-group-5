@@ -25,3 +25,8 @@ export function createSecretToken(): SecretToken {
 export function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
+
+/** True if the text looks like a token we create (43 base64url characters), so we don't search for anything else. */
+export function isWellFormedToken(text: string): boolean {
+  return /^[A-Za-z0-9_-]{43}$/.test(text);
+}

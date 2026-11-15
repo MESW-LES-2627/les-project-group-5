@@ -793,6 +793,16 @@ svg {
   cursor: default;
 }
 
+/* "display: block" on the buttons would otherwise win over the hidden attribute. */
+.account-panel [hidden] {
+  display: none;
+}
+
+.confirm-intro {
+  margin: 0;
+  color: var(--muted);
+}
+
 .sent-message {
   margin: 0;
   font-size: 15px;

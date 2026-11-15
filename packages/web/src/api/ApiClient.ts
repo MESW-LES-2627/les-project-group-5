@@ -21,6 +21,14 @@ export interface SignUpErrors {
 export type SignUpAnswer = { kind: 'sent' } | { kind: 'rejected'; errors: SignUpErrors } | { kind: 'failed' };
 
 /**
+ * The answer to a confirmation link (US-E1-02). "invalid" covers a link already used, replaced or malformed.
+ * "failed" means the server could not be reached or had a problem.
+ */
+export type ConfirmEmailAnswer = 'confirmed' | 'expired' | 'invalid' | 'failed';
+
+const CONFIRM_EMAIL_ANSWERS: Record<number, ConfirmEmailAnswer> = { 200: 'confirmed', 410: 'expired', 400: 'invalid' };
+
+/**
  * The only way the browser talks to the server (enforced by ESLint: `fetch` is not allowed anywhere else).
  * Every server call gets one method here, so pages never deal with URLs or HTTP details.
  */
@@ -63,6 +71,20 @@ export class ApiClient {
       return { kind: 'failed' };
     } catch {
       return { kind: 'failed' };
+    }
+  }
+
+  /** Confirms an email with the token from the link (US-E1-02). Never throws: problems come back as "failed". */
+  async confirmEmail(token: string): Promise<ConfirmEmailAnswer> {
+    try {
+      const response = await this.fetchFn('/api/email-confirmations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      return CONFIRM_EMAIL_ANSWERS[response.status] ?? 'failed';
+    } catch {
+      return 'failed';
     }
   }
 }
