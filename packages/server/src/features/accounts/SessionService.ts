@@ -40,8 +40,13 @@ export class SessionService {
     // Only after the right password: otherwise this answer would tell a stranger that the account exists.
     if (!account.emailConfirmed) return { outcome: 'not-confirmed' };
 
+    // Expired sessions no longer give access, but their rows would stay forever if nobody logs out
+    // (closed browser, cleared cookies, never coming back). Each successful login clears them, for every user.
+    const now = this.now();
+    await this.sessions.deleteExpiredSessions(now);
+
     const session = createSecretToken();
-    const expiresAt = new Date(this.now().getTime() + SESSION_DAYS * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(now.getTime() + SESSION_DAYS * 24 * 60 * 60 * 1000);
     await this.sessions.createSession(account.userId, session.hash, expiresAt);
     return { outcome: 'logged-in', token: session.token, expiresAt, email: normalizeEmail(emailText) };
   }

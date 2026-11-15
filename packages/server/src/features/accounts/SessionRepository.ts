@@ -26,4 +26,7 @@ export interface SessionRepository {
 
   /** Deletes this session only; the user's sessions on other devices stay (US-E1-05). */
   deleteSession(tokenHash: string): Promise<void>;
+
+  /** Deletes every session (of any user) that expired before `now`. */
+  deleteExpiredSessions(now: Date): Promise<void>;
 }

@@ -72,6 +72,21 @@ describe('SessionService.logIn', () => {
     const { service } = await setUp();
     expect(await service.logIn('new@mail.com', 'wrong password!!')).toEqual({ outcome: 'invalid' });
   });
+
+  it('deletes the expired sessions of every user when someone logs in', async () => {
+    const clock = { now: NOW };
+    const { sessions, service } = await setUp(clock);
+    sessions.sessions.set('expired', { userId: 'someone-else', expiresAt: new Date('2026-11-11T09:59:59Z') });
+    sessions.sessions.set('still-valid', { userId: 'someone-else', expiresAt: new Date('2026-11-12T10:00:00Z') });
+
+    // A failed login changes nothing.
+    await service.logIn('ana@mail.com', 'wrong password!!');
+    expect(sessions.sessions.has('expired')).toBe(true);
+
+    await service.logIn('ana@mail.com', PASSWORD);
+    expect(sessions.sessions.has('expired')).toBe(false);
+    expect(sessions.sessions.has('still-valid')).toBe(true);
+  });
 });
 
 describe('SessionService.currentUser and logOut', () => {

@@ -36,4 +36,8 @@ export class PostgresSessionRepository implements SessionRepository {
   async deleteSession(tokenHash: string): Promise<void> {
     await this.pool.query('DELETE FROM sessions WHERE token_hash = $1', [tokenHash]);
   }
+
+  async deleteExpiredSessions(now: Date): Promise<void> {
+    await this.pool.query('DELETE FROM sessions WHERE expires_at <= $1', [now]);
+  }
 }

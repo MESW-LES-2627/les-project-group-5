@@ -90,6 +90,12 @@ export class InMemorySessionRepository implements SessionRepository {
   async deleteSession(tokenHash: string): Promise<void> {
     this.sessions.delete(tokenHash);
   }
+
+  async deleteExpiredSessions(now: Date): Promise<void> {
+    for (const [tokenHash, session] of this.sessions) {
+      if (session.expiresAt.getTime() <= now.getTime()) this.sessions.delete(tokenHash);
+    }
+  }
 }
 
 /** The account part of buildApp's dependencies, built only from fakes, for tests of other routes. */
