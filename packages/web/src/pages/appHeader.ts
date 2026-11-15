@@ -1,6 +1,6 @@
 /** Which page is open, so the header can mark its link as active. */
 /** null for pages that have no link in the header, like the email confirmation page. */
-export type CurrentPage = 'instrument' | 'settings' | 'sign-up' | null;
+export type CurrentPage = 'instrument' | 'settings' | 'sign-up' | 'login' | null;
 
 /**
  * The top bar shared by every page (brand on the left, navigation on the right), as in the layout template.
@@ -21,7 +21,14 @@ export function appHeader(current: CurrentPage): string {
           <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M4 6h16M4 18h16M8 3v6M16 15v6" /><circle cx="8" cy="6" r="2" /><circle cx="16" cy="18" r="2" /></svg>
           Settings
         </a>
-        <a href="#/sign-up" class="${active(current, 'sign-up')}" ${ariaCurrent(current, 'sign-up')}>Sign up</a>
+        <!-- Only one of the two groups is shown: main.ts switches them when the player logs in or out. -->
+        <span class="guest-links">
+          <a href="#/login" class="${active(current, 'login')}" ${ariaCurrent(current, 'login')}>Log in</a>
+          <a href="#/sign-up" class="${active(current, 'sign-up')}" ${ariaCurrent(current, 'sign-up')}>Sign up</a>
+        </span>
+        <span class="user-links" hidden>
+          <button type="button" class="log-out">Log out</button>
+        </span>
       </nav>
     </header>`;
 }

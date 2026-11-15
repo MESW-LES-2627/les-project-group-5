@@ -26,6 +26,12 @@ export type SignUpAnswer = { kind: 'sent' } | { kind: 'rejected'; errors: SignUp
  */
 export type ConfirmEmailAnswer = 'confirmed' | 'expired' | 'invalid' | 'failed';
 
+/**
+ * The answer to a login (US-E1-04). "invalid" is the same for a wrong password and an unknown email.
+ * "failed" means the server could not be reached or had a problem.
+ */
+export type LogInAnswer = { kind: 'logged-in'; email: string } | { kind: 'invalid' } | { kind: 'not-confirmed' } | { kind: 'failed' };
+
 const CONFIRM_EMAIL_ANSWERS: Record<number, ConfirmEmailAnswer> = { 200: 'confirmed', 410: 'expired', 400: 'invalid' };
 
 /**
@@ -87,4 +93,51 @@ export class ApiClient {
       return 'failed';
     }
   }
+
+  /** Logs in (US-E1-04). The server sets the session cookie; the page never sees it. Never throws. */
+  async logIn(email: string, password: string): Promise<LogInAnswer> {
+    try {
+      const response = await this.fetchFn('/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      if (response.status === 401) return { kind: 'invalid' };
+      if (response.status === 403) return { kind: 'not-confirmed' };
+      if (response.ok) {
+        const email = await emailIn(response);
+        if (email) return { kind: 'logged-in', email };
+      }
+      return { kind: 'failed' };
+    } catch {
+      return { kind: 'failed' };
+    }
+  }
+
+  /** The email of the logged-in user, or null for a guest. If the server can't be reached, we treat the player as a guest. */
+  async currentUser(): Promise<string | null> {
+    try {
+      const response = await this.fetchFn('/api/session');
+      return response.ok ? await emailIn(response) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Logs out on this device (US-E1-05). Returns false if the server could not be reached. */
+  async logOut(): Promise<boolean> {
+    try {
+      const response = await this.fetchFn('/api/session', { method: 'DELETE' });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+}
+
+/** The "email" field of a JSON answer, or null if it is missing. */
+async function emailIn(response: Response): Promise<string | null> {
+  const body: unknown = await response.json();
+  const email = (body as { email?: unknown } | null)?.email;
+  return typeof email === 'string' ? email : null;
 }

@@ -2,7 +2,8 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../../app';
 import { AccountEmails } from './AccountEmails';
 import { AccountService } from './AccountService';
-import { FakePasswordHasher, InMemoryAccountRepository, RecordingEmailSender } from './testDoubles';
+import { SessionService } from './SessionService';
+import { FakePasswordHasher, InMemoryAccountRepository, InMemorySessionRepository, RecordingEmailSender } from './testDoubles';
 
 const accounts = new InMemoryAccountRepository();
 const emailSender = new RecordingEmailSender();
@@ -10,6 +11,8 @@ const app = buildApp({
   logger: false,
   database: { isOnline: async () => true },
   accounts: new AccountService(accounts, new FakePasswordHasher(), emailSender, new AccountEmails('https://app.example')),
+  sessions: new SessionService(new InMemorySessionRepository(accounts), new FakePasswordHasher()),
+  secureCookies: false,
 });
 afterAll(() => app.close());
 

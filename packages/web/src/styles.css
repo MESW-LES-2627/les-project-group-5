@@ -135,6 +135,27 @@ svg {
   background: rgba(255, 255, 255, 0.07);
 }
 
+.guest-links,
+.user-links {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* "display: flex" above would otherwise win over the hidden attribute. */
+.app-header [hidden] {
+  display: none;
+}
+
+.app-header nav .log-out {
+  cursor: pointer;
+}
+
+.app-header nav .log-out:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
 .app-header nav button:disabled {
   cursor: default;
   opacity: 0.6;
@@ -801,6 +822,16 @@ svg {
 .confirm-intro {
   margin: 0;
   color: var(--muted);
+}
+
+.form-footer {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.form-footer a {
+  color: var(--orange);
 }
 
 .sent-message {

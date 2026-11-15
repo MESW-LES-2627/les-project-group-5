@@ -10,6 +10,7 @@
     "build": "vite build"
   },
   "dependencies": {
+    "@fastify/cookie": "^11.1.5",
     "@instrument/domain": "*",
     "fastify": "^5.12.7",
     "pg": "^8.23.1"

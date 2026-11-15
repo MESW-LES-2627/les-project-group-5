@@ -1,9 +1,9 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { buildApp } from './app';
-import { fakeAccountService } from './features/accounts/testDoubles';
+import { fakeAccountDependencies } from './features/accounts/testDoubles';
 
 // App-wide behaviour only. Each feature tests its own routes next to its controller.
-const app = buildApp({ logger: false, database: { isOnline: async () => true }, accounts: fakeAccountService() });
+const app = buildApp({ logger: false, database: { isOnline: async () => true }, ...fakeAccountDependencies() });
 afterAll(() => app.close());
 
 describe('buildApp', () => {
