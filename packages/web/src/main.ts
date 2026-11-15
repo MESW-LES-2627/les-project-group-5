@@ -4,9 +4,11 @@ import {
   HandFeatureExtractor,
   Instrument,
   TwoColumnLayout,
-  ZigzagLayout,
+  PadGridLayout,
+  SingleBoxLayout,
   Scale,
   type Layout,
+  type LayoutKind,
 } from "@instrument/domain";
 import { ApiClient } from "./api/ApiClient";
 import { SoundOutput } from "./audio/SoundOutput";
@@ -62,9 +64,13 @@ showRoute();
 const settings = new SettingsStore();
 let currentScale = new Scale(settings.pitch, settings.scale);
 const mobileLayoutQuery = window.matchMedia("(max-width: 720px)");
-let layout: Layout = mobileLayoutQuery.matches
-  ? new TwoColumnLayout()
-  : new ZigzagLayout();
+
+const LAYOUTS: Record<LayoutKind, () => Layout> = {
+  "pad-grid": () => (mobileLayoutQuery.matches ? new TwoColumnLayout() : new PadGridLayout()),
+  "single-box": () => new SingleBoxLayout(),
+};
+
+let layout: Layout = LAYOUTS[settings.layout]();
 
 const page = new InstrumentPage(instrumentRoot);
 const settingsPage = new SettingsPage(settingsRoot);
@@ -117,11 +123,18 @@ addEventListener("hashchange", () => {
 });
 
 page.showCells(layout, currentScale);
-mobileLayoutQuery.addEventListener("change", (event) => {
-  layout = event.matches ? new TwoColumnLayout() : new ZigzagLayout();
+const applyLayout = () => {
+  instrument.update(null); // release the held note first, so the instrument and the sound agree
+  if (instrumentStarted) sound.stop(); // before Start the synth isn't initialized and nothing is sounding
+  layout = LAYOUTS[settings.layout]();
   instrument.setLayout(layout);
   page.showCells(layout, currentScale);
-});
+};
+mobileLayoutQuery.addEventListener("change", applyLayout);
+settings.subscribeLayout(applyLayout);
+
+settingsPage.setLayout(settings.layout);
+settingsPage.onLayoutChange((kind) => settings.setLayout(kind));
 
 settingsPage.setHand(settings.hand);
 page.setHand(settings.hand);
@@ -158,9 +171,9 @@ settings.subscribe((hand) => settingsPage.setHand(hand));
 settings.subscribeCameraPreview((visible) => settingsPage.setCameraPreview(visible));
 settings.subscribePitch((pitch) => settingsPage.setPitch(pitch));
 settings.subscribeScale((scale) => settingsPage.setScale(scale));
+settings.subscribeLayout((kind) => settingsPage.setLayout(kind));
 
 page.showInfo(currentScale, settings.hand);
-page.setStatus(`Press Start, allow the camera, and play with your ${settings.hand} hand.`);
 
 // Start loading the hand model right away, so Start is quicker. Errors are shown when Start is pressed.
 tracker.init().catch((error: unknown) => {

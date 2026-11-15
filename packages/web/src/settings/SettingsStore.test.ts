@@ -85,7 +85,37 @@ describe('SettingsStore', () => {
     store.setScale(ScaleType.NATURAL_MINOR);
     expect(store.scale).toBe(ScaleType.NATURAL_MINOR);
     expect(listener).toHaveBeenCalledWith(ScaleType.NATURAL_MINOR);
-  }); 
+  });
+
+  it('starts with the default layout', () => {
+    expect(new SettingsStore().layout).toBe('pad-grid');
+  });
+
+  it('updates the layout and notifies subscribers', () => {
+    const store = new SettingsStore();
+    const listener = vi.fn();
+    store.subscribeLayout(listener);
+    store.setLayout('single-box');
+    expect(store.layout).toBe('single-box');
+    expect(listener).toHaveBeenCalledWith('single-box');
+  });
+
+  it('does not notify when the layout does not change', () => {
+    const store = new SettingsStore();
+    const listener = vi.fn();
+    store.subscribeLayout(listener);
+    store.setLayout('pad-grid');
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('stops notifying after unsubscribe', () => {
+    const store = new SettingsStore();
+    const listener = vi.fn();
+    const unsubscribe = store.subscribeLayout(listener);
+    unsubscribe();
+    store.setLayout('single-box');
+    expect(listener).not.toHaveBeenCalled();
+  });
 
 });
 describe('SettingsStore.reset', () => {
@@ -95,6 +125,7 @@ describe('SettingsStore.reset', () => {
     store.setCameraPreview(false);
     store.setPitch('D');
     store.setScale(ScaleType.NATURAL_MINOR);
+    store.setLayout('single-box');
     const handListener = vi.fn();
     store.subscribe(handListener);
 
@@ -104,6 +135,7 @@ describe('SettingsStore.reset', () => {
     expect(store.cameraPreview).toBe(true);
     expect(store.pitch).toBe('C');
     expect(store.scale).toBe(ScaleType.MAJOR);
+    expect(store.layout).toBe('pad-grid');
     expect(handListener).toHaveBeenCalledWith('Right');
   });
 });
