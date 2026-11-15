@@ -8,7 +8,7 @@ This report describes the design of the project and the reasons behind it. It is
 |---|---|
 | 0 | First version of the EventStorming board, the domain model and the component diagram. |
 | 1 | Domain model: Preferences moved to Playing, Calibration Profile added. Components: Vercel, Postgres on Supabase, Health, Settings. Change scenario 1. |
-| 2 | Report reorganized, project overview and EventStorming findings added. Domain model: accounts as built, key, scale and layout as preferences. Components: Accounts (sign up), Email Sender and API client. Scenario 1 analysis rewritten. Change scenario 2. |
+| 2 | Report reorganized, project overview and EventStorming findings added. Domain model: accounts as built, key, scale and layout as preferences. Components: Accounts (sign up, email confirmation), Email Sender and API client. Scenario 1 analysis rewritten. Change scenario 2. |
 
 ## 1. Project overview
 
@@ -73,7 +73,7 @@ The model ([source](design/domain-model.puml)) uses the words of the problem, no
 | **Game** «planned» | Exercises and attempts. |
 | **API** | A serverless function built with Fastify. Each feature has a controller, a service and a repository interface, connected in [`createDependencies.ts`](../packages/server/src/createDependencies.ts). |
 | **Health** | `GET /api/health`, which checks the server and the database. |
-| **Accounts** | Sign up is built; email confirmation and login are «planned» (in review). |
+| **Accounts** | Sign up and email confirmation are built. Login and logout with a session cookie are «planned» (in review). |
 | **Email Sender** | The `EmailSender` interface; for now the emails go to the log. The real provider is «planned». |
 | **Database access** | One `pg` pool and hand-written SQL to Postgres on Supabase. |
 
