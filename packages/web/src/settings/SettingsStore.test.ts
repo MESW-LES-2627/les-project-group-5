@@ -166,7 +166,7 @@ describe('SettingsStore.reset', () => {
     store.setPitch('D');
     store.setScale(ScaleType.NATURAL_MINOR);
     store.setLayout('piano');
-    set.setSensitivity(0.8);
+    store.setSensitivity(0.8);
     const handListener = vi.fn();
     store.subscribe(handListener);
 
