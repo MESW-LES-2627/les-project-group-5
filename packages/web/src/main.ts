@@ -6,7 +6,7 @@ import {
   Instrument,
   TwoColumnLayout,
   PadGridLayout,
-  SingleBoxLayout,
+  PianoLayout,
   Scale,
   type Layout,
   type LayoutKind
@@ -66,9 +66,10 @@ const settings = new SettingsStore();
 let currentScale = new Scale(settings.pitch, settings.scale);
 const mobileLayoutQuery = window.matchMedia("(max-width: 720px)");
 
+// Keep layout selection here so the instrument loop uses the same Layout interface for pads and piano keys.
 const LAYOUTS: Record<LayoutKind, () => Layout> = {
   "pad-grid": () => (mobileLayoutQuery.matches ? new TwoColumnLayout() : new PadGridLayout()),
-  "single-box": () => new SingleBoxLayout(),
+  "piano": () => new PianoLayout(),
 };
 
 let layout: Layout = LAYOUTS[settings.layout]();

@@ -14,6 +14,9 @@ export type { LayoutKind } from "./layouts/Layout";
 export { SingleBoxLayout } from './layouts/SingleBoxLayout';
 export { PadGridLayout } from './layouts/PadGridLayout';
 export { TwoColumnLayout } from './layouts/TwoColumnLayout';
+// PianoLayout is exported with its key descriptions so the web package can render the full keyboard.
+export { PianoLayout } from './layouts/PianoLayout';
+export type { PianoKey } from './layouts/PianoLayout';
 export type { Region } from './layouts/Region';
 
 export type { Handedness, Landmark, TrackedHand } from './hand/TrackedHand';

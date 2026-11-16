@@ -281,6 +281,76 @@ svg {
   color: #ffd9bd;
 }
 
+/* White and black piano keys share the layout's exact hit regions. */
+.cell.piano-key {
+  border-radius: 0 0 10px 10px;
+  gap: 3px;
+  text-shadow: none;
+}
+
+.piano-key.white-key {
+  z-index: 1;
+  color: #77716b;
+  border-color: #d6d0c7;
+  /* Use translucent fills, not element opacity, so labels stay crisp over the webcam preview. */
+  background: linear-gradient(rgba(207, 201, 192, 0.84), rgba(244, 240, 233, 0.84));
+}
+
+.piano-key.white-key.in-scale {
+  color: #24211e;
+  border-color: rgba(255, 139, 62, 0.72);
+  background: linear-gradient(rgba(238, 232, 223, 0.86), rgba(255, 253, 249, 0.86));
+}
+
+.piano-key.black-key {
+  z-index: 2;
+  justify-content: flex-end;
+  padding-bottom: 12px;
+  color: #6f6d69;
+  border-color: rgba(255, 255, 255, 0.12);
+  border-radius: 0 0 7px 7px;
+  background: linear-gradient(
+    90deg,
+    rgba(20, 20, 20, 0.9),
+    rgba(41, 39, 37, 0.9) 45%,
+    rgba(17, 17, 17, 0.9)
+  );
+  box-shadow: 0 8px 14px rgba(0, 0, 0, 0.4);
+}
+
+.piano-key.black-key.in-scale {
+  color: #e3ddd6;
+  border-bottom-color: #a94d12;
+}
+
+.piano-key strong {
+  font-size: clamp(12px, 1.8vw, 22px);
+  line-height: 1;
+  font-weight: 500;
+}
+
+.piano-key span {
+  font-size: clamp(8px, 0.9vw, 11px);
+}
+
+.piano-key.black-key strong {
+  font-size: clamp(10px, 1.3vw, 16px);
+}
+
+.cell.piano-key.selected,
+.cell.piano-key.sounding {
+  transform: translateY(3px) scale(0.98);
+  color: #fff;
+  border-color: var(--orange);
+  background: linear-gradient(rgba(255, 150, 62, 0.88), rgba(255, 108, 8, 0.88));
+  box-shadow: 0 0 24px rgba(255, 106, 6, 0.55);
+}
+
+.cell.piano-key.selected span,
+.cell.piano-key.sounding span {
+  color: #fff;
+}
+
 /* The pointer follows the hand. Same ring and cross as the template's gesture pointer. */
 .pointer {
   position: absolute;

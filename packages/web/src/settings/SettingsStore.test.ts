@@ -95,9 +95,9 @@ describe('SettingsStore', () => {
     const store = new SettingsStore();
     const listener = vi.fn();
     store.subscribeLayout(listener);
-    store.setLayout('single-box');
-    expect(store.layout).toBe('single-box');
-    expect(listener).toHaveBeenCalledWith('single-box');
+    store.setLayout('piano');
+    expect(store.layout).toBe('piano');
+    expect(listener).toHaveBeenCalledWith('piano');
   });
 
   it('does not notify when the layout does not change', () => {
@@ -113,7 +113,7 @@ describe('SettingsStore', () => {
     const listener = vi.fn();
     const unsubscribe = store.subscribeLayout(listener);
     unsubscribe();
-    store.setLayout('single-box');
+    store.setLayout('piano');
     expect(listener).not.toHaveBeenCalled();
   });
 
@@ -165,8 +165,8 @@ describe('SettingsStore.reset', () => {
     store.setCameraPreview(false);
     store.setPitch('D');
     store.setScale(ScaleType.NATURAL_MINOR);
-    store.setLayout('single-box');
-    store.setSensitivity(0.8);
+    store.setLayout('piano');
+    set.setSensitivity(0.8);
     const handListener = vi.fn();
     store.subscribe(handListener);
 

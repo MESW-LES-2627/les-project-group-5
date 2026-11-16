@@ -6,11 +6,11 @@ const SCALE_OPTIONS: readonly { type: ScaleType; label: string }[] = [
   { type: ScaleType.NATURAL_MINOR, label: 'Natural minor' },
 ];
 
+// SingleBoxLayout remains available as a domain prototype, but is intentionally not a player setting.
 export const LAYOUT_OPTIONS: readonly { kind: LayoutKind; label: string }[] = [
   { kind: 'pad-grid', label: 'Pad grid' },
-  { kind: 'single-box', label: 'Single box' },
+  { kind: 'piano', label: 'Piano' },
 ];
-
 
 /** The settings screen. It only draws the choices and reports changes; it doesn't store anything. */
 export class SettingsPage {
