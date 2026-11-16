@@ -102,6 +102,7 @@ export class SettingsStore {
     this.setPitch(DEFAULT_PITCH);
     this.setScale(DEFAULT_SCALE);
     this.setLayout(DEFAULT_LAYOUT);
+    this.setSensitivity(DEFAULT_SENSITIVITY);
   }
 
   /** Returns a function that removes the listener. */
