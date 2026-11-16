@@ -20,6 +20,7 @@ export class SettingsPage {
   private readonly layoutSelector: HTMLSelectElement;
   private readonly cameraPreviewInput: HTMLInputElement;
   private readonly serverStatus: HTMLElement;
+  private readonly sensitivitySelector: HTMLInputElement;
   
 
   constructor(root: HTMLElement) {
@@ -77,6 +78,17 @@ export class SettingsPage {
             </section>
             <section>
               <div class="section-title">
+                <h2>Sensitivity</h2>
+                <p>How far your hand has to move to cover all the pads.</p>
+              </div>
+              <div class="slider">
+                <span>Low</span>
+                <input type="range" class="sensitivity-slider" min="0" max="100" step="1" value="50" aria-label="Sensitivity">
+                <span>High</span>
+              </div>
+            </section>
+            <section>
+              <div class="section-title">
                 <h2>Camera preview</h2>
                 <p>Choose whether the camera image shows behind the cells.</p>
               </div>
@@ -95,6 +107,7 @@ export class SettingsPage {
     this.cameraPreviewInput = find(root, '.toggle input[type="checkbox"]');
     this.layoutSelector = find(root, '.layout-select');
     this.serverStatus = find(root, '.server-status');
+    this.sensitivitySelector = find(root, '.sensitivity-slider');
   }
 
   setServerStatus(online: boolean): void {
@@ -142,6 +155,11 @@ export class SettingsPage {
     });
   }
 
+  /** Reports a sensitivity choice made by the user. */
+  onSensitivityChange(handler: (sensitivity: number) => void): void {
+    this.sensitivitySelector.addEventListener('input', () => handler(Number(this.sensitivitySelector.value) / 100));
+  }
+
   /** Shows which hand is selected. */
   setHand(hand: Handedness): void {
     const input = this.handSelector.querySelector<HTMLInputElement>(`input[value="${hand}"]`);
@@ -167,6 +185,11 @@ export class SettingsPage {
   /** Shows which layout is selected. */
   setLayout(layout: LayoutKind): void {
     this.layoutSelector.value = layout;
+  }
+
+  /** Shows the sensitivity. Setting `value` doesn't fire `input`. */
+  setSensitivity(sensitivity: number): void {
+    this.sensitivitySelector.value = String(Math.round(sensitivity * 100));
   }
 }
 
