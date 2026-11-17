@@ -1,6 +1,10 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { SettingsStore } from './SettingsStore';
 import { ScaleType } from '@instrument/domain';
+
+beforeEach(() => {
+  document.cookie = 'instrument-settings=; max-age=0; path=/';
+});
 
 describe('SettingsStore', () => {
   it('starts with the right hand', () => {
@@ -156,7 +160,33 @@ describe('SettingsStore', () => {
     store.setSensitivity(0.7);
     expect(listener).not.toHaveBeenCalled();
   });
+
+  it('restores saved settings from the cookie', () => {
+    const store = new SettingsStore();
+
+    store.setHand('Left');
+    store.setCameraPreview(false);
+    store.setPitch('D');
+    store.setScale(ScaleType.NATURAL_MINOR);
+    store.setLayout('piano');
+
+    const restored = new SettingsStore();
+
+    expect(restored.hand).toBe('Left');
+    expect(restored.cameraPreview).toBe(false);
+    expect(restored.pitch).toBe('D');
+    expect(restored.scale).toBe(ScaleType.NATURAL_MINOR);
+    expect(restored.layout).toBe('piano');
+  });
+
+  it('saves the settings cookie', () => {
+    const store = new SettingsStore();
+    store.setLayout('piano');
+
+    expect(document.cookie).toContain('instrument-settings=');
+  });
 });
+
 describe('SettingsStore.reset', () => {
   it('goes back to the defaults and tells the listeners', () => {
     const store = new SettingsStore();
