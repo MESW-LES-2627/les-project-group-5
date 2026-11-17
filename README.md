@@ -84,12 +84,12 @@ The full explanation, with the real-time pipeline step by step, is in the [devel
 │   │       ├── pages/         # InstrumentPage (draws the screen)
 │   │       └── api/           # ApiClient (the only code that talks to the server)
 │   └── server/            # Fastify server on :3000
-│       ├── .env               # DATABASE_URL (not in git, see "How to run")
+│       ├── .env               # DATABASE_URL, EMAIL_USER, EMAIL_PASS (not in git, see "How to run")
 │       └── src/           # One folder per feature (see developer guide, "The server")
 │           ├── main.ts        # Composition root: reads config, creates the database pool, starts the server
 │           ├── app.ts         # buildApp(): creates the app with all routes (used by tests too)
 │           ├── config/        # env.ts: reads and checks .env values
-│           ├── shared/        # Code used by several features (database/createDatabasePool)
+│           ├── shared/        # Code used by several features (database/createDatabasePool, email/ senders)
 │           └── features/
 │               └── health/    # HealthController, DatabaseStatus, PostgresDatabaseStatus
 ├── scripts/
@@ -127,7 +127,17 @@ Before the first `npm run dev`, create `packages/server/.env` with the database 
 DATABASE_URL=postgresql://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres
 ```
 
-This file is in `.gitignore`: **never commit it**, because the string contains the database password. Never put it in the web app. On Vercel, set `DATABASE_URL` in the project's environment variables instead. The server stops at start-up with a clear message if a value is missing. Node loads the file itself (`--env-file-if-exists` in `packages/server/package.json`), so no extra library is needed.
+To send real emails (account confirmation, password reset), also add the email account that sends them (Gmail by default):
+
+```bash
+EMAIL_USER=you@gmail.com
+EMAIL_PASS=your-app-password
+# Optional: EMAIL_FROM="Instrument <you@gmail.com>", and SMTP_HOST / SMTP_PORT for a provider other than Gmail
+```
+
+Both are optional locally: without them, emails are only written to the `[server]` log, so you can open the links from there. For Gmail, `EMAIL_PASS` must be an [App Password](https://myaccount.google.com/apppasswords) (needs 2-Step Verification), not the account's normal password.
+
+This file is in `.gitignore`: **never commit it**, because it contains the database password and the email password. Never put them in the web app. On Vercel, set `DATABASE_URL`, `EMAIL_USER` and `EMAIL_PASS` in the project's environment variables instead. The server stops at start-up with a clear message if a value is missing. Node loads the file itself (`--env-file-if-exists` in `packages/server/package.json`), so no extra library is needed.
 
 - `npm install` also runs `scripts/copy-mediapipe-wasm.mjs`, which copies MediaPipe's files into `packages/web/public/mediapipe/` so the browser can load them. That folder is not in git: it is recreated on every install.
 - `npm run dev` starts **two programs**: the server at http://127.0.0.1:3000 and the web app at **http://localhost:5173**. Each line in the terminal starts with `[server]` or `[web]` so you know who wrote it. Press **Ctrl+C** once to stop both.
@@ -252,6 +262,7 @@ To try the production build on your machine: `npm run build:api && vercel build 
 | "Database: offline" (server online) | The server can't reach the database: see the `"database":"offline"` row below. |
 | `Missing DATABASE_URL` | Create `packages/server/.env` with the connection string (see "How to run"). |
 | `/api/health` says `"database":"offline"` | Check `DATABASE_URL` in `packages/server/.env` (password replaced, transaction pooler on port 6543), your internet connection, and that the Supabase project is not paused. The `[server]` log shows the connection error. |
+| No email arrives | Without `EMAIL_USER` and `EMAIL_PASS` the email is only in the `[server]` log. With them, check the `[server]` log for the SMTP error (for Gmail, `Invalid login` means the App Password is wrong or missing). Also check the spam folder. |
 | `EADDRINUSE` (port in use) | Another `npm run dev` is still running. Close it, or find it with `lsof -i :5173` / `lsof -i :3000`. |
 | Strange errors after `git pull` | Run `npm install` (someone may have added a dependency). |
 | `npm install` fails / syntax errors | Check `node -v` is 24 or newer. |
