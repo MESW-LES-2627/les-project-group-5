@@ -5,5 +5,6 @@ export default defineConfig({
     include: ['packages/*/src/**/*.test.ts'],
     // There are no tests yet; the first ones arrive with the domain rules.
     passWithNoTests: true,
+    environment: 'jsdom',
   },
 });

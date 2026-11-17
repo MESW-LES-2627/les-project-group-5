@@ -1,10 +1,17 @@
-import { ScaleType, type Handedness, type PitchClass, type LayoutKind } from '@instrument/domain';
+import {
+  ScaleType,
+  type Handedness,
+  type PitchClass,
+  type LayoutKind,
+} from "@instrument/domain";
 
-const DEFAULT_HAND: Handedness = 'Right';
+const COOKIE_NAME = "instrument-settings";
+const ONE_WEEK_SECONDS = 7 * 24 * 60 * 60;
+const DEFAULT_HAND: Handedness = "Right";
 const default_camera_preview = true;
-const DEFAULT_PITCH: PitchClass = 'C';
+const DEFAULT_PITCH: PitchClass = "C";
 const DEFAULT_SCALE: ScaleType = ScaleType.MAJOR;
-const DEFAULT_LAYOUT: LayoutKind = 'pad-grid';
+const DEFAULT_LAYOUT: LayoutKind = "pad-grid";
 
 type HandListener = (hand: Handedness) => void;
 type CameraPreviewListener = (visible: boolean) => void;
@@ -21,6 +28,45 @@ export class SettingsStore {
   private readonly pitchListeners = new Set<(pitch: PitchClass) => void>();
   private readonly scaleListeners = new Set<(scale: ScaleType) => void>();
   private readonly layoutListeners = new Set<(layout: LayoutKind) => void>();
+
+  /**
+   * get data from cookies
+   */
+  constructor() {
+    const match = document.cookie
+      .split("; ")
+      .find((cookie) => cookie.startsWith(`${COOKIE_NAME}=`));
+
+    if (!match) return;
+
+    try {
+      const saved = JSON.parse(decodeURIComponent(match.split("=")[1]));
+
+      if (saved.hand === "Left" || saved.hand === "Right") {
+        this.current = saved.hand;
+      }
+
+      if (typeof saved.cameraPreview === "boolean") {
+        this.currentCameraPreview = saved.cameraPreview;
+      }
+
+      if (typeof saved.pitch === "string") {
+        this.currentPitch = saved.pitch as PitchClass;
+      }
+
+      if (saved.scale === ScaleType.MAJOR.name) {
+        this.currentScale = ScaleType.MAJOR;
+      } else if (saved.scale === ScaleType.NATURAL_MINOR.name) {
+        this.currentScale = ScaleType.NATURAL_MINOR;
+      }
+
+      if (saved.layout === "pad-grid" || saved.layout === "piano") {
+        this.currentLayout = saved.layout;
+      }
+    } catch {
+      // Ignore invalid cookie data.
+    }
+  }
 
   /** The hand that plays the instrument. */
   get hand(): Handedness {
@@ -50,30 +96,35 @@ export class SettingsStore {
   setHand(hand: Handedness): void {
     if (hand === this.current) return;
     this.current = hand;
+    this.save();
     for (const listener of [...this.listeners]) listener(hand);
   }
 
   setCameraPreview(visible: boolean): void {
     if (visible === this.currentCameraPreview) return;
     this.currentCameraPreview = visible;
+    this.save();
     for (const listener of [...this.cameraPreviewListeners]) listener(visible);
   }
 
   setPitch(pitch: PitchClass): void {
     if (pitch === this.currentPitch) return;
     this.currentPitch = pitch;
+    this.save();
     for (const listener of [...this.pitchListeners]) listener(pitch);
   }
-  
+
   setScale(scale: ScaleType): void {
     if (scale === this.currentScale) return;
     this.currentScale = scale;
+    this.save();
     for (const listener of [...this.scaleListeners]) listener(scale);
   }
 
   setLayout(layout: LayoutKind): void {
     if (layout === this.currentLayout) return;
     this.currentLayout = layout;
+    this.save();
     for (const listener of [...this.layoutListeners]) listener(layout);
   }
 
@@ -89,6 +140,23 @@ export class SettingsStore {
     this.setLayout(DEFAULT_LAYOUT);
   }
 
+  /**
+   * save data to cookies
+   */
+  private save(): void {
+    const value = encodeURIComponent(
+      JSON.stringify({
+        hand: this.current,
+        cameraPreview: this.currentCameraPreview,
+        pitch: this.currentPitch,
+        scale: this.currentScale.name,
+        layout: this.currentLayout,
+      }),
+    );
+
+    document.cookie = `${COOKIE_NAME}=${value}; max-age=${ONE_WEEK_SECONDS}; path=/; SameSite=Lax`;
+  }
+
   /** Returns a function that removes the listener. */
   subscribe(listener: HandListener): () => void {
     this.listeners.add(listener);
@@ -100,7 +168,7 @@ export class SettingsStore {
     this.cameraPreviewListeners.add(listener);
     return () => this.cameraPreviewListeners.delete(listener);
   }
-  
+
   /** Returns a function that removes the listener. */
   subscribePitch(listener: (pitch: PitchClass) => void): () => void {
     this.pitchListeners.add(listener);
@@ -118,5 +186,4 @@ export class SettingsStore {
     this.layoutListeners.add(listener);
     return () => this.layoutListeners.delete(listener);
   }
-
 }

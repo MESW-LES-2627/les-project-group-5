@@ -1,43 +1,47 @@
-import { describe, expect, it, vi } from 'vitest';
-import { SettingsStore} from './SettingsStore';
-import { ScaleType } from '@instrument/domain';
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { SettingsStore } from "./SettingsStore";
+import { ScaleType } from "@instrument/domain";
 
-describe('SettingsStore', () => {
-  it('starts with the right hand', () => {
-    expect(new SettingsStore().hand).toBe('Right');
+beforeEach(() => {
+  document.cookie = "instrument-settings=; max-age=0; path=/";
+});
+
+describe("SettingsStore", () => {
+  it("starts with the right hand", () => {
+    expect(new SettingsStore().hand).toBe("Right");
   });
 
-  it('updates the hand and notifies subscribers', () => {
+  it("updates the hand and notifies subscribers", () => {
     const store = new SettingsStore();
     const listener = vi.fn();
     store.subscribe(listener);
-    store.setHand('Left');
-    expect(store.hand).toBe('Left');
-    expect(listener).toHaveBeenCalledWith('Left');
+    store.setHand("Left");
+    expect(store.hand).toBe("Left");
+    expect(listener).toHaveBeenCalledWith("Left");
   });
 
-  it('does not notify when the hand does not change', () => {
+  it("does not notify when the hand does not change", () => {
     const store = new SettingsStore();
     const listener = vi.fn();
     store.subscribe(listener);
-    store.setHand('Right');
+    store.setHand("Right");
     expect(listener).not.toHaveBeenCalled();
   });
 
-  it('stops notifying after unsubscribe', () => {
+  it("stops notifying after unsubscribe", () => {
     const store = new SettingsStore();
     const listener = vi.fn();
     const unsubscribe = store.subscribe(listener);
     unsubscribe();
-    store.setHand('Left');
+    store.setHand("Left");
     expect(listener).not.toHaveBeenCalled();
   });
 
-  it('shows the camera preview by default', () => {
+  it("shows the camera preview by default", () => {
     expect(new SettingsStore().cameraPreview).toBe(true);
   });
 
-  it('updates the preview setting and notifies subscribers', () => {
+  it("updates the preview setting and notifies subscribers", () => {
     const store = new SettingsStore();
     const listener = vi.fn();
     store.subscribeCameraPreview(listener);
@@ -46,7 +50,7 @@ describe('SettingsStore', () => {
     expect(listener).toHaveBeenCalledWith(false);
   });
 
-  it('does not notify when the preview setting does not change', () => {
+  it("does not notify when the preview setting does not change", () => {
     const store = new SettingsStore();
     const listener = vi.fn();
     store.subscribeCameraPreview(listener);
@@ -54,7 +58,7 @@ describe('SettingsStore', () => {
     expect(listener).not.toHaveBeenCalled();
   });
 
-  it('stops notifying the preview listener after unsubscribe', () => {
+  it("stops notifying the preview listener after unsubscribe", () => {
     const store = new SettingsStore();
     const listener = vi.fn();
     const unsubscribe = store.subscribeCameraPreview(listener);
@@ -63,22 +67,22 @@ describe('SettingsStore', () => {
     expect(listener).not.toHaveBeenCalled();
   });
 
-  it('starts with the default pitch and scale', () => {
+  it("starts with the default pitch and scale", () => {
     const store = new SettingsStore();
-    expect(store.pitch).toBe('C');
+    expect(store.pitch).toBe("C");
     expect(store.scale).toBe(ScaleType.MAJOR);
   });
 
-  it('updates the pitch and notifies subscribers', () => {
+  it("updates the pitch and notifies subscribers", () => {
     const store = new SettingsStore();
     const listener = vi.fn();
     store.subscribePitch(listener);
-    store.setPitch('D');
-    expect(store.pitch).toBe('D');
-    expect(listener).toHaveBeenCalledWith('D');
+    store.setPitch("D");
+    expect(store.pitch).toBe("D");
+    expect(listener).toHaveBeenCalledWith("D");
   });
 
-  it('updates the scale and notifies subscribers', () => {
+  it("updates the scale and notifies subscribers", () => {
     const store = new SettingsStore();
     const listener = vi.fn();
     store.subscribeScale(listener);
@@ -87,55 +91,80 @@ describe('SettingsStore', () => {
     expect(listener).toHaveBeenCalledWith(ScaleType.NATURAL_MINOR);
   });
 
-  it('starts with the default layout', () => {
-    expect(new SettingsStore().layout).toBe('pad-grid');
+  it("starts with the default layout", () => {
+    expect(new SettingsStore().layout).toBe("pad-grid");
   });
 
-  it('updates the layout and notifies subscribers', () => {
+  it("updates the layout and notifies subscribers", () => {
     const store = new SettingsStore();
     const listener = vi.fn();
     store.subscribeLayout(listener);
-    store.setLayout('piano');
-    expect(store.layout).toBe('piano');
-    expect(listener).toHaveBeenCalledWith('piano');
+    store.setLayout("piano");
+    expect(store.layout).toBe("piano");
+    expect(listener).toHaveBeenCalledWith("piano");
   });
 
-  it('does not notify when the layout does not change', () => {
+  it("does not notify when the layout does not change", () => {
     const store = new SettingsStore();
     const listener = vi.fn();
     store.subscribeLayout(listener);
-    store.setLayout('pad-grid');
+    store.setLayout("pad-grid");
     expect(listener).not.toHaveBeenCalled();
   });
 
-  it('stops notifying after unsubscribe', () => {
+  it("stops notifying after unsubscribe", () => {
     const store = new SettingsStore();
     const listener = vi.fn();
     const unsubscribe = store.subscribeLayout(listener);
     unsubscribe();
-    store.setLayout('piano');
+    store.setLayout("piano");
     expect(listener).not.toHaveBeenCalled();
   });
 
-});
-describe('SettingsStore.reset', () => {
-  it('goes back to the defaults and tells the listeners', () => {
+  it("restores saved settings from the cookie", () => {
     const store = new SettingsStore();
-    store.setHand('Left');
+
+    store.setHand("Left");
     store.setCameraPreview(false);
-    store.setPitch('D');
+    store.setPitch("D");
     store.setScale(ScaleType.NATURAL_MINOR);
-    store.setLayout('piano');
+    store.setLayout("piano");
+
+    const restored = new SettingsStore();
+
+    expect(restored.hand).toBe("Left");
+    expect(restored.cameraPreview).toBe(false);
+    expect(restored.pitch).toBe("D");
+    expect(restored.scale).toBe(ScaleType.NATURAL_MINOR);
+    expect(restored.layout).toBe("piano");
+  });
+
+  it("saves the settings cookie", () => {
+    const store = new SettingsStore();
+    store.setLayout("piano");
+
+    expect(document.cookie).toContain("instrument-settings=");
+  });
+});
+
+describe("SettingsStore.reset", () => {
+  it("goes back to the defaults and tells the listeners", () => {
+    const store = new SettingsStore();
+    store.setHand("Left");
+    store.setCameraPreview(false);
+    store.setPitch("D");
+    store.setScale(ScaleType.NATURAL_MINOR);
+    store.setLayout("piano");
     const handListener = vi.fn();
     store.subscribe(handListener);
 
     store.reset();
 
-    expect(store.hand).toBe('Right');
+    expect(store.hand).toBe("Right");
     expect(store.cameraPreview).toBe(true);
-    expect(store.pitch).toBe('C');
+    expect(store.pitch).toBe("C");
     expect(store.scale).toBe(ScaleType.MAJOR);
-    expect(store.layout).toBe('pad-grid');
-    expect(handListener).toHaveBeenCalledWith('Right');
+    expect(store.layout).toBe("pad-grid");
+    expect(handListener).toHaveBeenCalledWith("Right");
   });
 });
