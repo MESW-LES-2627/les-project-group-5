@@ -10,7 +10,7 @@ A musical instrument that runs in the browser and is played with your hand inste
 - Gabriel Henrique Dias Conte - up202500543@up.pt
 - Mahsa Karimi - up202602749@up.pt
 
-**Guides:** [How to collaborate](CONTRIBUTING.md) · [How the code works](docs/developer-guide.md) 
+**Guides:** [How to collaborate](CONTRIBUTING.md) · [How the code works](docs/developer-guide.md) · [Design report](docs/design.md)
 
 
 ---
