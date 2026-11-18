@@ -1,11 +1,10 @@
-import { ScaleType, type Handedness, type PitchClass, type LayoutKind } from '@instrument/domain';
+import { DEFAULT_SENSITIVITY, ScaleType, type Handedness, type PitchClass, type LayoutKind } from '@instrument/domain';
 
 const DEFAULT_HAND: Handedness = 'Right';
 const DEFAULT_CAMERA_PREVIEW = true;
 const DEFAULT_PITCH: PitchClass = 'C';
 const DEFAULT_SCALE: ScaleType = ScaleType.MAJOR;
 const DEFAULT_LAYOUT: LayoutKind = 'pad-grid';
-const DEFAULT_SENSITIVITY = 0.5;
 
 type HandListener = (hand: Handedness) => void;
 type CameraPreviewListener = (visible: boolean) => void;

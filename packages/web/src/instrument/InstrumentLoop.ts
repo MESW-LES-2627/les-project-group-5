@@ -1,4 +1,5 @@
 import {
+  PointerSmoother,
   pickHand,
   type CalibrationProfile,
   type HandFeatureExtractor,
@@ -15,22 +16,6 @@ export type FrameErrorListener = (error: unknown) => void;
 /** The video has data for the current frame (HTMLMediaElement.HAVE_CURRENT_DATA). */
 const HAVE_CURRENT_DATA = 2;
 
-interface Point {
-  x: number;
-  y: number;
-}
-
-const lerp = (from: number, to: number, t: number) => from + (to - from) * t;
-
-/** Less sensitivity means a steadier pointer: more smoothing and a bigger dead zone. */
-function smoothingFor(sensitivity: number) {
-  const s = Math.min(1, Math.max(0, sensitivity));
-  return {
-    alpha: lerp(0.3, 0.8, s),        // share of the distance covered per frame (1 = no smoothing)
-    deadZone: lerp(0.02, 0.004, s),  // movements smaller than this are ignored
-  };
-}
-
 /**
  * The real-time loop: on every new camera frame it runs the pipeline
  *   tracker → dominant hand → features → calibration → instrument rules
@@ -44,6 +29,7 @@ export class InstrumentLoop {
   private readonly errorListeners = new Set<FrameErrorListener>();
   private animationFrame: number | null = null;
   private lastVideoTime = -1;
+  private readonly smoothing: PointerSmoother = new PointerSmoother();
 
   constructor(
     private readonly tracker: HandTracker,
@@ -51,15 +37,13 @@ export class InstrumentLoop {
     private profile: CalibrationProfile,
     private readonly instrument: Instrument,
     private readonly video: HTMLVideoElement,
-    private dominantHand: Handedness = 'Right',
-    private smoothing = smoothingFor(0.5),
-    private lastPointer: Point | null = null,
+    private dominantHand: Handedness = 'Right'
   ) {}
 
   /** Changes which hand drives the instrument. Takes effect on the next processed frame. */
   setDominantHand(hand: Handedness): void {
     this.dominantHand = hand;
-    this.lastPointer = null;  // reset smoothing, so the pointer doesn't jump
+    this.smoothing.reset();  // reset smoothing, so the pointer doesn't jump
   }
 
   /** Changes the calibration profile. Takes effect on the next processed frame. */
@@ -69,20 +53,7 @@ export class InstrumentLoop {
   
   /** Changes the sensitivity. Takes effect on the next processed frame. */
   setSensitivity(sensitivity: number): void {
-    this.smoothing = smoothingFor(sensitivity);
-  }
-
-  private smoothPointer(point: Point): Point {
-    const last = this.lastPointer;
-    if (!last) {
-      this.lastPointer = { ...point };
-      return { ...point };
-    }
-    const dx = point.x - last.x;
-    const dy = point.y - last.y;
-    if (Math.hypot(dx, dy) < this.smoothing.deadZone) return { ...last };
-    this.lastPointer = { x: last.x + this.smoothing.alpha * dx, y: last.y + this.smoothing.alpha * dy };
-    return { ...this.lastPointer };
+    this.smoothing.setSensitivity(sensitivity);
   }
 
   /** Adds a listener. Returns a function that removes it. */
@@ -134,8 +105,8 @@ export class InstrumentLoop {
 
     const hand = pickHand(this.tracker.detect(this.video, nowMs), this.dominantHand);
     const raw = hand ? this.profile.apply(this.extractor.extract(hand)) : null;
-    if (!raw) this.lastPointer = null;
-    const controls = raw ? { ...raw, pointer: this.smoothPointer(raw.pointer) } : null;
+    if (!raw) this.smoothing.reset();
+    const controls = raw ? { ...raw, pointer: this.smoothing.apply(raw.pointer) } : null;
     const frame = this.instrument.update(controls);
     for (const listener of this.listeners) {
       listener(frame);

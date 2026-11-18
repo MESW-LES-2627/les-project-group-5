@@ -25,8 +25,9 @@ export { HandFeatureExtractor } from './hand/HandFeatureExtractor';
 export { HandLandmark, LANDMARK_COUNT } from './hand/HandLandmark';
 export { pickHand } from './hand/pickHand';
 
-export { CalibrationProfile, DEFAULT_CALIBRATION_PROFILE, calibrationForSensitivity } from './calibration/CalibrationProfile';
+export { CalibrationProfile, DEFAULT_CALIBRATION_PROFILE, DEFAULT_SENSITIVITY, calibrationForSensitivity } from './calibration/CalibrationProfile';
 export { ControlCalibration } from './calibration/ControlCalibration';
+export { PointerSmoother, smoothingFor } from './calibration/PointerSmoother';
 export type { HandControls } from './calibration/HandControls';
 
 export { DEFAULT_VOLUME_THRESHOLD, Instrument } from './instrument/Instrument';
