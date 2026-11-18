@@ -1,6 +1,7 @@
 import "./styles.css";
 import {
   DEFAULT_CALIBRATION_PROFILE,
+  calibrationForSensitivity,
   HandFeatureExtractor,
   Instrument,
   TwoColumnLayout,
@@ -8,7 +9,7 @@ import {
   PianoLayout,
   Scale,
   type Layout,
-  type LayoutKind,
+  type LayoutKind
 } from "@instrument/domain";
 import { ApiClient } from "./api/ApiClient";
 import { SoundOutput } from "./audio/SoundOutput";
@@ -167,12 +168,25 @@ settingsPage.setPitch(settings.pitch);
 settingsPage.setScale(settings.scale);
 settingsPage.onPitchChange((pitch) => settings.setPitch(pitch));
 settingsPage.onScaleChange((scale) => settings.setScale(scale));
+
+const applySensitivity = (sensitivity: number) => {
+  loop.setCalibrationProfile(calibrationForSensitivity(sensitivity));
+  loop.setSensitivity(sensitivity);
+};
+applySensitivity(settings.sensitivity);
+settings.subscribeSensitivity(applySensitivity);
+
+settingsPage.setSensitivity(settings.sensitivity);
+settingsPage.onSensitivityChange((sensitivity) => settings.setSensitivity(sensitivity));
+
 // Keep the settings page in step when the settings change from elsewhere (for example back to the defaults on log out).
 settings.subscribe((hand) => settingsPage.setHand(hand));
 settings.subscribeCameraPreview((visible) => settingsPage.setCameraPreview(visible));
 settings.subscribePitch((pitch) => settingsPage.setPitch(pitch));
 settings.subscribeScale((scale) => settingsPage.setScale(scale));
 settings.subscribeLayout((kind) => settingsPage.setLayout(kind));
+settings.subscribeSensitivity((sensitivity) => settingsPage.setSensitivity(sensitivity));
+
 
 page.showInfo(currentScale, settings.hand);
 

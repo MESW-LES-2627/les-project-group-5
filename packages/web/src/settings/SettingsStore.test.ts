@@ -117,6 +117,46 @@ describe('SettingsStore', () => {
     expect(listener).not.toHaveBeenCalled();
   });
 
+  it('starts at 0.5', () => {
+    expect(new SettingsStore().sensitivity).toBe(0.5);
+  });
+
+  it('clamps to 0..1 and ignores NaN', () => {
+    const store = new SettingsStore();
+    store.setSensitivity(3);
+    expect(store.sensitivity).toBe(1);
+    store.setSensitivity(-2);
+    expect(store.sensitivity).toBe(0);
+    store.setSensitivity(NaN);
+    expect(store.sensitivity).toBe(0);
+  });
+
+  it('updates the sensitivity and notifies subscribers', () => {
+    const store = new SettingsStore();
+    const listener = vi.fn();
+    store.subscribeSensitivity(listener);
+    store.setSensitivity(0.8);
+    expect(store.sensitivity).toBe(0.8);
+    expect(listener).toHaveBeenCalledWith(0.8);
+  });
+
+  it('does not notify when the sensitivity does not change', () => {
+    const store = new SettingsStore();
+    const listener = vi.fn();
+    store.subscribeSensitivity(listener);
+    store.setSensitivity(0.5);
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('stops notifying after unsubscribe', () => {
+    const store = new SettingsStore();
+    const listener = vi.fn();
+    const unsubscribe = store.subscribeSensitivity(listener);
+    unsubscribe();
+    store.setSensitivity(0.7);
+    expect(listener).not.toHaveBeenCalled();
+  });
+
 });
 describe('SettingsStore.reset', () => {
   it('goes back to the defaults and tells the listeners', () => {
@@ -126,6 +166,7 @@ describe('SettingsStore.reset', () => {
     store.setPitch('D');
     store.setScale(ScaleType.NATURAL_MINOR);
     store.setLayout('piano');
+    store.setSensitivity(0.8);
     const handListener = vi.fn();
     store.subscribe(handListener);
 
@@ -136,6 +177,7 @@ describe('SettingsStore.reset', () => {
     expect(store.pitch).toBe('C');
     expect(store.scale).toBe(ScaleType.MAJOR);
     expect(store.layout).toBe('pad-grid');
+    expect(store.sensitivity).toBe(0.5);
     expect(handListener).toHaveBeenCalledWith('Right');
   });
 });
