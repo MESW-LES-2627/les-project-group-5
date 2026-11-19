@@ -163,11 +163,10 @@ export class InstrumentPage {
     this.video.classList.toggle('camera-hidden', !visible);
   }
 
-  /** Zooms the camera image to the area the pointer covers, so the pointer stays on the finger. */
-  setCameraZoom(x: number, y: number): void {
-   this.video.style.setProperty('--zoom-x', String(x));
-   this.video.style.setProperty('--zoom-y', String(y));
-  }
+/** Zooms the camera image to the area the pointer covers, so the pointer stays on the finger. */
+setCameraZoom(zoom: number): void {
+  this.video.style.setProperty('--zoom', String(zoom));
+}
 
   /** Shows the Start button again (for example after an error), with a new label. */
   showStart(label: string): void {

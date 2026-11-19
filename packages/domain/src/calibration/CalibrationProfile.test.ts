@@ -13,8 +13,8 @@ describe('DEFAULT_CALIBRATION_PROFILE', () => {
   });
 
   it('reaches the edges of the play area before the hand reaches the edges of the image', () => {
-    const topLeft = profile.apply({ pointer: { x: 0.2, y: 0.15 }, openness: 1.4 });
-    const bottomRight = profile.apply({ pointer: { x: 0.8, y: 0.85 }, openness: 1.4 });
+    const topLeft = profile.apply({ pointer: { x: 0.2, y: 0.2 }, openness: 1.4 });
+    const bottomRight = profile.apply({ pointer: { x: 0.8, y: 0.8 }, openness: 1.4 });
     expect(topLeft.pointer).toEqual({ x: 0, y: 0 });
     expect(bottomRight.pointer.x).toBeCloseTo(1);
     expect(bottomRight.pointer.y).toBeCloseTo(1);
@@ -41,8 +41,8 @@ describe('calibrationForSensitivity', () => {
     const p = calibrationForSensitivity(0.5);
     expect(p.pointerX.min).toBeCloseTo(0.2);
     expect(p.pointerX.max).toBeCloseTo(0.8);
-    expect(p.pointerY.min).toBeCloseTo(0.15);
-    expect(p.pointerY.max).toBeCloseTo(0.85);
+    expect(p.pointerY.min).toBeCloseTo(0.2);
+    expect(p.pointerY.max).toBeCloseTo(0.8);
   });
 
   it.each([0, 0.5, 1])('keeps the edges reachable at %s', (s) => {

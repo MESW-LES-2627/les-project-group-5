@@ -174,10 +174,7 @@ const applySensitivity = (sensitivity: number) => {
   loop.setCalibrationProfile(calibrationForSensitivity(sensitivity));
   loop.setSensitivity(sensitivity);
     // Zoom the camera image to the area the pointer covers, so the pointer stays on the finger.
-  page.setCameraZoom(
-    1 / (profile.pointerX.max - profile.pointerX.min),
-    1 / (profile.pointerY.max - profile.pointerY.min),
-  );
+ page.setCameraZoom(1 / (profile.pointerX.max - profile.pointerX.min));
 };
 applySensitivity(settings.sensitivity);
 settings.subscribeSensitivity(applySensitivity);
