@@ -10,6 +10,8 @@ import {
   Scale,
   type Layout,
   type LayoutKind,
+  CalibrationProfile,
+  ControlCalibration,
 } from '@instrument/domain';
 import { ApiClient } from './api/ApiClient';
 import { SoundOutput } from './audio/SoundOutput';
@@ -168,11 +170,13 @@ settingsPage.onPitchChange((pitch) => settings.setPitch(pitch));
 settingsPage.onScaleChange((scale) => settings.setScale(scale));
 
 const applySensitivity = (sensitivity: number) => {
-  const profile = calibrationForSensitivity(sensitivity);
-  loop.setCalibrationProfile(calibrationForSensitivity(sensitivity));
+  // The pointer follows the finger exactly (range 0 to 1), so the note plays where you see the finger.
+  // Only the volume range still depends on the sensitivity.
+  const volume = calibrationForSensitivity(sensitivity).openness;
+  loop.setCalibrationProfile(
+    new CalibrationProfile(new ControlCalibration(0, 1), new ControlCalibration(0, 1), volume),
+  );
   loop.setSensitivity(sensitivity);
-    // Zoom the camera image to the area the pointer covers, so the pointer stays on the finger.
- page.setCameraZoom(1 / (profile.pointerX.max - profile.pointerX.min));
 };
 applySensitivity(settings.sensitivity);
 settings.subscribeSensitivity(applySensitivity);
