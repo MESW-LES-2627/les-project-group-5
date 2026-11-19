@@ -6,6 +6,7 @@ import {
   type Handedness,
   type Instrument,
   type InstrumentFrame,
+  cameraToView
 } from '@instrument/domain';
 import type { HandTracker } from '../tracking/HandTracker';
 
@@ -104,7 +105,9 @@ export class InstrumentLoop {
     this.lastVideoTime = this.video.currentTime;
 
     const hand = pickHand(this.tracker.detect(this.video, nowMs), this.dominantHand);
-    const raw = hand ? this.profile.apply(this.extractor.extract(hand)) : null;
+    //const raw = hand ? this.profile.apply(this.extractor.extract(hand)) : null;
+   const features = hand ? this.extractor.extract(hand) : null;
+const raw = features ? this.profile.apply({ ...features, pointer: this.toViewPoint(features.pointer) }) : null;
     if (!raw) this.smoothing.reset();
     const controls = raw ? { ...raw, pointer: this.smoothing.apply(raw.pointer) } : null;
     const frame = this.instrument.update(controls);
@@ -112,4 +115,16 @@ export class InstrumentLoop {
       listener(frame);
     }
   }
+
+  /** Moves the pointer from the camera image to what the player sees on the stage (the video is cropped by object-fit: cover). */
+private toViewPoint(point: { x: number; y: number }): { x: number; y: number } {
+  const { videoWidth, videoHeight, clientWidth, clientHeight } = this.video;
+  // Before the first frame, the sizes are 0 (or missing in a test), so leave the point as it is.
+  if (!(videoWidth > 0 && videoHeight > 0 && clientWidth > 0 && clientHeight > 0)) return point;
+  return cameraToView(
+    point,
+    { width: videoWidth, height: videoHeight },
+    { width: clientWidth, height: clientHeight },
+  );
+}
 }

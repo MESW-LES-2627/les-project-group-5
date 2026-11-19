@@ -36,3 +36,4 @@ export type { InstrumentFrame, NoteChange } from './instrument/InstrumentFrame';
 export { isValidEmail, normalizeEmail } from './accounts/EmailAddress';
 export { checkPassword, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from './accounts/PasswordRules';
 export type { PasswordProblem } from './accounts/PasswordRules';
+export { cameraToView, type Size } from './calibration/cameraToView';
