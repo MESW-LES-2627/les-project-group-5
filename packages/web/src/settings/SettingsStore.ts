@@ -1,7 +1,7 @@
-import { ScaleType, type Handedness, type PitchClass, type LayoutKind } from '@instrument/domain';
+import { DEFAULT_SENSITIVITY, ScaleType, type Handedness, type PitchClass, type LayoutKind } from '@instrument/domain';
 
 const DEFAULT_HAND: Handedness = 'Right';
-const default_camera_preview = true;
+const DEFAULT_CAMERA_PREVIEW = true;
 const DEFAULT_PITCH: PitchClass = 'C';
 const DEFAULT_SCALE: ScaleType = ScaleType.MAJOR;
 const DEFAULT_LAYOUT: LayoutKind = 'pad-grid';
@@ -12,15 +12,17 @@ type CameraPreviewListener = (visible: boolean) => void;
 /** Holds the player's settings. Pages report changes to it; the loop and the instrument page listen to it. */
 export class SettingsStore {
   private current: Handedness = DEFAULT_HAND;
-  private currentCameraPreview = default_camera_preview;
+  private currentCameraPreview = DEFAULT_CAMERA_PREVIEW;
   private currentPitch: PitchClass = DEFAULT_PITCH;
   private currentScale: ScaleType = DEFAULT_SCALE;
   private currentLayout: LayoutKind = DEFAULT_LAYOUT;
+  private currentSensitivity = DEFAULT_SENSITIVITY;
   private readonly listeners = new Set<HandListener>();
   private readonly cameraPreviewListeners = new Set<CameraPreviewListener>();
   private readonly pitchListeners = new Set<(pitch: PitchClass) => void>();
   private readonly scaleListeners = new Set<(scale: ScaleType) => void>();
   private readonly layoutListeners = new Set<(layout: LayoutKind) => void>();
+  private readonly sensitivityListeners = new Set<(sensitivity: number) => void>();
 
   /** The hand that plays the instrument. */
   get hand(): Handedness {
@@ -44,6 +46,10 @@ export class SettingsStore {
   /** The layout of the instrument page. */
   get layout(): LayoutKind {
     return this.currentLayout;
+  }
+
+  get sensitivity(): number {
+    return this.currentSensitivity;
   }
 
   /** Changes the hand and tells every listener. Does nothing if the hand is the same. */
@@ -77,16 +83,25 @@ export class SettingsStore {
     for (const listener of [...this.layoutListeners]) listener(layout);
   }
 
+  setSensitivity(sensitivity: number): void {
+    if (!Number.isFinite(sensitivity)) return;
+    const value = Math.min(1, Math.max(0, sensitivity));
+    if (value === this.currentSensitivity) return;
+    this.currentSensitivity = value;
+    for (const listener of [...this.sensitivityListeners]) listener(value);
+  }
+
   /**
    * Goes back to the default settings, telling every listener that changes (used when logging out, US-E1-05).
    * It reuses the setters, so the pages and the instrument update exactly as after a change by the player.
    */
   reset(): void {
     this.setHand(DEFAULT_HAND);
-    this.setCameraPreview(default_camera_preview);
+    this.setCameraPreview(DEFAULT_CAMERA_PREVIEW);
     this.setPitch(DEFAULT_PITCH);
     this.setScale(DEFAULT_SCALE);
     this.setLayout(DEFAULT_LAYOUT);
+    this.setSensitivity(DEFAULT_SENSITIVITY);
   }
 
   /** Returns a function that removes the listener. */
@@ -117,6 +132,12 @@ export class SettingsStore {
   subscribeLayout(listener: (layout: LayoutKind) => void): () => void {
     this.layoutListeners.add(listener);
     return () => this.layoutListeners.delete(listener);
+  }
+
+  /** Returns a function that removes the listener. */
+  subscribeSensitivity(listener: (sensitivity: number) => void): () => void {
+    this.sensitivityListeners.add(listener);
+    return () => this.sensitivityListeners.delete(listener);
   }
 
 }

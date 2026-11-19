@@ -8,7 +8,7 @@ export default defineConfig({
     proxy: {
       '/api': process.env.API_URL ?? 'http://127.0.0.1:3000',
     },
- // Lets the ngrok host names through, to test on a phone over HTTPS (see "Testing on a phone" in the README).
-  allowedHosts: ['.ngrok-free.app', '.ngrok-free.dev'],
+     // Lets the ngrok host names through, to test on a phone over HTTPS (see "Testing on a phone" in the README).
+     allowedHosts: ['.ngrok-free.app', '.ngrok-free.dev'],
   }
 });
