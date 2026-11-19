@@ -37,8 +37,8 @@ export class CalibrationProfile {
  * - Openness: about 1.0 for a fist and 1.8 for an open hand (see HandFeatures.openness).
  */
 export const DEFAULT_CALIBRATION_PROFILE = new CalibrationProfile(
- new ControlCalibration(0, 1),
-  new ControlCalibration(0, 1),
+  new ControlCalibration(0.2, 0.8),
+  new ControlCalibration(0.15, 0.85),
   new ControlCalibration(1.0, 1.8),
 );
 

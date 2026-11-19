@@ -163,6 +163,12 @@ export class InstrumentPage {
     this.video.classList.toggle('camera-hidden', !visible);
   }
 
+  /** Zooms the camera image to the area the pointer covers, so the pointer stays on the finger. */
+  setCameraZoom(x: number, y: number): void {
+   this.video.style.setProperty('--zoom-x', String(x));
+   this.video.style.setProperty('--zoom-y', String(y));
+  }
+
   /** Shows the Start button again (for example after an error), with a new label. */
   showStart(label: string): void {
     this.startButton.textContent = label;
@@ -209,6 +215,7 @@ export class InstrumentPage {
 
     this.setStatus(frame.handDetected ? HINT : `Show your ${this.handLabel} hand to the camera.`);
   }
+
 }
 
 /** Writes "Name: online/offline" and turns the dot green when online. */
