@@ -37,20 +37,20 @@ export class InstrumentLoop {
     private profile: CalibrationProfile,
     private readonly instrument: Instrument,
     private readonly video: HTMLVideoElement,
-    private dominantHand: Handedness = 'Right'
+    private dominantHand: Handedness = 'Right',
   ) {}
 
   /** Changes which hand drives the instrument. Takes effect on the next processed frame. */
   setDominantHand(hand: Handedness): void {
     this.dominantHand = hand;
-    this.smoothing.reset();  // reset smoothing, so the pointer doesn't jump
+    this.smoothing.reset(); // reset smoothing, so the pointer doesn't jump
   }
 
   /** Changes the calibration profile. Takes effect on the next processed frame. */
   setCalibrationProfile(profile: CalibrationProfile): void {
     this.profile = profile;
   }
-  
+
   /** Changes the sensitivity. Takes effect on the next processed frame. */
   setSensitivity(sensitivity: number): void {
     this.smoothing.setSensitivity(sensitivity);

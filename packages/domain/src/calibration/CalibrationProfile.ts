@@ -42,7 +42,6 @@ export const DEFAULT_CALIBRATION_PROFILE = new CalibrationProfile(
   new ControlCalibration(1.0, 1.8),
 );
 
-
 export const DEFAULT_SENSITIVITY = 0.5;
 
 /** Pointer ranges are 1.5× wider at Low and 1.5× narrower at High, compared with the default. */

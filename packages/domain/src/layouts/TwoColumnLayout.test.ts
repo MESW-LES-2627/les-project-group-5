@@ -1,13 +1,13 @@
-import { describe, expect, it } from "vitest";
-import { Scale } from "../music/Scale";
-import { ScaleType } from "../music/ScaleType";
-import { TwoColumnLayout } from "./TwoColumnLayout";
+import { describe, expect, it } from 'vitest';
+import { Scale } from '../music/Scale';
+import { ScaleType } from '../music/ScaleType';
+import { TwoColumnLayout } from './TwoColumnLayout';
 
 const layout = new TwoColumnLayout();
-const regions = layout.regions(new Scale("C", ScaleType.MAJOR));
+const regions = layout.regions(new Scale('C', ScaleType.MAJOR));
 
-describe("TwoColumnLayout", () => {
-  it("places all eight degrees in four rows of two columns", () => {
+describe('TwoColumnLayout', () => {
+  it('places all eight degrees in four rows of two columns', () => {
     expect(regions.map((region) => region.degree)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
     expect(new Set(regions.map((region) => region.y)).size).toBe(4);
     expect(new Set(regions.map((region) => region.x)).size).toBe(2);
@@ -24,7 +24,7 @@ describe("TwoColumnLayout", () => {
     }
   });
 
-  it("spreads the columns apart and keeps some space around the grid", () => {
+  it('spreads the columns apart and keeps some space around the grid', () => {
     expect(regions[0].x + regions[0].width / 2).toBeCloseTo(0.34);
     expect(regions[1].x + regions[1].width / 2).toBeCloseTo(0.66);
     expect(regions[0].y + regions[0].height / 2).toBeCloseTo(0.32);
@@ -33,7 +33,7 @@ describe("TwoColumnLayout", () => {
     expect(layout.hitTest({ x: 1.1, y: 0.87 })).toBeNull();
   });
 
-  it("selects nothing in the gap between two pads", () => {
+  it('selects nothing in the gap between two pads', () => {
     expect(layout.hitTest({ x: 0.5, y: 0.32 })).toBeNull(); // between the two columns
     expect(layout.hitTest({ x: 0.34, y: 0.41 })).toBeNull(); // between the first two rows
   });

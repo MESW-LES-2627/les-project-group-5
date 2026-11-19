@@ -9,7 +9,7 @@ export interface Landmark {
 }
 
 /** Which of the player's hands: the real hand, not the mirrored one on screen. */
-export type Handedness = "Left" | "Right";
+export type Handedness = 'Left' | 'Right';
 
 /**
  * A hand found in one camera frame. This is the project's own type:

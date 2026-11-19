@@ -7,7 +7,7 @@ const MIDI_C4 = 60;
 /** MIDI number and frequency of A4 / Lá4, the tuning reference. */
 /** The standard tuning frequency for A4 / Lá4 is 440 Hz, but some people tune instruments slightly higher or lower. */
 const MIDI_A4 = 69;
-const FREQUENCY_A4 = 440; 
+const FREQUENCY_A4 = 440;
 
 /**
  * Turns a degree (a position from 1 to 8) into a MIDI note using the scale's
@@ -39,8 +39,8 @@ export class Scale {
   }
 
   /**
-   * Converts the degree's MIDI number to frequency using A4 / Lá4 (MIDI 69) as the 440 Hz reference. 
-   * Each 12-step MIDI difference is one octave, so the frequency doubles above A4 and halves below it. 
+   * Converts the degree's MIDI number to frequency using A4 / Lá4 (MIDI 69) as the 440 Hz reference.
+   * Each 12-step MIDI difference is one octave, so the frequency doubles above A4 and halves below it.
    * The result is in hertz.
    */
   frequencyOf(degree: Degree): number {

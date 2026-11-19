@@ -109,19 +109,19 @@ export class PianoLayout implements Layout {
     const key =
       this.hitTestKeys.find(
         (candidate) =>
-          candidate.color === 'black' &&
-          x >= candidate.x &&
-          x < candidate.x + candidate.width &&
-          y >= candidate.y &&
-          y < candidate.y + candidate.height,
-      ) ??
-      this.hitTestKeys.find(
+          candidate.color === 'black'
+          && x >= candidate.x
+          && x < candidate.x + candidate.width
+          && y >= candidate.y
+          && y < candidate.y + candidate.height,
+      )
+      ?? this.hitTestKeys.find(
         (candidate) =>
-          candidate.color === 'white' &&
-          x >= candidate.x &&
-          x < candidate.x + candidate.width &&
-          y >= candidate.y &&
-          y < candidate.y + candidate.height,
+          candidate.color === 'white'
+          && x >= candidate.x
+          && x < candidate.x + candidate.width
+          && y >= candidate.y
+          && y < candidate.y + candidate.height,
       );
     return key?.degree ?? null;
   }

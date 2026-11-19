@@ -1,8 +1,8 @@
-import { DEGREES, type Degree } from "../music/Degree";
-import type { Point } from "../geometry/Point";
-import type { Scale } from "../music/Scale";
-import type { Layout } from "./Layout";
-import type { Region } from "./Region";
+import { DEGREES, type Degree } from '../music/Degree';
+import type { Point } from '../geometry/Point';
+import type { Scale } from '../music/Scale';
+import type { Layout } from './Layout';
+import type { Region } from './Region';
 
 const COLUMNS = 2;
 /** Centre of the first pad and the distance between the centres of two neighbour pads. */

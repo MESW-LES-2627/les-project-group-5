@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { SettingsStore} from './SettingsStore';
+import { SettingsStore } from './SettingsStore';
 import { ScaleType } from '@instrument/domain';
 
 describe('SettingsStore', () => {
@@ -156,7 +156,6 @@ describe('SettingsStore', () => {
     store.setSensitivity(0.7);
     expect(listener).not.toHaveBeenCalled();
   });
-
 });
 describe('SettingsStore.reset', () => {
   it('goes back to the defaults and tells the listeners', () => {

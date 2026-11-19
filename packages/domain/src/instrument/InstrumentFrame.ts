@@ -5,21 +5,21 @@ import type { Degree } from '../music/Degree';
 export type NoteChange =
   /** A new note starts (stopping the previous one). */
   | {
-      /** Says which kind of change this is. */
-      readonly kind: 'start';
-      /** The degree of the new note. */
-      readonly degree: Degree;
-    }
+    /** Says which kind of change this is. */
+    readonly kind: 'start';
+    /** The degree of the new note. */
+    readonly degree: Degree;
+  }
   /** The current note stops. */
   | {
-      /** Says which kind of change this is. */
-      readonly kind: 'stop';
-    }
+    /** Says which kind of change this is. */
+    readonly kind: 'stop';
+  }
   /** Nothing changes (a note may keep sounding). */
   | {
-      /** Says which kind of change this is. */
-      readonly kind: 'none';
-    };
+    /** Says which kind of change this is. */
+    readonly kind: 'none';
+  };
 
 /** The state of the instrument after one camera frame: everything the sound and the screen need. */
 export interface InstrumentFrame {

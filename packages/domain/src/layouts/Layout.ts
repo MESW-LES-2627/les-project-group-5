@@ -1,7 +1,7 @@
-import type { Point } from "../geometry/Point";
-import type { Degree } from "../music/Degree";
-import type { Scale } from "../music/Scale";
-import type { Region } from "./Region";
+import type { Point } from '../geometry/Point';
+import type { Degree } from '../music/Degree';
+import type { Scale } from '../music/Scale';
+import type { Region } from './Region';
 
 export type LayoutKind = 'pad-grid' | 'piano';
 
