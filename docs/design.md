@@ -8,7 +8,7 @@ This report describes the design of the project and the reasons behind it. It is
 |---|---|
 | 0 | First version of the EventStorming board, the domain model and the component diagram. |
 | 1 | Domain model: Preferences moved to Playing, Calibration Profile added. Components: Vercel, Postgres on Supabase, Health, Settings. Change scenario 1. |
-| 2 | Report reorganized, project overview and EventStorming findings added. Domain model: accounts as built, key, scale and layout as preferences. Components: Accounts (sign up, email confirmation), Email Sender and API client. Scenario 1 analysis rewritten. Change scenario 2. |
+| 2 | Report reorganized, project overview and EventStorming findings added. Domain model: accounts as built, key, scale, layout (pad grid or piano) and sensitivity as preferences. Components: Accounts (sign up, email confirmation, login and logout), Email Sender and API client. Scenario 1 analysis rewritten. Change scenario 2. |
 
 ## 1. Project overview
 
@@ -47,8 +47,8 @@ The board ([source](design/eventstorming.drawio)) shows the player's timeline (a
 
 The model ([source](design/domain-model.puml)) uses the words of the problem, not of the code.
 
-- **Playing.** The player's **calibration profile** turns a hand gesture into values from 0 to 1. The gesture points at a **pad** of the **layout**, and the hand's openness sets the volume. Each pad stands for a **degree** of the **scale** (a key and a mode, major or natural minor).
-- **Preferences:** dominant hand, camera preview, key, mode and layout (pad grid or single box); sensitivity is planned. An account only keeps a copy of them.
+- **Playing.** The player's **calibration profile** turns a hand gesture into values from 0 to 1. The gesture points at a **pad** of the **layout** (a cell of the pad grid or a key of the piano), and the hand's openness sets the volume. Each pad stands for a **degree** of the **scale** (a key and a mode, major or natural minor).
+- **Preferences:** dominant hand, camera preview, key, mode, layout (pad grid or piano) and sensitivity (from 0, Low, to 1, High; 0.5 by default). The sensitivity scales the calibration profile: higher sensitivity means a smaller movement reaches every note. An account only keeps a copy of the preferences.
 - **Game.** An exercise has a melody (a sequence of degrees). Passing an attempt unlocks the next exercise.
 - **Accounts.** An account can be used only after its email is confirmed with a **confirmation link** (valid for 24 hours). Each logged-in device has a **session** (valid for 30 days).
 
@@ -73,7 +73,7 @@ The model ([source](design/domain-model.puml)) uses the words of the problem, no
 | **Game** «planned» | Exercises and attempts. |
 | **API** | A serverless function built with Fastify. Each feature has a controller, a service and a repository interface, connected in [`createDependencies.ts`](../packages/server/src/createDependencies.ts). |
 | **Health** | `GET /api/health`, which checks the server and the database. |
-| **Accounts** | Sign up and email confirmation are built. Login and logout with a session cookie are «planned» (in review). |
+| **Accounts** | Sign up, email confirmation, and login and logout with a session cookie. |
 | **Email Sender** | The `EmailSender` interface; for now the emails go to the log. The real provider is «planned». |
 | **Database access** | One `pg` pool and hand-written SQL to Postgres on Supabase. |
 
@@ -122,6 +122,8 @@ Affected: [`InstrumentLoop`](../packages/web/src/instrument/InstrumentLoop.ts) (
 
 **Decision: (b).** The only coupling to Settings stays in the composition root, and it follows a pattern the team already uses. **Cost:** one setter and a few wiring lines. **Plan:** no change now; when the assistant is built, add the profile to the store, the setter on the loop, the wiring and the page.
 
+> **Note (2026-11-19).** The setter arrived with the sensitivity setting, not with the assistant: [`main.ts`](../packages/web/src/main.ts) listens to the sensitivity in `SettingsStore` and calls `loop.setCalibrationProfile(calibrationForSensitivity(...))`, as decided in (b). The calibration assistant does not exist yet; when it is built, it only needs to provide its measured profile through the same path.
+
 ### 4.2. Scenario 2 — Saving the settings in the account (Iteration 2)
 
 *Written on 2026-11-15.*
@@ -153,6 +155,8 @@ Affected: `SettingsStore`, `main.ts`, `ApiClient`, the settings page, a new serv
 
 The compiler can't see SQL, so the mismatch went unnoticed until this analysis. Nothing writes to the table yet, but the first save would be rejected by the database. The fix is now recorded in [#35](https://github.com/MESW-LES-2627/les-project-group-5/issues/35).
 
+> **Note (2026-11-19).** Since this analysis, the piano layout and the sensitivity setting were added to the code: two more changes to the settings in three days, which confirms their high volatility. Today the layout values differ only in spelling (`pad_grid` in the table, `pad-grid` in the code), and sensitivity matches the table (a number from 0 to 1). The scale still has no stored form in the code.
+
 **Cohesion:** saving from inside `SettingsStore` would mix keeping the choices (synchronous, never fails) with saving them remotely (asynchronous, may fail, only when logged in).
 
 #### Alternatives, decision, and consequences
@@ -169,7 +173,7 @@ The compiler can't see SQL, so the mismatch went unnoticed until this analysis. 
 
 **Consequences:** a wrong value is caught at compile time or by the server, not in production; old saved data keeps working; guests are unaffected. The cost is one more type, one more component per side, and a migration per new setting, which we accept so the database can still reject invalid data.
 
-**Plan:** implement in Iteration 3 with #35, after login is merged, in this order: `PlayerSettings`, migration 003, the server feature, the `ApiClient` methods, `SettingsSync`.
+**Plan:** implement in Iteration 3 with #35 (login is already built), in this order: `PlayerSettings`, migration 003, the server feature, the `ApiClient` methods, `SettingsSync`.
 
 ## 5. Existing design pattern instances
 
