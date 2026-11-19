@@ -14,15 +14,16 @@ The Gesture-based Web Instrument is a browser-based musical instrument played wi
 **Unlike** mouse, touch or keyboard-driven virtual instruments, which assume fine hand control,
 **Our product** uses gestures tailored to each individual, so even a small movement reaches every note.
 
-## Problem
+## Product Vision Board
 
-Learning a traditional instrument takes time, money and physical skill before it becomes fun. Many people who like music never get to play a melody.
+| **VISION** |
+| :--- |
+| **"Learn, play and jam, with an accessible instrument that fits your movement."** |
 
-## Who it is for
+| **TARGET GROUP** | **NEEDS** | **PRODUCT** | **BUSINESS GOALS** |
+| :--- | :--- | :--- | :--- |
+| **Primary Target Group:**<br>People who want to make music but face physical, financial, or practical barriers.<br><br>**Segments:**<br>• **Curious beginners:** People who want to experience making music without investing in a physical instrument or installing software.<br>• **Music students:** People who want to practise, play, or jam without having their physical instrument available.<br>• **People with limited range of motion:** People who need an instrument that adapts to their individual physical abilities. | • Start playing music immediately, without buying equipment or installing software.<br>• Control musical notes naturally through body gestures.<br>• Adapt the instrument to their individual movement capabilities.<br>• Learn music progressively through interactive exercises.<br>• Play and collaborate with other people online.<br>• Feel confident that their camera data remains private.<br>• Have an accessible and enjoyable musical experience regardless of physical ability. | A browser-based musical instrument that uses webcam-based gesture recognition (MediaPipe) to translate body movements into musical controls.<br><br>**Core capabilities:**<br>• Gesture-controlled pitch and volume.<br>• Grid-based and piano-style note layouts.<br>• Desktop and mobile browser support.<br>• Real-time gesture recognition using a webcam.<br>• On-device camera processing to protect user privacy.<br><br>**Additional capabilities:**<br>• Personal movement calibration.<br>• Interactive music-learning games.<br>• Online multiplayer jam rooms.<br>• Vibrato and expressive musical controls. | • Make music creation more accessible and inclusive.<br>• Lower the financial and technical barriers to playing music.<br>• Attract and engage beginners through an immediate, enjoyable experience.<br>• Encourage continued use through learning exercises and progression.<br>• Build a community through collaborative online music-making.<br>• Establish a scalable web platform that can support future musical features. |
 
-- **Maria, curious beginner:** wants to learn and play something musical on her laptop within a minute, without having to buy external controllers or install new software.
-- **Tiago, music student:** wants to jam or play, doesn't have an instrument around but has a laptop or phone.
-- **Ana, limited range of motion:** wants to learn music and needs the instrument to adapt to the movements she can do.
 
 ## Main features (in order of relevance)
 
