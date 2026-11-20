@@ -51,7 +51,7 @@ export class InstrumentLoop {
   setCalibrationProfile(profile: CalibrationProfile): void {
     this.profile = profile;
   }
-  
+
   /** Changes the sensitivity. Takes effect on the next processed frame. */
   setSensitivity(sensitivity: number): void {
     this.smoothing.setSensitivity(sensitivity);

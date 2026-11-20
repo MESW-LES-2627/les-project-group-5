@@ -70,7 +70,7 @@ export class SettingsStore {
     this.currentPitch = pitch;
     for (const listener of [...this.pitchListeners]) listener(pitch);
   }
-  
+
   setScale(scale: ScaleType): void {
     if (scale === this.currentScale) return;
     this.currentScale = scale;
@@ -115,7 +115,7 @@ export class SettingsStore {
     this.cameraPreviewListeners.add(listener);
     return () => this.cameraPreviewListeners.delete(listener);
   }
-  
+
   /** Returns a function that removes the listener. */
   subscribePitch(listener: (pitch: PitchClass) => void): () => void {
     this.pitchListeners.add(listener);
