@@ -19,4 +19,13 @@ describe('ScaleType', () => {
     expect(ScaleType.MAJOR.intervals).toEqual([0, 2, 4, 5, 7, 9, 11, 12]);
     expect(ScaleType.NATURAL_MINOR.intervals).toEqual([0, 2, 3, 5, 7, 8, 10, 12]);
   });
+
+  // The id is what gets saved, so every scale needs its own and must be found by it.
+  it('finds each scale by its id and returns undefined for an unknown id', () => {
+    for (const type of ScaleType.ALL) {
+      expect(ScaleType.fromId(type.id)).toBe(type);
+    }
+    expect(ScaleType.fromId('Major')).toBeUndefined();
+    expect(ScaleType.fromId(42)).toBeUndefined();
+  });
 });
