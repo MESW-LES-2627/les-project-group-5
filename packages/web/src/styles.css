@@ -222,7 +222,6 @@ svg {
   height: 100%;
   object-fit: cover;
   transform: scaleX(-1);
-  /* transform: scale(calc(var(--zoom, 1) * -1), var(--zoom, 1)); */
 }
 
 .camera.camera-hidden {
