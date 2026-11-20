@@ -38,21 +38,24 @@ export class CalibrationProfile {
  */
 export const DEFAULT_CALIBRATION_PROFILE = new CalibrationProfile(
   new ControlCalibration(0.2, 0.8),
-  new ControlCalibration(0.15, 0.85),
+  new ControlCalibration(0.2, 0.8),
   new ControlCalibration(1.0, 1.8),
 );
 
 export const DEFAULT_SENSITIVITY = 0.5;
-
-/** Pointer ranges are 1.5× wider at Low and 1.5× narrower at High, compared with the default. */
-const RANGE_SPREAD = 1.5;
-/** A range never gets wider than 0.05–0.95 of the camera image, so the edge cells stay reachable. */
-const MAX_HALF_WIDTH = 0.45;
 /** At High the open-hand end of the volume range is 1.55 instead of 1.8. */
 const OPENNESS_MAX_AT_HIGH = 1.55;
+/** Half the width of the hand range at Low, default and High. Smaller = the pointer moves faster. */
+const HALF_WIDTH_LOW = 0.45;
+const HALF_WIDTH_DEFAULT = 0.3;
+const HALF_WIDTH_HIGH = 0.15;
 
-function pointerRange(halfWidth: number, sensitivity: number): ControlCalibration {
-  const half = Math.min(halfWidth * RANGE_SPREAD ** (1 - 2 * sensitivity), MAX_HALF_WIDTH);
+const lerp = (from: number, to: number, t: number) => from + (to - from) * t;
+function pointerRange(sensitivity: number): ControlCalibration {
+  const half =
+    sensitivity < 0.5
+      ? lerp(HALF_WIDTH_LOW, HALF_WIDTH_DEFAULT, sensitivity * 2)
+      : lerp(HALF_WIDTH_DEFAULT, HALF_WIDTH_HIGH, (sensitivity - 0.5) * 2);
   return new ControlCalibration(0.5 - half, 0.5 + half);
 }
 
@@ -62,5 +65,5 @@ export function calibrationForSensitivity(sensitivity: number): CalibrationProfi
   const { min, max } = DEFAULT_CALIBRATION_PROFILE.openness;
   const t = Math.max(0, (s - 0.5) * 2); // volume range only narrows above the default
   const openness = new ControlCalibration(min, max + (OPENNESS_MAX_AT_HIGH - max) * t);
-  return new CalibrationProfile(pointerRange(0.3, s), pointerRange(0.35, s), openness);
+  return new CalibrationProfile(pointerRange(s), pointerRange(s), openness);
 }

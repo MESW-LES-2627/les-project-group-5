@@ -1,5 +1,5 @@
-/* Look taken from the layout template (packages/layout) and the Figma design "Web-based Gesture Instrument":
-   dark warm background, orange for the notes, green for "online". */
+/* Look taken from the layout template (packages/layout) and the Figma design 'Web-based Gesture Instrument':
+   dark warm background, orange for the notes, green for 'online'. */
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap');
 
 :root {
@@ -13,7 +13,7 @@
   --orange-strong: #f36d13;
   --ok: #83ae75;
   --mono: 'DM Mono', ui-monospace, monospace;
-    font-family: 'Manrope', system-ui, sans-serif;
+  font-family: 'Manrope', system-ui, sans-serif;
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
@@ -77,7 +77,11 @@ svg {
   flex-direction: column;
   /* The warm light from the top of the template, without the extra background elements. */
   background:
-    radial-gradient(ellipse 68vw 82vh at 50% -10%, rgba(211, 146, 82, 0.16), transparent 66%),
+    radial-gradient(
+      ellipse 68vw 82vh at 50% -10%,
+      rgba(211, 146, 82, 0.16),
+      transparent 66%
+    ),
     #11100f;
 }
 
@@ -142,7 +146,7 @@ svg {
   align-items: center;
 }
 
-/* "display: flex" above would otherwise win over the hidden attribute. */
+/* 'display: flex' above would otherwise win over the hidden attribute. */
 .app-header [hidden] {
   display: none;
 }
@@ -186,20 +190,27 @@ svg {
 }
 
 /* ---------- Instrument page ---------- */
+.app-shell:has(.stage) {
+  height: 100dvh;
+}
 
 .stage-area {
   flex: 1;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px clamp(16px, 4vw, 72px);
+  padding: 12px clamp(8px, 2vw, 32px);
 }
 
-/* The play area. It has the camera's shape (4:3), so the pointer and the pads match the camera image. */
+
+/* 16:9, like the camera. It is as big as fits between header and footer, so nothing is cropped or stretched. */
+/* Subtract the 86px header, 72px minimum footer height, and 24px vertical
+   stage-area padding (12px top and bottom), then convert height to 16:9 width. */
 .stage {
   position: relative;
-  width: min(100%, 1040px, calc((100vh - 220px) * 4 / 3));
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 9;
+  width: min(100%, calc((100dvh - 86px - 72px - 24px) * 16 / 9));
   background: #161514;
   border: 1px solid var(--line);
   border-radius: 22px;
@@ -214,6 +225,7 @@ svg {
   height: 100%;
   object-fit: cover;
   transform: scaleX(-1);
+  /* transform: scale(calc(var(--zoom, 1) * -1), var(--zoom, 1)); */
 }
 
 .camera.camera-hidden {
@@ -235,7 +247,7 @@ svg {
   z-index: 1;
 }
 
-/* Each pad is a circle (the template's zigzag pads): the layout gives it a square place on the 4:3 play area. */
+/* On the 16:9 desktop stage, each square pad region is drawn as a circle. */
 .cell {
   position: absolute;
   display: flex;
@@ -247,9 +259,17 @@ svg {
   color: #f3eee8;
   border: 2px solid rgba(255, 139, 62, 0.6);
   /* See-through, so the hand behind the pad stays visible. */
-  background: linear-gradient(145deg, rgba(57, 49, 43, 0.28), rgba(24, 23, 21, 0.18));
+  background: linear-gradient(
+    145deg,
+    rgba(57, 49, 43, 0.28),
+    rgba(24, 23, 21, 0.18)
+  );
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.85);
-  transition: transform 0.18s, border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.18s,
+    border-color 0.2s,
+    background 0.2s,
+    box-shadow 0.2s;
 }
 
 .cell strong {
@@ -263,13 +283,17 @@ svg {
   color: #9f9a94;
 }
 
-/* The pad is selected (the pointer is over it): the template's "playing" look, as soon as it is selected. */
+/* The pad is selected (the pointer is over it): the template's 'playing' look, as soon as it is selected. */
 .cell.selected,
 .cell.sounding {
   transform: translateY(-5px) scale(0.98);
   color: #fff;
   border-color: var(--orange);
-  background: radial-gradient(circle, rgba(255, 124, 31, 0.42), rgba(42, 29, 20, 0.4));
+  background: radial-gradient(
+    circle,
+    rgba(255, 124, 31, 0.42),
+    rgba(42, 29, 20, 0.4)
+  );
   box-shadow:
     0 0 0 1px rgba(255, 109, 10, 0.4),
     0 0 35px rgba(255, 98, 0, 0.38),
@@ -293,13 +317,19 @@ svg {
   color: #77716b;
   border-color: #d6d0c7;
   /* Use translucent fills, not element opacity, so labels stay crisp over the webcam preview. */
-  background: linear-gradient(rgba(207, 201, 192, 0.84), rgba(244, 240, 233, 0.84));
+  background: linear-gradient(
+    rgba(207, 201, 192, 0.84),
+    rgba(244, 240, 233, 0.84)
+  );
 }
 
 .piano-key.white-key.in-scale {
   color: #24211e;
   border-color: rgba(255, 139, 62, 0.72);
-  background: linear-gradient(rgba(238, 232, 223, 0.86), rgba(255, 253, 249, 0.86));
+  background: linear-gradient(
+    rgba(238, 232, 223, 0.86),
+    rgba(255, 253, 249, 0.86)
+  );
 }
 
 .piano-key.black-key {
@@ -342,7 +372,10 @@ svg {
   transform: translateY(3px) scale(0.98);
   color: #fff;
   border-color: var(--orange);
-  background: linear-gradient(rgba(255, 150, 62, 0.88), rgba(255, 108, 8, 0.88));
+  background: linear-gradient(
+    rgba(255, 150, 62, 0.88),
+    rgba(255, 108, 8, 0.88)
+  );
   box-shadow: 0 0 24px rgba(255, 106, 6, 0.55);
 }
 
@@ -413,7 +446,7 @@ svg {
   display: none;
 }
 
-/* Same orange pill as the template's "Play melody" button. */
+/* Same orange pill as the template's 'Play melody' button. */
 .start {
   padding: 12px 36px;
   border: 0;
@@ -480,6 +513,7 @@ svg {
   color: var(--dim);
   text-transform: uppercase;
   letter-spacing: 0.09em;
+  margin-top: auto;
 }
 
 .status-copy,
@@ -619,7 +653,7 @@ svg {
   letter-spacing: -0.04em;
 }
 
-/* Where the template shows "Saved": a small status on the right of the title. */
+/* Where the template shows 'Saved': a small status on the right of the title. */
 .settings-heading .server-status {
   margin-left: auto;
   color: var(--dim);
@@ -746,7 +780,9 @@ svg {
   height: 14px;
   border-radius: 50%;
   background: #9c968e;
-  transition: transform 0.18s, background 0.18s;
+  transition:
+    transform 0.18s,
+    background 0.18s;
 }
 
 .toggle input:checked {
@@ -860,7 +896,7 @@ svg {
   gap: 22px;
 }
 
-/* "display: grid" above would otherwise win over the hidden attribute (used after a successful sign-up). */
+/* 'display: grid' above would otherwise win over the hidden attribute (used after a successful sign-up). */
 .account-form[hidden] {
   display: none;
 }
@@ -932,7 +968,7 @@ svg {
   cursor: default;
 }
 
-/* "display: block" on the buttons would otherwise win over the hidden attribute. */
+/* 'display: block' on the buttons would otherwise win over the hidden attribute. */
 .account-panel [hidden] {
   display: none;
 }
@@ -991,11 +1027,6 @@ svg {
     display: none;
   }
 
-  /* The instrument page fits the screen exactly, so the stage can use all the height that is left. */
-  .app-shell:has(.stage) {
-    height: 100dvh;
-  }
-
   .stage-area {
     min-height: 0;
     padding: 4px 2px;
@@ -1008,7 +1039,7 @@ svg {
     border-radius: 13px;
   }
 
-  /* On a phone the play area is not 4:3, so a region is not a square and can't be a circle.
+  /* On a phone the play area is not 16:4, so a region is not a square and can't be a circle.
      The pad fills its region exactly (rounded, as the template's phone pads), so the drawn pad is the hit area. */
   .stage .cell {
     border-radius: 13px;
