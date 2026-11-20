@@ -43,7 +43,7 @@ export class InstrumentLoop {
   /** Changes which hand drives the instrument. Takes effect on the next processed frame. */
   setDominantHand(hand: Handedness): void {
     this.dominantHand = hand;
-    this.smoothing.reset();  // reset smoothing, so the pointer doesn't jump
+    this.smoothing.reset(); // reset smoothing, so the pointer doesn't jump
   }
 
   /** Changes the calibration profile. Takes effect on the next processed frame. */
