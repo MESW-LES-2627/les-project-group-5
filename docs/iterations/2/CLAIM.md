@@ -17,7 +17,7 @@ Previous tag: `iter-1`
 | This tag (`iter-2`) | [iter-2](https://github.com/MESW-LES-2627/les-project-group-5/tree/iter-2) |
 |  |  |
 | Production | https://les-project-group-5.vercel.app |
-| Staging | https://les-project-group-5-aw2wa8tvl-les-119e.vercel.app |
+| Staging | https://les-project-group-5-fu3b8oye0-les-119e.vercel.app |
 |  |  |
 | CI/CD Pipeline | [Runs on GitHub Actions](https://github.com/MESW-LES-2627/les-project-group-5/actions/workflows/ci.yml) (the `check` job is CI, the `deploy` job publishes to Vercel); [workflow file](https://github.com/MESW-LES-2627/les-project-group-5/blob/iter-2/.github/workflows/ci.yml) |
 |  |  |
