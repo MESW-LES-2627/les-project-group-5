@@ -48,8 +48,9 @@ export function readConfig(defaultAppBaseUrl?: string): Config {
 /**
  * Both EMAIL_USER and EMAIL_PASS, or neither (emails go to the log).
  * Only one of them is a mistake: we stop at start-up, instead of silently sending no emails (e.g. on Vercel).
+ * Exported only so env.test.ts can check these three cases.
  */
-function readSmtpConfig(): SmtpConfig | undefined {
+export function readSmtpConfig(): SmtpConfig | undefined {
   const user = process.env.EMAIL_USER;
   const pass = process.env.EMAIL_PASS;
   if (!user && !pass) return undefined;
