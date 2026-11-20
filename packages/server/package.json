@@ -10,12 +10,15 @@
     "build": "vite build"
   },
   "dependencies": {
+    "@fastify/cookie": "^11.1.5",
     "@instrument/domain": "*",
     "fastify": "^5.12.7",
+    "nodemailer": "^10.6.0",
     "pg": "^8.23.1"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",
+    "@types/nodemailer": "^8.0.2",
     "@types/pg": "^8.23.1",
     "tsx": "^4.23.15",
     "vite": "^8.3.4"

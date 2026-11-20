@@ -1,8 +1,7 @@
-import type { Degree, Handedness, InstrumentFrame, Layout, Scale } from '@instrument/domain';
+import { PianoLayout, type Degree, type Handedness, type InstrumentFrame, type Layout, type PianoKey, type Scale } from '@instrument/domain';
 import type { HealthStatus } from '../api/ApiClient';
 import { appHeader } from './appHeader';
 import { solfegeOf } from './solfege';
-import { SettingsStore } from '../settings/SettingsStore';
 
 /**
  * The instrument screen: camera image, the cells, the pointer, a Start button, a status line, a volume bar
@@ -22,11 +21,9 @@ export class InstrumentPage {
   private readonly debug: HTMLElement | null;
   private readonly scaleName: HTMLElement;
   private readonly handName: HTMLElement;
-  // private handLabel = this.settings.hand;;
   private cells = new Map<Degree, HTMLElement>();
   private selected: HTMLElement | null = null;
-  private settings = new SettingsStore();
-  private handLabel = this.settings.hand.toString();
+  private handLabel = 'right';
   private started = false;
 
   constructor(root: HTMLElement) {
@@ -83,18 +80,31 @@ export class InstrumentPage {
   }
 
   onStart(handler: () => void): void {
-     this.startButton.addEventListener('click', () => {
+    this.startButton.addEventListener('click', () => {
       this.started = true;
       handler();
     });
   }
 
-  /** Draws one pad per region of the layout, with the note letter and its name (for example "C" and "Dó"). */
+  /** Draws the layout's playable regions; the piano also draws its non-playable chromatic keys. */
   showCells(layout: Layout, scale: Scale): void {
     this.cellsElement.replaceChildren();
     this.cells.clear();
     this.selected = null;
-    for (const region of layout.regions(scale)) {
+    // Besides returning playable regions, this sets PianoLayout's scale-aware hit-test keys.
+    const regions = layout.regions(scale);
+    if (layout instanceof PianoLayout) {
+      const keys = layout.keys(scale);
+      // Put black keys after white keys so they appear on top where the key shapes overlap.
+      for (const color of ['white', 'black'] as const) {
+        for (const key of keys.filter((candidate) => candidate.color === color)) {
+          this.addPianoKey(key);
+        }
+      }
+      return;
+    }
+
+    for (const region of regions) {
       const cell = document.createElement('div');
       cell.className = 'cell';
       const note = scale.noteNameOf(region.degree);
@@ -108,13 +118,26 @@ export class InstrumentPage {
     }
   }
 
-    /** Fills the bottom bar: the scale (for example "C MAJOR") and which hand plays. */
+  /** Draws one piano key, but only maps in-scale keys to degrees that can be highlighted while playing. */
+  private addPianoKey(key: PianoKey): void {
+    const cell = document.createElement('div');
+    cell.className = `cell piano-key ${key.color}-key ${key.degree === null ? 'out-of-scale' : 'in-scale'}`;
+    const solfege = solfegeOf(key.note);
+    cell.innerHTML = `<strong>${key.note}</strong><span>${solfege}</span>`;
+    cell.style.left = percent(key.x);
+    cell.style.top = percent(key.y);
+    cell.style.width = percent(key.width);
+    cell.style.height = percent(key.height);
+    this.cellsElement.append(cell);
+    if (key.degree !== null) this.cells.set(key.degree, cell);
+  }
+
+  /** Fills the bottom bar: the scale (for example "C MAJOR") and which hand plays. */
   showInfo(scale: Scale, hand: Handedness): void {
     this.scaleName.textContent = `${scale.root} ${scale.type.name}`;
     this.handLabel = hand.toLowerCase();
     this.handName.textContent = `${this.handLabel} hand`;
   }
-
 
   /** Shows whether the server and its database can be reached. */
   setHealthStatus(health: HealthStatus): void {
@@ -125,7 +148,6 @@ export class InstrumentPage {
   setStatus(message: string): void {
     this.status.textContent = message;
   }
-
 
   /** Shows which hand is selected, for the initial value or to correct the UI after a rejected change. */
   setHand(hand: Handedness): void {
@@ -181,8 +203,8 @@ export class InstrumentPage {
     if (this.debug) {
       const where = frame.pointer ? `${frame.pointer.x.toFixed(2)}, ${frame.pointer.y.toFixed(2)}` : '-';
       this.debug.textContent =
-        `hand: ${frame.handDetected ? 'yes' : 'no'}  pointer: ${where}  pad: ${frame.degree ?? '-'}\n` +
-        `volume: ${Math.round(frame.volume * 100)}%  sounding: ${frame.sounding ? 'yes' : 'no'}`;
+        `hand: ${frame.handDetected ? 'yes' : 'no'}  pointer: ${where}  pad: ${frame.degree ?? '-'}\n`
+        + `volume: ${Math.round(frame.volume * 100)}%  sounding: ${frame.sounding ? 'yes' : 'no'}`;
     }
 
     this.setStatus(frame.handDetected ? HINT : `Show your ${this.handLabel} hand to the camera.`);

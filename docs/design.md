@@ -1,109 +1,186 @@
-# Design
+# Design Report — Gesture-Based Web Instrument
 
-Design models of the **Gesture-Based Web Instrument**. They describe the whole product vision; the parts outside the MVP are marked as hot spots. The models are updated at the end of each iteration.
-
-The sources are in [`design/`](design/): the EventStorming board opens in [diagrams.net](https://app.diagrams.net) (`eventstorming.drawio`), and the UML diagrams are [PlantUML](https://plantuml.com) files (`.puml`).
+This report describes the design of the project and the reasons behind it. It is updated at the end of every iteration. The sources of the models are in [`design/`](design/): the EventStorming board opens in [diagrams.net](https://app.diagrams.net) and the UML diagrams are [PlantUML](https://plantuml.com) files.
 
 ## History
 
 | Iteration | Changes |
 |---|---|
-| 0 | First version of the three models, covering the whole product vision. |
-| 1 | Domain model: Preferences updated (dominant hand, camera preview) and moved to Playing, Calibration Profile added. Components: Vercel (static site + serverless API), Postgres hosted on Supabase, Health with the DatabaseStatus interface, Settings; parts not built yet marked as planned. Change scenario 1: per-user hand calibration. |
+| 0 | First version of the EventStorming board, the domain model and the component diagram. |
+| 1 | Domain model: Preferences moved to Playing, Calibration Profile added. Components: Vercel, Postgres on Supabase, Health, Settings. Change scenario 1. |
+| 2 | Report reorganized, project overview and EventStorming findings added. Domain model: accounts as built, key, scale, layout (pad grid or piano) and sensitivity as preferences. Components: Accounts (sign up, email confirmation, login and logout), Email Sender and API client. Scenario 1 analysis rewritten. Change scenario 2. |
 
-## 1. EventStorming
+## 1. Project overview
+
+A musical instrument that runs in the browser and is played with hand gestures in front of a webcam: the hand's position chooses the note and its openness sets the volume. It is meant for beginners, for music students without an instrument, and for people with a limited range of motion. See the [vision](iterations/0/vision.md) and the [MVP](iterations/0/mvp.md).
+
+**Central responsibilities:** turn the camera image into sound in real time; let the player adjust the instrument; an ear-training game (planned); optional accounts that keep settings and progress.
+
+**Constraints that shape the design:**
+
+- **Real time runs in the browser.** The camera image never leaves the device, and the network would be too slow for playing.
+- **The account is optional.** Every page works without logging in, so the instrument cannot depend on the server.
+- **Vercel:** static site plus a serverless API, with no state kept in memory between requests.
+- **Postgres on Supabase, used only as a database** ([ADR 001](adr/001-database-choice.md)).
+- **Few frameworks:** plain TypeScript, Fastify only for HTTP, hand-written SQL, dependencies created by hand.
+- **External systems:** webcam, MediaPipe, Web Audio and an email provider (not chosen yet).
+
+## 2. Domain discovery and modeling
+
+### 2.1. EventStorming results
 
 ![EventStorming](design/eventstorming.png)
 
-**Big picture.** The player's timeline in three phases. The optional account comes first; the pivotal events *Instrument Started* and *Exercise Started* begin the playing and the game phases.
+The board ([source](design/eventstorming.drawio)) shows the player's timeline (account, playing, game) and, for each subdomain, the commands, aggregates, events, policies and external systems.
 
-**Process modelling.** Each subdomain shows who issues each command (actor), the aggregate that handles it, the events it produces, the policies that react to them and the external systems involved.
+**Main findings:**
 
-| Subdomain | Type | Why |
-|---|---|---|
-| Playing | Core | Playing notes with hand gestures is what makes the product different. |
-| Game | Supporting | An ear-training game that gives the player a reason to practise, built on top of playing. |
-| Accounts | Generic | Sign up, login and password reset work like in any other app. |
+- **Three subdomains.** Playing is **core** (it is what makes the product different), Game is **supporting**, and Accounts is **generic**. They became the main boundaries of the code.
+- **Playing is a fast loop.** *Hand Detected → Note Played → Note Stopped* repeats many times per second, and *Hand Lost* must stop the note. So the loop runs in the browser, with the rules kept apart from the camera and audio.
+- **Saving is an extra step.** The policies say "*if logged in*, save the settings / progress", so playing works the same without an account. That is why Preferences belong to Playing, not to Accounts ([scenario 2](#42-scenario-2--saving-the-settings-in-the-account-iteration-2)).
+- **Account rules:** confirmation email, login blocked after 5 failures in 15 minutes, password reset by email.
+- **Hot spots** (open questions): per-user calibration ([scenario 1](#41-scenario-1--per-user-hand-calibration-iteration-1)), head mode, vibrato, more layouts, recording.
 
-The policies link the subdomains: when settings change or an attempt passes and the player is logged in, the settings or the progress are saved in the account.
-
-## 2. Domain model
+### 2.2. Domain model
 
 ![Domain model](design/domain-model.png)
 
-The model uses the language of the problem, not of the code:
+The model ([source](design/domain-model.puml)) uses the words of the problem, not of the code.
 
-- **Playing:** a player makes hand gestures. The player's **calibration profile** normalizes each gesture: it says which part of the camera image covers the play area and how open the hand must be for silence and for full volume. The gesture then points at a pad of the instrument's layout (grid or piano), and the hand openness sets the volume. Each pad stands for a degree of the scale, so the instrument produces the note of that degree. The player's **preferences** (dominant hand, camera preview, and later key, scale, layout and sensitivity) configure the instrument.
-- **Game:** the "Listen and Repeat" ear-training game. An exercise has a melody (a sequence of degrees) played in its own key and scale. The player makes attempts to repeat it. Passing an attempt unlocks the next exercise in the player's progress.
-- **Accounts:** an account is optional. It saves the player's preferences and progress. Preferences exist without an account too, so they are part of Playing.
+- **Playing.** The player's **calibration profile** turns a hand gesture into values from 0 to 1. The gesture points at a **pad** of the **layout** (a cell of the pad grid or a key of the piano), and the hand's openness sets the volume. Each pad stands for a **degree** of the **scale** (a key and a mode, major or natural minor).
+- **Preferences:** dominant hand, camera preview, key, mode, layout (pad grid or piano) and sensitivity (from 0, Low, to 1, High; 0.5 by default). The sensitivity scales the calibration profile: higher sensitivity means a smaller movement reaches every note. An account only keeps a copy of the preferences.
+- **Game.** An exercise has a melody (a sequence of degrees). Passing an attempt unlocks the next exercise.
+- **Accounts.** An account can be used only after its email is confirmed with a **confirmation link** (valid for 24 hours). Each logged-in device has a **session** (valid for 30 days).
 
-## 3. Component diagram
+**Non-obvious choices:**
+
+- The calibration profile belongs to the player, because it describes the body and the camera, not the music.
+- A pad stands for a *degree*, not a pitch, so changing the key doesn't change the layout.
+
+## 3. High-level architecture
 
 ![Component diagram](design/component-diagram.png)
 
-Components marked **«planned»** (Game, Accounts, Email Sender) are part of the design but are not in the code yet.
+[Source](design/component-diagram.puml). Components marked **«planned»** are not built yet.
 
-- The **player** uses only the Player App in the browser. **Vercel** serves the built app as a static site.
-- Everything that happens in real time (hand tracking, notes, sound, game) runs in the browser, so the app works without an account. **Settings** (`SettingsStore`) holds the player's choices (dominant hand, camera preview) and tells the instrument when they change.
-- **Instrument** and **Game** hold the rules and do not use the webcam, MediaPipe or Web Audio directly. **Hand Tracking** and **Sound** wrap those external systems.
-- The **API** runs on Vercel as a serverless function. Today it has **Health** (`GET /api/health`), which reports whether the server and the database answer. Health depends on the **DatabaseStatus** interface, not on the database driver, so its tests use a fake.
-- **Database access** is the only part that talks to the database: one `pg` connection pool and hand-written SQL, to a **Postgres database hosted on Supabase** (see [ADR 001](adr/001-database-choice.md)). **Accounts** will use it for its repositories and send emails through the **Email Sender**.
+| Component | Responsibility |
+|---|---|
+| **Player App** | The pages and the composition root [`main.ts`](../packages/web/src/main.ts), the only place that creates and connects the concrete classes. |
+| **Settings** | [`SettingsStore`](../packages/web/src/settings/SettingsStore.ts) holds the player's choices, notifies when one changes and keeps them between visits through the [`SettingsStorage`](../packages/web/src/settings/SettingsStorage.ts) interface. [`CookieSettingsStorage`](../packages/web/src/settings/CookieSettingsStorage.ts) saves them in a cookie for one week (guests, [#34](https://github.com/MESW-LES-2627/les-project-group-5/issues/34)). |
+| **Instrument** | The rules of playing (layouts, scale, notes), in the `domain` package, with no dependency on the browser. |
+| **Hand Tracking, Sound** | Wrap MediaPipe and Web Audio behind interfaces ([`HandTracker`](../packages/web/src/tracking/HandTracker.ts), [`Synth`](../packages/web/src/audio/Synth.ts)). |
+| **API client** | [`ApiClient`](../packages/web/src/api/ApiClient.ts), the only code that calls the server. |
+| **Game** «planned» | Exercises and attempts. |
+| **API** | A serverless function built with Fastify. Each feature has a controller, a service and a repository interface, connected in [`createDependencies.ts`](../packages/server/src/createDependencies.ts). |
+| **Health** | `GET /api/health`, which checks the server and the database. |
+| **Accounts** | Sign up, email confirmation, and login and logout with a session cookie. |
+| **Email Sender** | The `EmailSender` interface; for now the emails go to the log. The real provider is «planned». |
+| **Database access** | One `pg` pool and hand-written SQL to Postgres on Supabase. |
 
-## 4. Change scenarios
+**Why these boundaries:**
 
-### Scenario 1: per-user hand calibration
+- **Real time in the browser, accounts on the server**, connected only through the API client, so the instrument works when the server is down.
+- **Domain rules apart from browser APIs.** Playing is the part that changes most, and this boundary lets it change and be tested without a camera or speakers.
+- **Interfaces at the server's edges** (repositories, `EmailSender`), so services are tested with fakes and the email provider can be chosen later.
 
-**Scenario.** Today everyone plays with the same `DEFAULT_CALIBRATION_PROFILE`: fixed ranges for the pointer and for the hand openness. Hands, arms and camera positions differ, so some players can't reach the edge pads or never reach full volume. In the future, a calibration assistant asks the player to move the hand to the edges and to open and close it, measures the ranges, and the instrument then uses **that player's profile**.
+## 4. Future change scenarios: coupling, cohesion, and design decisions
 
-**Affected elements.**
+We analyze coupling in three dimensions:
 
-| Element | Today | With per-user calibration |
+- **Strength:** how much one part knows about another. From strongest to weakest: *intrusive*, *functional* (shared rule), *model* (shared data model), *contract* (only an agreed interface).
+- **Distance:** same module, another package, another program over the network, or data stored today and read by future code.
+- **Volatility:** how often the parts change (the core subdomain changes most).
+
+Strong coupling is fine at short distance, and long distance is fine with weak coupling. The risk is **strong + distant + volatile**.
+
+### 4.1. Scenario 1 — Per-user hand calibration (Iteration 1)
+
+*Written on 2026-11-04. Analysis rewritten on 2026-11-15 with the three dimensions; the decision did not change.*
+
+#### Change scenario and design context
+
+Everyone plays with the same [`DEFAULT_CALIBRATION_PROFILE`](../packages/domain/src/calibration/CalibrationProfile.ts), so some players can't reach the edge pads or full volume, especially players with a limited range of motion. In the change, a calibration assistant measures the player's ranges and the instrument uses **that player's profile**.
+
+Affected: [`InstrumentLoop`](../packages/web/src/instrument/InstrumentLoop.ts) (keeps the profile `readonly`), [`main.ts`](../packages/web/src/main.ts), [`SettingsStore`](../packages/web/src/settings/SettingsStore.ts), a new calibration page, and saving the profile in the account. `CalibrationProfile` itself doesn't change: a measured profile is just another instance.
+
+#### Coupling and cohesion analysis
+
+| Coupling | Strength | Distance | Volatility | Result |
+|---|---|---|---|---|
+| `InstrumentLoop` → `CalibrationProfile` | Model (domain type, injected) | Short | High (core) | Balanced: the loop doesn't know where the profile comes from |
+| `main.ts` → default profile | Model | Short | Low | Fine: the composition root knows every part |
+| Profile → saved in the account | Model | Long | High | Risky; handled in scenario 2 |
+
+- **What breaks:** only the `readonly` profile in the loop, which needs a setter.
+- **Cohesion:** the `calibration` module only normalizes values; which profile to use is decided in `main.ts`. `SettingsStore` repeats the same getter, setter and listeners for each setting (two settings on 11-04, five on 11-15).
+
+#### Alternatives, decision, and consequences
+
+- **(a) The loop reads the profile from `SettingsStore`.** Fewer lines, but the loop would depend on a class that changes with every new setting.
+- **(b) Inject the profile from `main.ts`,** with `SettingsStore` as the only source and `loop.setCalibrationProfile()`, as already done for the dominant hand.
+- **(c) A `CalibrationSource` interface asked every frame.** Weaker coupling, but the distance is already short, so it adds an interface for little gain.
+
+**Decision: (b).** The only coupling to Settings stays in the composition root, and it follows a pattern the team already uses. **Cost:** one setter and a few wiring lines. **Plan:** no change now; when the assistant is built, add the profile to the store, the setter on the loop, the wiring and the page.
+
+> **Note (2026-11-19).** The setter arrived with the sensitivity setting, not with the assistant: [`main.ts`](../packages/web/src/main.ts) listens to the sensitivity in `SettingsStore` and calls `loop.setCalibrationProfile(calibrationForSensitivity(...))`, as decided in (b). The calibration assistant does not exist yet; when it is built, it only needs to provide its measured profile through the same path.
+
+### 4.2. Scenario 2 — Saving the settings in the account (Iteration 2)
+
+*Written on 2026-11-15.*
+
+#### Change scenario and design context
+
+The settings live only in the browser's memory and are lost on reload. That is intended for guests. Story [#35](https://github.com/MESW-LES-2627/les-project-group-5/issues/35) asks that a **logged-in** player's settings be saved automatically, loaded at login on any device, still applied when saving fails (with a message), and reachable only by their owner.
+
+It is plausible because it comes right after login in the backlog, the EventStorming has the policy *"if logged in, save the settings"*, and the `user_settings` table ([migration 002](../packages/server/migrations/002_create_settings_and_progress.sql)) already exists, unused.
+
+Affected: `SettingsStore`, `main.ts`, `ApiClient`, the settings page, a new server feature, the session (login), the `user_settings` table, and the domain types of each setting.
+
+> **Note (2026-11-20).** Guest settings are no longer lost on reload: story [#34](https://github.com/MESW-LES-2627/les-project-group-5/issues/34) keeps them in a cookie for one week. `SettingsStore` receives a `SettingsStorage` in its constructor and only `CookieSettingsStorage` touches `document.cookie`. Saving in the account can be another `SettingsStorage` (or sit next to it) without changing the store. Scales are saved by a fixed `ScaleType.id`, not by the name shown to people, so the server can use the same ids.
+
+#### Coupling and cohesion analysis
+
+| Coupling | Strength | Distance | Volatility |
+|---|---|---|---|
+| ① Settings page → `SettingsStore` | Model | Short | High |
+| ② Browser → server (settings over HTTP) | Model | Long (network) | High |
+| ③ Server → `user_settings` | Model, repeated in SQL | Longest (stored data) | High |
+| ④ Settings routes → session | Functional | Short | Low (generic) |
+
+① and ④ are balanced. **② and ③ are the risky combination:** they share the meaning of each value across the longest distances, and settings change often (the store went from two to five settings in eleven days). The code already shows the problem: **the table disagrees with the domain.**
+
+| Setting | Domain | `user_settings` |
 |---|---|---|
-| `domain/calibration/CalibrationProfile.ts` | The `CalibrationProfile` class and the `DEFAULT_CALIBRATION_PROFILE` constant | Unchanged. A measured profile is just another `CalibrationProfile` |
-| `domain/calibration/ControlCalibration.ts` | One range, normalizes a value to 0–1, rejects invalid ranges | Unchanged. It already rejects a bad measurement (min ≥ max) |
-| `web/main.ts` | Imports `DEFAULT_CALIBRATION_PROFILE` and passes it to `InstrumentLoop` | Takes the profile from Settings and passes changes to the loop |
-| `web/instrument/InstrumentLoop.ts` | Receives the profile in its constructor (`readonly profile`) | Needs a way to change it while running, like `setDominantHand` |
-| `web/settings/SettingsStore.ts` | Holds dominant hand and camera preview | Also holds the current profile (default until the player calibrates) |
-| `web/pages/` | `InstrumentPage`, `SettingsPage` | New calibration page (the assistant), opened from Settings |
-| Accounts «planned» | — | Saves the profile with the preferences |
-| `web/instrument/InstrumentLoop.test.ts` | Uses the default profile | Adds a test for changing the profile |
+| Layout | `'pad-grid' \| 'single-box'` | `'pad_grid' \| 'piano'` |
+| Scale | `ScaleType.MAJOR`, `ScaleType.NATURAL_MINOR` | `'major' \| 'natural_minor'` |
+| Sensitivity | Not built yet | Required |
 
-**Coupling analysis.**
+The compiler can't see SQL, so the mismatch went unnoticed until this analysis. Nothing writes to the table yet, but the first save would be rejected by the database. The fix is now recorded in [#35](https://github.com/MESW-LES-2627/les-project-group-5/issues/35).
 
-- Only two files use the global constant `DEFAULT_CALIBRATION_PROFILE`: `main.ts` (the composition root) and the loop's test. No rule or page depends on it.
-- `InstrumentLoop` depends on the `CalibrationProfile` **type**, received through its constructor, not on the constant. It doesn't know where the profile comes from. This is the coupling we want to keep.
-- The weak point is that the loop keeps the profile as `readonly`. A profile measured while the app runs can't reach it without a new method.
-- The domain (`Instrument`, `HandFeatureExtractor`) never sees the profile. It only receives `HandControls` from 0 to 1, so it isn't affected at all.
+> **Note (2026-11-19).** Since this analysis, the piano layout and the sensitivity setting were added to the code: two more changes to the settings in three days, which confirms their high volatility. Today the layout values differ only in spelling (`pad_grid` in the table, `pad-grid` in the code), and sensitivity matches the table (a number from 0 to 1). The scale still has no stored form in the code.
 
-**Cohesion analysis.**
+**Cohesion:** saving from inside `SettingsStore` would mix keeping the choices (synchronous, never fails) with saving them remotely (asynchronous, may fail, only when logged in).
 
-- The `calibration` module has one responsibility: turning raw hand values into 0–1 controls. `ControlCalibration` handles one range, and `CalibrationProfile` groups the three ranges and applies them.
-- **Which** profile to use is not decided there. That choice is made in `main.ts`. The only exception is the default values, which live next to the class as a constant. That is acceptable: they are the domain's starting values, not a choice per user.
-- `SettingsStore` has a separate getter, setter and listener set for each setting. Adding the profile would make a third copy of the same code. This small duplication is worth fixing when the store grows.
+#### Alternatives, decision, and consequences
 
-**Options.**
+- **(a) Mirror the store in the API and the table, and save from each setter.** Least code today, but every new setting touches five places in three languages with nothing checking that they agree, and the store loses cohesion.
+- **(b) Store the settings as one opaque JSON column.** The server never changes, but it can't validate what it stores. The coupling moves into the data, where it is hardest to see.
+- **(c) One shared contract and a separate sync component:**
+  - `PlayerSettings` in the `domain` package, with a version, used by both browser and server. Missing or unknown fields take the default.
+  - `SettingsSync` in the browser, which saves through `ApiClient` only when the player is logged in and loads the settings at login.
+  - `features/settings/` on the server (`GET`/`PUT /api/settings`), with the user taken from the session.
+  - Migration 003 to fix the table.
 
-- **(a) Read the profile from `SettingsStore` where it is used.** `InstrumentLoop` would receive the `SettingsStore` and read `settings.calibration` on every frame.
-  - It needs fewer wiring lines.
-  - But the loop, which runs the pipeline, also has to know about the settings. Its tests would need a settings store, and the loop would depend on a web class instead of only on domain types (more coupling, less cohesion).
-- **(b) Inject the profile at the composition root, from one source.** `SettingsStore` is the only source of the current profile, starting with `DEFAULT_CALIBRATION_PROFILE`. `main.ts` passes it to the loop, subscribes to changes and calls `loop.setCalibrationProfile(profile)`, the same pattern already used for the dominant hand.
-  - The loop and the domain only see a `CalibrationProfile` and never know where it comes from.
-- **(c) A `CalibrationSource` interface that the loop asks on every frame.**
-  - It is flexible.
-  - But it adds an interface for a value that rarely changes, and pull on every frame hides when the change happens.
+**Decision: (c).** It turns ② and ③ into contract coupling, checked by the compiler on both sides, and keeps `SettingsStore` with a single job.
 
-**Decision: (b).**
+**Consequences:** a wrong value is caught at compile time or by the server, not in production; old saved data keeps working; guests are unaffected. The cost is one more type, one more component per side, and a migration per new setting, which we accept so the database can still reject invalid data.
 
-- It keeps coupling low: the loop depends only on the `CalibrationProfile` type, the domain depends on nothing new, and only `main.ts` knows that the profile comes from Settings.
-- It keeps each part cohesive: Settings holds choices, the loop runs the pipeline, and `calibration` normalizes values.
-- It follows a pattern the team already uses (`setDominantHand`), so it is easy to read and to test with a fake profile.
+**Plan:** implement in Iteration 3 with #35 (login is already built), in this order: `PlayerSettings`, migration 003, the server feature, the `ApiClient` methods, `SettingsSync`.
 
-**Now:** no code change. The current design already injects the profile, and adding a setter before anyone needs it would be speculative.
+## 5. Existing design pattern instances
 
-**When the assistant is built:**
+To be completed in Iteration 3.
 
-1. Add the profile to `SettingsStore`, default `DEFAULT_CALIBRATION_PROFILE`, ideally after making its listeners generic.
-2. Add `InstrumentLoop.setCalibrationProfile()` and its test.
-3. Add the wiring in `main.ts`.
-4. Add the calibration page, which builds a `CalibrationProfile` from the measured ranges.
-5. Have Accounts save the profile.
+## 6. Existing code smells and possible refactorings
+
+To be completed in Iteration 3.

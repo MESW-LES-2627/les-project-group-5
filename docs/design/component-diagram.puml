@@ -38,23 +38,28 @@ skinparam ranksep 55
 actor Player
 
 node "Browser" #EFF6FF {
-  component "Player App\n(instrument and\nsettings pages)" as App
+  component "Player App\n(instrument, settings,\nsign-up, email confirmation\nand login pages)" as App
   component "Settings\n(SettingsStore)" as Set
   component "Game\n(exercises, attempts)" as Ear <<planned>>
   component "Instrument\n(layouts, scale, notes)" as Instr
   component "Hand Tracking" as Track
   component "Sound" as Sound
+  component "API client\n(ApiClient)" as Client
 }
 
 node "Vercel" #ECFDF5 {
   package "API (serverless function)" #F7FEF9 {
     () "Health API\n(GET /api/health)" as HAPI
     () "Accounts API\n(REST)" as AAPI
+    () "Settings API\n(REST)" as SAPI
     component "Health" as Health
-    component "Accounts\n(sign up, login,\npreferences, progress)" as Acc <<planned>>
+    component "Accounts\n(sign up,\nemail confirmation)" as Acc
+    component "Login and logout\n(session cookie)" as Login
+    component "Settings\n(saved settings)" as SSet <<planned>>
     () "DatabaseStatus" as DBS
+    () "EmailSender" as ES
     component "Database access\n(pg pool)" as DBA
-    component "Email Sender" as Mail <<planned>>
+    component "Console Email Sender\n(writes to the log)" as Mail
   }
   component "Static site\n(built web app)" as Site
 }
@@ -63,12 +68,13 @@ component "Webcam" as Cam <<external>>
 component "MediaPipe" as MP <<external>>
 component "Web Audio" as WA <<external>>
 database "Postgres\n(hosted on Supabase)" as PG #FDF2F8
-cloud "Email provider" as SMTP #FDF2F8
+cloud "Email provider\n(planned)" as SMTP #FDF2F8
 
 Player -down-> App : uses
 App .down.> Set
 App .down.> Ear
 App .down.> Instr
+App .down.> Client
 Ear .down.> Instr
 Ear .down.> Sound
 Instr .down.> Track
@@ -77,15 +83,22 @@ Track .down.> Cam
 Track .down.> MP
 Sound .down.> WA
 
-App ..> HAPI
-App ..> AAPI
+Client ..> HAPI
+Client ..> AAPI
+Client ..> SAPI
 HAPI -down- Health
 AAPI -down- Acc
+AAPI -down- Login
+SAPI -down- SSet
+SSet .left.> Login : current user
 Health .down.> DBS
 DBS - DBA
 Acc .down.> DBA
-Acc .down.> Mail
+Login .down.> DBA
+SSet .down.> DBA
+Acc .down.> ES
+Mail -left- ES
+Mail .down.> SMTP : to be replaced by
 DBA -down-> PG : SQL
-Mail -down-> SMTP
 Site .[norank].> App : serves
 @enduml

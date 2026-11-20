@@ -1,4 +1,4 @@
-import { PITCH_CLASSES, ScaleType, type Handedness, type PitchClass } from '@instrument/domain';
+import { PITCH_CLASSES, ScaleType, type Handedness, type PitchClass, type LayoutKind } from '@instrument/domain';
 import { appHeader } from './appHeader';
 
 const SCALE_OPTIONS: readonly { type: ScaleType; label: string }[] = [
@@ -6,20 +6,28 @@ const SCALE_OPTIONS: readonly { type: ScaleType; label: string }[] = [
   { type: ScaleType.NATURAL_MINOR, label: 'Natural minor' },
 ];
 
+// SingleBoxLayout remains available as a domain prototype, but is intentionally not a player setting.
+export const LAYOUT_OPTIONS: readonly { kind: LayoutKind; label: string }[] = [
+  { kind: 'pad-grid', label: 'Pad grid' },
+  { kind: 'piano', label: 'Piano' },
+];
+
 /** The settings screen. It only draws the choices and reports changes; it doesn't store anything. */
 export class SettingsPage {
   private readonly handSelector: HTMLElement;
   private readonly pitchSelector: HTMLSelectElement;
   private readonly scaleSelector: HTMLSelectElement;
+  private readonly layoutSelector: HTMLSelectElement;
   private readonly cameraPreviewInput: HTMLInputElement;
   private readonly serverStatus: HTMLElement;
-  
+  private readonly sensitivitySelector: HTMLInputElement;
 
   constructor(root: HTMLElement) {
-        // The option values for the scale are indexes into SCALE_OPTIONS, so this works
+    // The option values for the scale are indexes into SCALE_OPTIONS, so this works
     // whatever the underlying values of ScaleType are.
     const pitchOptions = PITCH_CLASSES.map((p) => `<option value="${p}">${p}</option>`).join('');
     const scaleOptions = SCALE_OPTIONS.map((o, i) => `<option value="${i}">${o.label}</option>`).join('');
+    const layoutOptions = LAYOUT_OPTIONS.map((o) => `<option value="${o.kind}">${o.label}</option>`).join('');
     // The hand choice uses real radio buttons styled as the template's two-button switch,
     // so the keyboard and screen readers keep working without extra code.
     root.innerHTML = `
@@ -44,18 +52,38 @@ export class SettingsPage {
               </div>
               <fieldset class="segmented hand-selector">
                 <legend class="visually-hidden">Hand</legend>
-                <label><input type="radio" name="hand" value="Right" checked><span>Right hand</span></label>
                 <label><input type="radio" name="hand" value="Left"><span>Left hand</span></label>
+                <label><input type="radio" name="hand" value="Right" checked><span>Right hand</span></label>
               </fieldset>
             </section>
             <section>
               <div class="section-title">
-                <h2>Key and scale</h2>
+                <h2>Pitch and scale</h2>
                 <p>Choose the root note and the type of scale.</p>
               </div>
               <div class="scale-controls">
-                <label>Key <select class="root-select">${pitchOptions}</select></label>
+                <label>Pitch <select class="root-select">${pitchOptions}</select></label>
                 <label>Scale <select class="scale-type-select">${scaleOptions}</select></label>
+              </div>
+            </section>
+            <section>
+              <div class="section-title">
+                <h2>Layout</h2>
+                <p>Choose how the notes are arranged on the instrument page.</p>
+              </div>
+              <div class="scale-controls">
+                <label>Layout <select class="layout-select">${layoutOptions}</select></label>
+              </div>
+            </section>
+            <section>
+              <div class="section-title">
+                <h2>Sensitivity</h2>
+                <p>How far your hand has to move to cover all the pads.</p>
+              </div>
+              <div class="slider">
+                <span>Low</span>
+                <input type="range" class="sensitivity-slider" min="0" max="100" step="1" value="50" aria-label="Sensitivity">
+                <span>High</span>
               </div>
             </section>
             <section>
@@ -76,7 +104,9 @@ export class SettingsPage {
     this.pitchSelector = find(root, '.root-select');
     this.scaleSelector = find(root, '.scale-type-select');
     this.cameraPreviewInput = find(root, '.toggle input[type="checkbox"]');
+    this.layoutSelector = find(root, '.layout-select');
     this.serverStatus = find(root, '.server-status');
+    this.sensitivitySelector = find(root, '.sensitivity-slider');
   }
 
   setServerStatus(online: boolean): void {
@@ -116,6 +146,19 @@ export class SettingsPage {
     });
   }
 
+  /** Reports a layout choice made by the user. */
+  onLayoutChange(handler: (layout: LayoutKind) => void): void {
+    this.layoutSelector.addEventListener('change', () => {
+      const option = LAYOUT_OPTIONS.find((o) => o.kind === this.layoutSelector.value);
+      if (option) handler(option.kind);
+    });
+  }
+
+  /** Reports a sensitivity choice made by the user. */
+  onSensitivityChange(handler: (sensitivity: number) => void): void {
+    this.sensitivitySelector.addEventListener('input', () => handler(Number(this.sensitivitySelector.value) / 100));
+  }
+
   /** Shows which hand is selected. */
   setHand(hand: Handedness): void {
     const input = this.handSelector.querySelector<HTMLInputElement>(`input[value="${hand}"]`);
@@ -136,6 +179,16 @@ export class SettingsPage {
   setScale(scale: ScaleType): void {
     const index = SCALE_OPTIONS.findIndex((o) => o.type === scale);
     if (index >= 0) this.scaleSelector.value = index.toString();
+  }
+
+  /** Shows which layout is selected. */
+  setLayout(layout: LayoutKind): void {
+    this.layoutSelector.value = layout;
+  }
+
+  /** Shows the sensitivity. Setting `value` doesn't fire `input`. */
+  setSensitivity(sensitivity: number): void {
+    this.sensitivitySelector.value = String(Math.round(sensitivity * 100));
   }
 }
 

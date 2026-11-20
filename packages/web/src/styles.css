@@ -135,6 +135,27 @@ svg {
   background: rgba(255, 255, 255, 0.07);
 }
 
+.guest-links,
+.user-links {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* "display: flex" above would otherwise win over the hidden attribute. */
+.app-header [hidden] {
+  display: none;
+}
+
+.app-header nav .log-out {
+  cursor: pointer;
+}
+
+.app-header nav .log-out:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
 .app-header nav button:disabled {
   cursor: default;
   opacity: 0.6;
@@ -258,6 +279,76 @@ svg {
 .cell.selected span,
 .cell.sounding span {
   color: #ffd9bd;
+}
+
+/* White and black piano keys share the layout's exact hit regions. */
+.cell.piano-key {
+  border-radius: 0 0 10px 10px;
+  gap: 3px;
+  text-shadow: none;
+}
+
+.piano-key.white-key {
+  z-index: 1;
+  color: #77716b;
+  border-color: #d6d0c7;
+  /* Use translucent fills, not element opacity, so labels stay crisp over the webcam preview. */
+  background: linear-gradient(rgba(207, 201, 192, 0.84), rgba(244, 240, 233, 0.84));
+}
+
+.piano-key.white-key.in-scale {
+  color: #24211e;
+  border-color: rgba(255, 139, 62, 0.72);
+  background: linear-gradient(rgba(238, 232, 223, 0.86), rgba(255, 253, 249, 0.86));
+}
+
+.piano-key.black-key {
+  z-index: 2;
+  justify-content: flex-end;
+  padding-bottom: 12px;
+  color: #6f6d69;
+  border-color: rgba(255, 255, 255, 0.12);
+  border-radius: 0 0 7px 7px;
+  background: linear-gradient(
+    90deg,
+    rgba(20, 20, 20, 0.9),
+    rgba(41, 39, 37, 0.9) 45%,
+    rgba(17, 17, 17, 0.9)
+  );
+  box-shadow: 0 8px 14px rgba(0, 0, 0, 0.4);
+}
+
+.piano-key.black-key.in-scale {
+  color: #e3ddd6;
+  border-bottom-color: #a94d12;
+}
+
+.piano-key strong {
+  font-size: clamp(12px, 1.8vw, 22px);
+  line-height: 1;
+  font-weight: 500;
+}
+
+.piano-key span {
+  font-size: clamp(8px, 0.9vw, 11px);
+}
+
+.piano-key.black-key strong {
+  font-size: clamp(10px, 1.3vw, 16px);
+}
+
+.cell.piano-key.selected,
+.cell.piano-key.sounding {
+  transform: translateY(3px) scale(0.98);
+  color: #fff;
+  border-color: var(--orange);
+  background: linear-gradient(rgba(255, 150, 62, 0.88), rgba(255, 108, 8, 0.88));
+  box-shadow: 0 0 24px rgba(255, 106, 6, 0.55);
+}
+
+.cell.piano-key.selected span,
+.cell.piano-key.sounding span {
+  color: #fff;
 }
 
 /* The pointer follows the hand. Same ring and cross as the template's gesture pointer. */
@@ -688,6 +779,54 @@ svg {
   font: inherit;
 }
 
+.slider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: #77736e;
+  font-size: 11px;
+}
+
+.slider input[type='range'] {
+  flex: 1;
+  height: 20px;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.slider input[type='range']::-webkit-slider-runnable-track,
+.slider input[type='range']::-moz-range-track {
+  height: 3px;
+  border-radius: 3px;
+  background: #3e3c39;
+}
+
+.slider input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5.5px;
+  border: 2px solid #121110;
+  border-radius: 50%;
+  background: var(--orange);
+  box-shadow: 0 0 10px rgba(255, 107, 11, 0.6);
+}
+
+.slider input[type='range']::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #121110;
+  border-radius: 50%;
+  background: var(--orange);
+  box-shadow: 0 0 10px rgba(255, 107, 11, 0.6);
+}
+
 .done-button {
   display: block;
   width: fit-content;
@@ -704,6 +843,119 @@ svg {
 
 .done-button:hover {
   background: #e9680d;
+}
+
+/* ---------- Account pages (sign up) ---------- */
+
+.account-page {
+  width: min(100% - 40px, 520px);
+}
+
+.account-panel {
+  padding: 34px;
+}
+
+.account-form {
+  display: grid;
+  gap: 22px;
+}
+
+/* "display: grid" above would otherwise win over the hidden attribute (used after a successful sign-up). */
+.account-form[hidden] {
+  display: none;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.field input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--text);
+  background: var(--surface);
+  font: inherit;
+}
+
+.field input[aria-invalid='true'] {
+  border-color: #e0694f;
+}
+
+.password-row {
+  display: flex;
+  gap: 8px;
+}
+
+.show-password {
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--muted);
+  background: var(--surface);
+  font: inherit;
+  cursor: pointer;
+}
+
+.show-password:hover {
+  color: #fff;
+}
+
+.field-hint {
+  color: var(--dim);
+  font-size: 11px;
+}
+
+.field-error,
+.form-message {
+  margin: 0;
+  color: #f08a73;
+  font-size: 12px;
+}
+
+.field-error:empty,
+.form-message:empty {
+  display: none;
+}
+
+.account-form .done-button {
+  margin: 0;
+  border: 0;
+  cursor: pointer;
+}
+
+.account-form .done-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* "display: block" on the buttons would otherwise win over the hidden attribute. */
+.account-panel [hidden] {
+  display: none;
+}
+
+.confirm-intro {
+  margin: 0;
+  color: var(--muted);
+}
+
+.form-footer {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.form-footer a {
+  color: var(--orange);
+}
+
+.sent-message {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
 }
 
 /* ---------- Phones (same width as the layout switch in main.ts) ---------- */

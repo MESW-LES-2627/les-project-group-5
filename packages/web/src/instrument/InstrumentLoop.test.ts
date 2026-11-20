@@ -12,9 +12,23 @@ function fakeVideo() {
   return { readyState: 4, currentTime: 0 } as { readyState: number; currentTime: number } & HTMLVideoElement;
 }
 
+/** Moves the hand from x 0.7 to x 0.3 and returns how far the pointer moved. */
+function pointerTravel(sensitivity: number): number {
+  const { tracker, video, loop, frames } = setup();
+  loop.setSensitivity(sensitivity);
+  tracker.setHands([makeHand({ handedness: 'Right', indexTip: { x: 0.7, y: 0.5 }, reach: 2 })]);
+  video.currentTime = 1;
+  loop.tick(1000);
+  tracker.setHands([makeHand({ handedness: 'Right', indexTip: { x: 0.3, y: 0.5 }, reach: 2 })]);
+  video.currentTime = 2;
+  loop.tick(1033);
+
+  return Math.abs(frames[1].pointer!.x - frames[0].pointer!.x);
+}
+
 const bothHands = () => [
   makeHand({ handedness: 'Right', indexTip: { x: 0.75, y: 0.5 }, reach: 2 }), // degree 1
-  makeHand({ handedness: 'Left', indexTip: { x: 0.25, y: 0.5 }, reach: 2 }),  // degree 2
+  makeHand({ handedness: 'Left', indexTip: { x: 0.25, y: 0.5 }, reach: 2 }), // degree 2
 ];
 
 function setup() {
@@ -121,4 +135,19 @@ describe('InstrumentLoop', () => {
     }
   });
 
+  it('smooths the pointer more at Low than at High', () => {
+    expect(pointerTravel(0)).toBeLessThan(pointerTravel(1));
+  });
+
+  it('ignores tiny movements at Low (dead zone)', () => {
+    const { tracker, video, loop, frames } = setup();
+    loop.setSensitivity(0);
+    tracker.setHands([makeHand({ handedness: 'Right', indexTip: { x: 0.7, y: 0.5 }, reach: 2 })]);
+    video.currentTime = 1;
+    loop.tick(1000);
+    tracker.setHands([makeHand({ handedness: 'Right', indexTip: { x: 0.701, y: 0.5 }, reach: 2 })]);
+    video.currentTime = 2;
+    loop.tick(1033);
+    expect(frames[1].pointer).toEqual(frames[0].pointer);
+  });
 });

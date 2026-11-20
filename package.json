@@ -15,13 +15,17 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "typecheck": "tsc -p packages/domain && tsc -p packages/web && tsc -p packages/server",
     "check": "npm run lint && npm run typecheck && npm test",
     "build:api": "npm run build -w @instrument/server",
-    "docs": "typedoc"
+    "docs": "typedoc",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "@stylistic/eslint-plugin": "^6.0.1",
     "eslint": "^10.13.0",
+    "husky": "^9.1.7",
     "typedoc": "^0.28.20",
     "typedoc-plugin-markdown": "^4.14.1",
     "typescript": "^6.0.3",

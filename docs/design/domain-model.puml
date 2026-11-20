@@ -36,22 +36,21 @@ package "Playing" #EFF6FF {
   }
   class Instrument
   class Preferences {
-    dominant hand
-    camera preview on/off
-    key, scale, layout
-    sensitivity
+    dominant hand : Left | Right
+    camera preview : on | off
+    sensitivity : 0 (Low)..1 (High)
   }
   class Pad
   class Layout {
-    kind : Grid | Piano
+    kind : Pad grid | Piano
   }
   class Note {
     pitch
     volume
   }
   class Scale {
-    key : C, D, ...
-    mode : Major | Minor
+    key : one of 12 note names
+    mode : Major | Natural minor
   }
   class Degree {
     number : 1..8
@@ -61,7 +60,13 @@ package "Playing" #EFF6FF {
 package "Accounts" #ECFDF5 {
   class Account {
     email
-    email confirmed
+    email confirmed : yes | no
+  }
+  class ConfirmationLink as "Confirmation Link" {
+    valid for 24 hours
+  }
+  class Session {
+    valid for 30 days
   }
 }
 
@@ -95,7 +100,10 @@ Player "1" -down- "*" Attempt : makes >
 ' Playing
 CalibrationProfile "1" -right- "*" HandGesture : normalizes >
 HandGesture "*" -down- "0..1" Pad : points at >
+Preferences "*" -down- "1" Scale : chosen key and mode >
+Preferences "*" -down- "1" Layout : chosen layout >
 Preferences .left.> Instrument : configures
+Preferences "*" -- "1" CalibrationProfile : sensitivity scales >
 Instrument "1" -down- "1" Layout : arranged as >
 Instrument "1" -down- "*" Note : produces >
 Instrument "1" -down- "1" Scale : tuned to >
@@ -105,7 +113,9 @@ Note "*" -down- "1" Degree : of >
 Scale "1" *-down- "8" Degree
 
 ' Accounts
-Account "1" -down- "0..1" Preferences : saves >
+Account "1" -down- "0..1" ConfirmationLink : confirmed with >
+Account "1" -down- "*" Session : logged in with\n(one per device) >
+Account "1" -down- "0..1" Preferences : keeps a copy of >
 Account "1" -down- "0..1" Progress : saves >
 
 ' Game

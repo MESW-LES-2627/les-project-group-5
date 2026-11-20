@@ -1,4 +1,5 @@
 import {
+  PointerSmoother,
   pickHand,
   type CalibrationProfile,
   type HandFeatureExtractor,
@@ -28,11 +29,12 @@ export class InstrumentLoop {
   private readonly errorListeners = new Set<FrameErrorListener>();
   private animationFrame: number | null = null;
   private lastVideoTime = -1;
+  private readonly smoothing: PointerSmoother = new PointerSmoother();
 
   constructor(
     private readonly tracker: HandTracker,
     private readonly extractor: HandFeatureExtractor,
-    private readonly profile: CalibrationProfile,
+    private profile: CalibrationProfile,
     private readonly instrument: Instrument,
     private readonly video: HTMLVideoElement,
     private dominantHand: Handedness = 'Right',
@@ -41,6 +43,17 @@ export class InstrumentLoop {
   /** Changes which hand drives the instrument. Takes effect on the next processed frame. */
   setDominantHand(hand: Handedness): void {
     this.dominantHand = hand;
+    this.smoothing.reset(); // reset smoothing, so the pointer doesn't jump
+  }
+
+  /** Changes the calibration profile. Takes effect on the next processed frame. */
+  setCalibrationProfile(profile: CalibrationProfile): void {
+    this.profile = profile;
+  }
+
+  /** Changes the sensitivity. Takes effect on the next processed frame. */
+  setSensitivity(sensitivity: number): void {
+    this.smoothing.setSensitivity(sensitivity);
   }
 
   /** Adds a listener. Returns a function that removes it. */
@@ -91,7 +104,9 @@ export class InstrumentLoop {
     this.lastVideoTime = this.video.currentTime;
 
     const hand = pickHand(this.tracker.detect(this.video, nowMs), this.dominantHand);
-    const controls = hand ? this.profile.apply(this.extractor.extract(hand)) : null;
+    const raw = hand ? this.profile.apply(this.extractor.extract(hand)) : null;
+    if (!raw) this.smoothing.reset();
+    const controls = raw ? { ...raw, pointer: this.smoothing.apply(raw.pointer) } : null;
     const frame = this.instrument.update(controls);
     for (const listener of this.listeners) {
       listener(frame);

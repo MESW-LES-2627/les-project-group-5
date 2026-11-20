@@ -1,53 +1,84 @@
-import "./styles.css";
+import './styles.css';
 import {
   DEFAULT_CALIBRATION_PROFILE,
+  calibrationForSensitivity,
   HandFeatureExtractor,
   Instrument,
   TwoColumnLayout,
-  ZigzagLayout,
+  PadGridLayout,
+  PianoLayout,
   Scale,
   type Layout,
-} from "@instrument/domain";
-import { ApiClient } from "./api/ApiClient";
-import { SoundOutput } from "./audio/SoundOutput";
-import { WebAudioSynth } from "./audio/WebAudioSynth";
-import { Camera, CameraError, type CameraProblem } from "./camera/Camera";
-import { InstrumentLoop } from "./instrument/InstrumentLoop";
-import { InstrumentPage } from "./pages/InstrumentPage";
-import { MediaPipeHandTracker } from "./tracking/MediaPipeHandTracker";
-import { SettingsStore } from "./settings/SettingsStore";
-import { SettingsPage } from "./pages/SettingsPage";
+  type LayoutKind,
+} from '@instrument/domain';
+import { ApiClient } from './api/ApiClient';
+import { SoundOutput } from './audio/SoundOutput';
+import { WebAudioSynth } from './audio/WebAudioSynth';
+import { Camera, CameraError, type CameraProblem } from './camera/Camera';
+import { InstrumentLoop } from './instrument/InstrumentLoop';
+import { InstrumentPage } from './pages/InstrumentPage';
+import { MediaPipeHandTracker } from './tracking/MediaPipeHandTracker';
+import { SettingsStore } from './settings/SettingsStore';
+import { SettingsPage } from './pages/SettingsPage';
+import { SignUpPage } from './pages/SignUpPage';
+import { ConfirmEmailPage } from './pages/ConfirmEmailPage';
+import { LoginPage } from './pages/LoginPage';
 
 // Composition root: the only place that creates the concrete classes and connects them.
 // Everything else receives what it needs through its constructor.
 
-const root = document.querySelector<HTMLElement>("#app");
-if (!root) throw new Error("Missing #app element");
+const root = document.querySelector<HTMLElement>('#app');
+if (!root) throw new Error('Missing #app element');
 
-// Both screens stay mounted and only one is visible. Removing the instrument page would destroy
-// the video and stop the camera, so the player would have to press Start again after every visit to settings.
-const instrumentRoot = document.createElement("div");
-const settingsRoot = document.createElement("div");
-root.append(instrumentRoot, settingsRoot);
+// All screens stay mounted and only one is visible. Removing the instrument page would destroy
+// the video and stop the camera, so the player would have to press Start again after every visit to another page.
+const instrumentRoot = document.createElement('div');
+const settingsRoot = document.createElement('div');
+const signUpRoot = document.createElement('div');
+const confirmEmailRoot = document.createElement('div');
+const loginRoot = document.createElement('div');
+const screens = [instrumentRoot, settingsRoot, signUpRoot, confirmEmailRoot, loginRoot];
+root.append(...screens);
+
+// Each address after "#" shows one screen. Any other address shows the instrument.
+// Some addresses carry values after "?" (like the token in #/confirm-email?token=...), so only the part before it counts.
+const ROUTES: Record<string, HTMLElement> = {
+  '#/settings': settingsRoot,
+  '#/sign-up': signUpRoot,
+  '#/confirm-email': confirmEmailRoot,
+  '#/login': loginRoot,
+};
+const routePath = (): string => location.hash.split('?')[0];
+const routeParameter = (name: string): string =>
+  new URLSearchParams(location.hash.split('?')[1] ?? '').get(name) ?? '';
+const currentScreen = (): HTMLElement => ROUTES[routePath()] ?? instrumentRoot;
+const onInstrument = (): boolean => currentScreen() === instrumentRoot;
 
 const showRoute = () => {
-  const onSettings = location.hash === "#/settings";
-  instrumentRoot.hidden = onSettings;
-  settingsRoot.hidden = !onSettings;
+  const visible = currentScreen();
+  for (const screen of screens) screen.hidden = screen !== visible;
 };
-addEventListener("hashchange", showRoute);
+addEventListener('hashchange', showRoute);
 showRoute();
 
 // The instrument starts with 8 notes in a zigzag of two rows. Key and scale come from the settings.
 const settings = new SettingsStore();
 let currentScale = new Scale(settings.pitch, settings.scale);
-const mobileLayoutQuery = window.matchMedia("(max-width: 720px)");
-let layout: Layout = mobileLayoutQuery.matches
-  ? new TwoColumnLayout()
-  : new ZigzagLayout();
+const mobileLayoutQuery = window.matchMedia('(max-width: 720px)');
+
+// Keep layout selection here so the instrument loop uses the same Layout interface for pads and piano keys.
+const LAYOUTS: Record<LayoutKind, () => Layout> = {
+  'pad-grid': () => (mobileLayoutQuery.matches ? new TwoColumnLayout() : new PadGridLayout()),
+  piano: () => new PianoLayout(),
+};
+
+let layout: Layout = LAYOUTS[settings.layout]();
 
 const page = new InstrumentPage(instrumentRoot);
 const settingsPage = new SettingsPage(settingsRoot);
+const signUpPage = new SignUpPage(signUpRoot);
+const confirmEmailPage = new ConfirmEmailPage(confirmEmailRoot);
+const loginPage = new LoginPage(loginRoot);
 const tracker = new MediaPipeHandTracker();
 const synth = new WebAudioSynth();
 const camera = new Camera();
@@ -67,21 +98,22 @@ loop.subscribe((frame) => page.render(frame));
 let instrumentStarted = false;
 let trackerNeedsReset = false;
 loop.subscribeError((error) => {
-  console.error("Instrument tracking stopped unexpectedly.", error);
+  console.error('Instrument tracking stopped unexpectedly.', error);
   loop.stop();
   instrument.update(null);
   sound.stop();
   camera.stop(page.video);
   instrumentStarted = false;
   trackerNeedsReset = true;
-  page.setStatus("Hand tracking stopped. Press Try again to restart.");
-  page.showStart("Try again");
+  page.setStatus('Hand tracking stopped. Press Try again to restart.');
+  page.showStart('Try again');
 });
 
 showRoute();
-addEventListener("hashchange", () => {
+addEventListener('hashchange', () => {
   showRoute();
-  if (location.hash === "#/settings") {
+  // The instrument only runs while its page is visible.
+  if (!onInstrument()) {
     if (instrumentStarted) {
       loop.stop();
       instrument.update(null);
@@ -93,11 +125,18 @@ addEventListener("hashchange", () => {
 });
 
 page.showCells(layout, currentScale);
-mobileLayoutQuery.addEventListener("change", (event) => {
-  layout = event.matches ? new TwoColumnLayout() : new ZigzagLayout();
+const applyLayout = () => {
+  instrument.update(null); // release the held note first, so the instrument and the sound agree
+  if (instrumentStarted) sound.stop(); // before Start the synth isn't initialized and nothing is sounding
+  layout = LAYOUTS[settings.layout]();
   instrument.setLayout(layout);
   page.showCells(layout, currentScale);
-});
+};
+mobileLayoutQuery.addEventListener('change', applyLayout);
+settings.subscribeLayout(applyLayout);
+
+settingsPage.setLayout(settings.layout);
+settingsPage.onLayoutChange((kind) => settings.setLayout(kind));
 
 settingsPage.setHand(settings.hand);
 page.setHand(settings.hand);
@@ -109,11 +148,9 @@ settings.subscribe((hand) => {
 settingsPage.setCameraPreview(settings.cameraPreview);
 page.setCameraPreviewVisible(settings.cameraPreview);
 settingsPage.onCameraPreviewChange((visible) =>
-  settings.setCameraPreview(visible),
-);
+  settings.setCameraPreview(visible));
 settings.subscribeCameraPreview((visible) =>
-  page.setCameraPreviewVisible(visible),
-);
+  page.setCameraPreviewVisible(visible));
 
 // One function rebuilds the scale from both settings, so it never works from a half-updated state.
 const applyScale = () => {
@@ -130,12 +167,29 @@ settingsPage.setScale(settings.scale);
 settingsPage.onPitchChange((pitch) => settings.setPitch(pitch));
 settingsPage.onScaleChange((scale) => settings.setScale(scale));
 
+const applySensitivity = (sensitivity: number) => {
+  loop.setCalibrationProfile(calibrationForSensitivity(sensitivity));
+  loop.setSensitivity(sensitivity);
+};
+applySensitivity(settings.sensitivity);
+settings.subscribeSensitivity(applySensitivity);
+
+settingsPage.setSensitivity(settings.sensitivity);
+settingsPage.onSensitivityChange((sensitivity) => settings.setSensitivity(sensitivity));
+
+// Keep the settings page in step when the settings change from elsewhere (for example back to the defaults on log out).
+settings.subscribe((hand) => settingsPage.setHand(hand));
+settings.subscribeCameraPreview((visible) => settingsPage.setCameraPreview(visible));
+settings.subscribePitch((pitch) => settingsPage.setPitch(pitch));
+settings.subscribeScale((scale) => settingsPage.setScale(scale));
+settings.subscribeLayout((kind) => settingsPage.setLayout(kind));
+settings.subscribeSensitivity((sensitivity) => settingsPage.setSensitivity(sensitivity));
+
 page.showInfo(currentScale, settings.hand);
-page.setStatus(`Press Start, allow the camera, and play with your ${settings.hand} hand.`);
 
 // Start loading the hand model right away, so Start is quicker. Errors are shown when Start is pressed.
 tracker.init().catch((error: unknown) => {
-  console.error("Could not preload the hand tracking model.", error);
+  console.error('Could not preload the hand tracking model.', error);
 });
 
 // Show whether the server and its database are reachable. The instrument works either way;
@@ -150,14 +204,72 @@ const checkServer = async () => {
 void checkServer();
 setInterval(checkServer, SERVER_CHECK_INTERVAL_MS);
 
+signUpPage.onSubmit((email, password) => api.signUp(email, password));
+
+// The token is read when the button is clicked, from the link that opened the page.
+confirmEmailPage.onConfirm(() => api.confirmEmail(routeParameter('token')));
+addEventListener('hashchange', () => {
+  if (currentScreen() === confirmEmailRoot) confirmEmailPage.reset();
+});
+
+// ---------- Logging in and out (US-E1-04, US-E1-05) ----------
+
+// The email of the logged-in player, or null for a guest. Asked once when the app opens;
+// the session itself lives in a cookie that only the server can read.
+let loggedInEmail: string | null = null;
+
+/** Shows "Log in / Sign up" to a guest and "Log out" to a logged-in player, in every page's header. */
+const showAccount = (email: string | null) => {
+  loggedInEmail = email;
+  for (const links of document.querySelectorAll<HTMLElement>('.guest-links')) links.hidden = email !== null;
+  for (const links of document.querySelectorAll<HTMLElement>('.user-links')) links.hidden = email === null;
+  // A logged-in player who opens the login page goes to the instrument instead.
+  if (email !== null && routePath() === '#/login') location.hash = '#/';
+};
+
+// After logging in, the player goes back to the page they were on before opening the login page.
+// Account pages are not worth going back to, so those lead to the instrument.
+const NO_RETURN_ROUTES = new Set(['#/login', '#/sign-up', '#/confirm-email']);
+let returnTo = '#/';
+addEventListener('hashchange', (event) => {
+  if (routePath() !== '#/login') return;
+  if (loggedInEmail !== null) {
+    location.hash = '#/';
+    return;
+  }
+  const previous = new URL(event.oldURL).hash;
+  returnTo = previous && !NO_RETURN_ROUTES.has(previous.split('?')[0]) ? previous : '#/';
+});
+
+loginPage.onSubmit(async (email, password) => {
+  const answer = await api.logIn(email, password);
+  if (answer.kind === 'logged-in') {
+    showAccount(answer.email);
+    location.hash = returnTo;
+  }
+  return answer;
+});
+
+// Every page's header has a Log out button, so one listener on the document handles them all.
+document.addEventListener('click', async (event) => {
+  if (!(event.target instanceof Element) || !event.target.closest('.log-out')) return;
+  if (!(await api.logOut())) return;
+  showAccount(null);
+  // Back to a guest with the default settings, on the instrument page (US-E1-05).
+  settings.reset();
+  location.hash = '#/';
+});
+
+void api.currentUser().then(showAccount);
+
 const CAMERA_MESSAGES: Record<CameraProblem, string> = {
   denied:
-    "Camera access is blocked. Allow the camera in your browser (icon in the address bar), then press Try again.",
-  "not-found": "No camera found. Connect a camera, then press Try again.",
+    'Camera access is blocked. Allow the camera in your browser (icon in the address bar), then press Try again.',
+  'not-found': 'No camera found. Connect a camera, then press Try again.',
   unsupported:
-    "This page can’t use the camera. Open it from localhost or an https:// address.",
+    'This page can’t use the camera. Open it from localhost or an https:// address.',
   unknown:
-    "The camera could not be started. Close other apps that use it, then press Try again.",
+    'The camera could not be started. Close other apps that use it, then press Try again.',
 };
 
 page.onStart(async () => {
@@ -169,22 +281,22 @@ page.onStart(async () => {
     }
     // Audio must be unlocked inside the click, before anything else is awaited.
     await synth.start();
-    page.setStatus("Opening the camera…");
+    page.setStatus('Opening the camera…');
     await camera.open(page.video);
-    page.setStatus("Loading hand tracking…");
+    page.setStatus('Loading hand tracking…');
     await tracker.init();
   } catch (error) {
     camera.stop(page.video);
     page.setStatus(
       error instanceof CameraError
         ? CAMERA_MESSAGES[error.problem]
-        : "Hand tracking could not be loaded. Check your connection, then press Try again.",
+        : 'Hand tracking could not be loaded. Check your connection, then press Try again.',
     );
-    page.showStart("Try again");
+    page.showStart('Try again');
     return;
   }
   page.hideStart();
-  page.setStatus("");
+  page.setStatus('');
   instrumentStarted = true;
-  if (location.hash !== "#/settings") loop.start();
+  if (onInstrument()) loop.start();
 });
