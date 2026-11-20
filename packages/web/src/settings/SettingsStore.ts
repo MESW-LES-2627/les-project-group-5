@@ -1,27 +1,35 @@
-import { DEFAULT_SENSITIVITY,  PITCH_CLASSES, ScaleType, type Handedness, type PitchClass, type LayoutKind } from '@instrument/domain';
-import type { SettingsStorage } from './SettingsStorage';
-import { CookieSettingsStorage } from './CookieSettingsStorage';
+import {
+  DEFAULT_SENSITIVITY,
+  PITCH_CLASSES,
+  ScaleType,
+  type Handedness,
+  type PitchClass,
+  type LayoutKind,
+} from "@instrument/domain";
+import type { SettingsStorage } from "./SettingsStorage";
+import { CookieSettingsStorage } from "./CookieSettingsStorage";
 
-const DEFAULT_HAND: Handedness = 'Right';
+const DEFAULT_HAND: Handedness = "Right";
 const DEFAULT_CAMERA_PREVIEW = true;
-const DEFAULT_PITCH: PitchClass = 'C';
+const DEFAULT_PITCH: PitchClass = "C";
 const DEFAULT_SCALE: ScaleType = ScaleType.MAJOR;
-const DEFAULT_LAYOUT: LayoutKind = 'pad-grid';
+const DEFAULT_LAYOUT: LayoutKind = "pad-grid";
 
 type HandListener = (hand: Handedness) => void;
 type CameraPreviewListener = (visible: boolean) => void;
 
 const isPitchClass = (value: unknown): value is PitchClass =>
-typeof value === 'string' && (PITCH_CLASSES as readonly string[]).includes(value);
+  typeof value === "string" &&
+  (PITCH_CLASSES as readonly string[]).includes(value);
 
 /** Every layout kind. The Record type makes TypeScript fail if a new LayoutKind is added and missing here. */
 const LAYOUT_KIND_LOOKUP: Record<LayoutKind, true> = {
-  'pad-grid': true,
+  "pad-grid": true,
   piano: true,
 };
 
 const isLayoutKind = (value: unknown): value is LayoutKind =>
-  typeof value === 'string' && Object.keys(LAYOUT_KIND_LOOKUP).includes(value);
+  typeof value === "string" && Object.keys(LAYOUT_KIND_LOOKUP).includes(value);
 /** Holds the player's settings. Pages report changes to it; the loop and the instrument page listen to it. */
 export class SettingsStore {
   private current: Handedness = DEFAULT_HAND;
@@ -35,10 +43,14 @@ export class SettingsStore {
   private readonly pitchListeners = new Set<(pitch: PitchClass) => void>();
   private readonly scaleListeners = new Set<(scale: ScaleType) => void>();
   private readonly layoutListeners = new Set<(layout: LayoutKind) => void>();
-  private readonly sensitivityListeners = new Set<(sensitivity: number) => void>();
+  private readonly sensitivityListeners = new Set<
+    (sensitivity: number) => void
+  >();
 
-  constructor(private readonly storage: SettingsStorage = new CookieSettingsStorage()) {
-  this.restore();
+  constructor(
+    private readonly storage: SettingsStorage = new CookieSettingsStorage(),
+  ) {
+    this.restore();
   }
 
   /** The hand that plays the instrument. */
@@ -80,27 +92,27 @@ export class SettingsStore {
   setCameraPreview(visible: boolean): void {
     if (visible === this.currentCameraPreview) return;
     this.currentCameraPreview = visible;
-     this.persist();
+    this.persist();
     for (const listener of [...this.cameraPreviewListeners]) listener(visible);
   }
 
   setPitch(pitch: PitchClass): void {
     if (pitch === this.currentPitch) return;
     this.currentPitch = pitch;
-     this.persist();
+    this.persist();
     for (const listener of [...this.pitchListeners]) listener(pitch);
   }
-  
+
   setScale(scale: ScaleType): void {
     if (scale === this.currentScale) return;
     this.currentScale = scale;
-     this.persist();
+    this.persist();
     for (const listener of [...this.scaleListeners]) listener(scale);
   }
 
   setLayout(layout: LayoutKind): void {
     if (layout === this.currentLayout) return;
-    this.currentLayout = layout; 
+    this.currentLayout = layout;
     this.persist();
     for (const listener of [...this.layoutListeners]) listener(layout);
   }
@@ -110,7 +122,7 @@ export class SettingsStore {
     const value = Math.min(1, Math.max(0, sensitivity));
     if (value === this.currentSensitivity) return;
     this.currentSensitivity = value;
-     this.persist();
+    this.persist();
     for (const listener of [...this.sensitivityListeners]) listener(value);
   }
 
@@ -138,7 +150,7 @@ export class SettingsStore {
     this.cameraPreviewListeners.add(listener);
     return () => this.cameraPreviewListeners.delete(listener);
   }
-  
+
   /** Returns a function that removes the listener. */
   subscribePitch(listener: (pitch: PitchClass) => void): () => void {
     this.pitchListeners.add(listener);
@@ -164,34 +176,41 @@ export class SettingsStore {
   }
 
   private restore(): void {
-  const raw = this.storage.load();
-  if (!raw) return;
-  let saved: Record<string, unknown>;
-  try {
-    saved = JSON.parse(raw);
-  } catch {
-    return;
-  }
-    if (saved.hand === 'Left' || saved.hand === 'Right') this.current = saved.hand;
-    if (typeof saved.cameraPreview === 'boolean') this.currentCameraPreview = saved.cameraPreview;
+    const raw = this.storage.load();
+    if (!raw) return;
+    let saved: Record<string, unknown>;
+    try {
+      saved = JSON.parse(raw);
+    } catch {
+      return;
+    }
+    if (saved.hand === "Left" || saved.hand === "Right")
+      this.current = saved.hand;
+    if (typeof saved.cameraPreview === "boolean")
+      this.currentCameraPreview = saved.cameraPreview;
     this.currentPitch = isPitchClass(saved.pitch) ? saved.pitch : DEFAULT_PITCH;
     this.currentScale = ScaleType.fromName(saved.scale) ?? DEFAULT_SCALE;
-    this.currentLayout = isLayoutKind(saved.layout) ? saved.layout : DEFAULT_LAYOUT;
-    if (typeof saved.sensitivity === 'number' && Number.isFinite(saved.sensitivity)) {
+    this.currentLayout = isLayoutKind(saved.layout)
+      ? saved.layout
+      : DEFAULT_LAYOUT;
+    if (
+      typeof saved.sensitivity === "number" &&
+      Number.isFinite(saved.sensitivity)
+    ) {
       this.currentSensitivity = Math.min(1, Math.max(0, saved.sensitivity));
     }
   }
 
-private persist(): void {
-  this.storage.save(JSON.stringify({
-    hand: this.current,
-    cameraPreview: this.currentCameraPreview,
-    pitch: this.currentPitch,
-    scale: this.currentScale.name,
-    layout: this.currentLayout,
-    sensitivity: this.currentSensitivity,
-  }));
+  private persist(): void {
+    this.storage.save(
+      JSON.stringify({
+        hand: this.current,
+        cameraPreview: this.currentCameraPreview,
+        pitch: this.currentPitch,
+        scale: this.currentScale.name,
+        layout: this.currentLayout,
+        sensitivity: this.currentSensitivity,
+      }),
+    );
+  }
 }
-}
-
-
