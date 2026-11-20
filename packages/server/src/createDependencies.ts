@@ -9,6 +9,8 @@ import { SessionService } from './features/accounts/SessionService';
 import { PostgresDatabaseStatus } from './features/health/PostgresDatabaseStatus';
 import { createDatabasePool } from './shared/database/createDatabasePool';
 import { ConsoleEmailSender } from './shared/email/ConsoleEmailSender';
+import type { EmailSender } from './shared/email/EmailSender';
+import { SmtpEmailSender } from './shared/email/SmtpEmailSender';
 
 /**
  * Creates the real objects and connects them: repositories → services → (controllers, in buildApp).
@@ -24,8 +26,7 @@ export function createDependencies(config: Config): {
   const accounts = new AccountService(
     new PostgresAccountRepository(pool),
     passwords,
-    // Emails are only written to the log until a real provider is chosen (#52).
-    new ConsoleEmailSender(),
+    createEmailSender(config),
     new AccountEmails(config.appBaseUrl),
   );
   return {
@@ -37,4 +38,10 @@ export function createDependencies(config: Config): {
     },
     closeDatabase: () => pool.end(),
   };
+}
+
+/** Sends real emails when an email account is configured; otherwise only writes them to the log (local development). */
+function createEmailSender(config: Config): EmailSender {
+  if (config.smtp) return new SmtpEmailSender(config.smtp);
+  return new ConsoleEmailSender();
 }

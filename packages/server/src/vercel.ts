@@ -6,7 +6,7 @@ import { createDependencies } from './createDependencies';
 // On Vercel the server does not listen on a port: Vercel runs this as a serverless function,
 // hands it each /api request (see the rewrite in vercel.json) and we pass it to Fastify's router.
 // The app is built once per function instance, not once per request, so warm requests are fast.
-// DATABASE_URL and APP_BASE_URL come from the Vercel project's environment variables (there is no .env file there).
+// DATABASE_URL, APP_BASE_URL, EMAIL_USER, EMAIL_PASS and EMAIL_FROM come from the Vercel project's environment variables (there is no .env file there).
 // Without APP_BASE_URL (preview deploys), email links use VERCEL_URL, the address Vercel gives each deploy.
 const vercelUrl = process.env.VERCEL_URL;
 const config = readConfig(vercelUrl ? `https://${vercelUrl}` : undefined);

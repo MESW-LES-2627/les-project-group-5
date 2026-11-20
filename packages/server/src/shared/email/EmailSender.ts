@@ -7,7 +7,7 @@ export interface Email {
 
 /**
  * Sends emails. Services depend on this interface, not on an email provider,
- * so the provider can be chosen later (#52) without changing them, and tests can use a fake.
+ * so the provider (SMTP, or the log locally) can change without changing them, and tests can use a fake.
  */
 export interface EmailSender {
   send(email: Email): Promise<void>;

@@ -15,6 +15,7 @@ const webAudioOnlyInSynth = ['AudioContext', 'OfflineAudioContext'].map((name) =
 
 const serverHttpFiles = ['packages/server/src/**/*Controller.ts', 'packages/server/src/app.ts'];
 const serverDatabaseFiles = ['packages/server/src/**/Postgres*.ts', 'packages/server/src/shared/database/**/*.ts'];
+const serverEmailFiles = ['packages/server/src/shared/email/SmtpEmailSender.ts'];
 const noFastify = {
   group: ['fastify', '@fastify/*'],
   message: 'Only controllers (and app.ts) may use Fastify. Services and repositories must not know about HTTP.',
@@ -22,6 +23,10 @@ const noFastify = {
 const noDatabase = {
   group: ['pg', '@supabase/*'],
   message: 'Only Postgres adapters (Postgres*.ts) and shared/database may use the database driver. Depend on an interface instead.',
+};
+const noEmailLibrary = {
+  group: ['nodemailer'],
+  message: 'Only SmtpEmailSender may use nodemailer. Depend on the EmailSender interface instead.',
 };
 
 export default defineConfig(
@@ -129,20 +134,25 @@ export default defineConfig(
       ],
     },
   },
-  // Server: only controllers (and app.ts) use Fastify, only Postgres adapters use the database driver.
-  // The three blocks below cover separate files on purpose: in ESLint, a later block with the same rule
+  // Server: only controllers (and app.ts) use Fastify, only Postgres adapters use the database driver,
+  // only SmtpEmailSender uses nodemailer.
+  // The four blocks below cover separate files on purpose: in ESLint, a later block with the same rule
   // replaces the earlier one instead of adding to it.
   {
     files: ['packages/server/src/**/*.ts'],
-    ignores: [...serverHttpFiles, ...serverDatabaseFiles, 'packages/server/src/**/*.test.ts'],
-    rules: { 'no-restricted-imports': ['error', { patterns: [noFastify, noDatabase] }] },
+    ignores: [...serverHttpFiles, ...serverDatabaseFiles, ...serverEmailFiles, 'packages/server/src/**/*.test.ts'],
+    rules: { 'no-restricted-imports': ['error', { patterns: [noFastify, noDatabase, noEmailLibrary] }] },
   },
   {
     files: serverHttpFiles,
-    rules: { 'no-restricted-imports': ['error', { patterns: [noDatabase] }] },
+    rules: { 'no-restricted-imports': ['error', { patterns: [noDatabase, noEmailLibrary] }] },
   },
   {
     files: serverDatabaseFiles,
-    rules: { 'no-restricted-imports': ['error', { patterns: [noFastify] }] },
+    rules: { 'no-restricted-imports': ['error', { patterns: [noFastify, noEmailLibrary] }] },
+  },
+  {
+    files: serverEmailFiles,
+    rules: { 'no-restricted-imports': ['error', { patterns: [noFastify, noDatabase] }] },
   },
 );
