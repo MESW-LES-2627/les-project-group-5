@@ -209,7 +209,6 @@ export class InstrumentPage {
 
     this.setStatus(frame.handDetected ? HINT : `Show your ${this.handLabel} hand to the camera.`);
   }
-
 }
 
 /** Writes "Name: online/offline" and turns the dot green when online. */

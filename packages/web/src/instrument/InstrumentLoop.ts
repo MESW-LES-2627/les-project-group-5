@@ -7,6 +7,7 @@ import {
   type Instrument,
   type InstrumentFrame,
   cameraToView,
+  type Point,
 } from '@instrument/domain';
 import type { HandTracker } from '../tracking/HandTracker';
 
@@ -117,7 +118,7 @@ export class InstrumentLoop {
   }
 
   /** Moves the pointer from the camera image to what the player sees on the stage (the video is cropped by object-fit: cover). */
-  private toViewPoint(point: { x: number; y: number }): { x: number; y: number } {
+  private toViewPoint(point: Point): Point {
     const { videoWidth, videoHeight, clientWidth, clientHeight } = this.video;
     // Before the first frame, the sizes are 0 (or missing in a test), so leave the point as it is.
     if (!(videoWidth > 0 && videoHeight > 0 && clientWidth > 0 && clientHeight > 0)) return point;

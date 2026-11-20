@@ -1,6 +1,6 @@
-/* Look taken from the layout template (packages/layout) and the Figma design "Web-based Gesture Instrument":
-   dark warm background, orange for the notes, green for "online". */
-@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap");
+/* Look taken from the layout template (packages/layout) and the Figma design 'Web-based Gesture Instrument':
+   dark warm background, orange for the notes, green for 'online'. */
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap');
 
 :root {
   --bg: #0d0d0d;
@@ -12,8 +12,8 @@
   --orange: #ff7a1a;
   --orange-strong: #f36d13;
   --ok: #83ae75;
-  --mono: "DM Mono", ui-monospace, monospace;
-  font-family: "Manrope", system-ui, sans-serif;
+  --mono: 'DM Mono', ui-monospace, monospace;
+  font-family: 'Manrope', system-ui, sans-serif;
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
@@ -146,7 +146,7 @@ svg {
   align-items: center;
 }
 
-/* "display: flex" above would otherwise win over the hidden attribute. */
+/* 'display: flex' above would otherwise win over the hidden attribute. */
 .app-header [hidden] {
   display: none;
 }
@@ -173,7 +173,7 @@ svg {
 }
 
 .status-light::before {
-  content: "";
+  content: '';
   width: 6px;
   height: 6px;
   border-radius: 50%;
@@ -203,7 +203,10 @@ svg {
   padding: 12px clamp(8px, 2vw, 32px);
 }
 
+
 /* 16:9, like the camera. It is as big as fits between header and footer, so nothing is cropped or stretched. */
+/* Subtract the 86px header, 72px minimum footer height, and 24px vertical
+   stage-area padding (12px top and bottom), then convert height to 16:9 width. */
 .stage {
   position: relative;
   aspect-ratio: 16 / 9;
@@ -231,7 +234,7 @@ svg {
 
 /* A dark layer over the camera, so the pads and the text stay easy to read. */
 .stage::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg, rgba(7, 7, 6, 0.08), rgba(8, 8, 7, 0.22));
@@ -244,7 +247,7 @@ svg {
   z-index: 1;
 }
 
-/* Each pad is a circle (the template's zigzag pads): the layout gives it a square place on the 4:3 play area. */
+/* On the 16:9 desktop stage, each square pad region is drawn as a circle. */
 .cell {
   position: absolute;
   display: flex;
@@ -280,7 +283,7 @@ svg {
   color: #9f9a94;
 }
 
-/* The pad is selected (the pointer is over it): the template's "playing" look, as soon as it is selected. */
+/* The pad is selected (the pointer is over it): the template's 'playing' look, as soon as it is selected. */
 .cell.selected,
 .cell.sounding {
   transform: translateY(-5px) scale(0.98);
@@ -398,7 +401,7 @@ svg {
 
 .pointer::before,
 .pointer::after {
-  content: "";
+  content: '';
   position: absolute;
   background: rgba(255, 176, 119, 0.8);
 }
@@ -443,7 +446,7 @@ svg {
   display: none;
 }
 
-/* Same orange pill as the template's "Play melody" button. */
+/* Same orange pill as the template's 'Play melody' button. */
 .start {
   padding: 12px 36px;
   border: 0;
@@ -566,7 +569,7 @@ svg {
 
 /* The round handle at the end of the orange bar. */
 .volume-fill::after {
-  content: "";
+  content: '';
   position: absolute;
   right: -6px;
   top: -4.5px;
@@ -650,7 +653,7 @@ svg {
   letter-spacing: -0.04em;
 }
 
-/* Where the template shows "Saved": a small status on the right of the title. */
+/* Where the template shows 'Saved': a small status on the right of the title. */
 .settings-heading .server-status {
   margin-left: auto;
   color: var(--dim);
@@ -769,7 +772,7 @@ svg {
 }
 
 .toggle input::after {
-  content: "";
+  content: '';
   position: absolute;
   left: 3px;
   top: 3px;
@@ -824,7 +827,7 @@ svg {
   font-size: 11px;
 }
 
-.slider input[type="range"] {
+.slider input[type='range'] {
   flex: 1;
   height: 20px;
   margin: 0;
@@ -833,14 +836,14 @@ svg {
   cursor: pointer;
 }
 
-.slider input[type="range"]::-webkit-slider-runnable-track,
-.slider input[type="range"]::-moz-range-track {
+.slider input[type='range']::-webkit-slider-runnable-track,
+.slider input[type='range']::-moz-range-track {
   height: 3px;
   border-radius: 3px;
   background: #3e3c39;
 }
 
-.slider input[type="range"]::-webkit-slider-thumb {
+.slider input[type='range']::-webkit-slider-thumb {
   appearance: none;
   width: 14px;
   height: 14px;
@@ -851,7 +854,7 @@ svg {
   box-shadow: 0 0 10px rgba(255, 107, 11, 0.6);
 }
 
-.slider input[type="range"]::-moz-range-thumb {
+.slider input[type='range']::-moz-range-thumb {
   width: 10px;
   height: 10px;
   border: 2px solid #121110;
@@ -893,7 +896,7 @@ svg {
   gap: 22px;
 }
 
-/* "display: grid" above would otherwise win over the hidden attribute (used after a successful sign-up). */
+/* 'display: grid' above would otherwise win over the hidden attribute (used after a successful sign-up). */
 .account-form[hidden] {
   display: none;
 }
@@ -914,7 +917,7 @@ svg {
   font: inherit;
 }
 
-.field input[aria-invalid="true"] {
+.field input[aria-invalid='true'] {
   border-color: #e0694f;
 }
 
@@ -965,7 +968,7 @@ svg {
   cursor: default;
 }
 
-/* "display: block" on the buttons would otherwise win over the hidden attribute. */
+/* 'display: block' on the buttons would otherwise win over the hidden attribute. */
 .account-panel [hidden] {
   display: none;
 }
@@ -1024,11 +1027,6 @@ svg {
     display: none;
   }
 
-  /* The instrument page fits the screen exactly, so the stage can use all the height that is left. */
- .app-shell:has(.stage) {
-    height: 100dvh;
-  }
-
   .stage-area {
     min-height: 0;
     padding: 4px 2px;
@@ -1041,7 +1039,7 @@ svg {
     border-radius: 13px;
   }
 
-  /* On a phone the play area is not 4:3, so a region is not a square and can't be a circle.
+  /* On a phone the play area is not 16:4, so a region is not a square and can't be a circle.
      The pad fills its region exactly (rounded, as the template's phone pads), so the drawn pad is the hit area. */
   .stage .cell {
     border-radius: 13px;

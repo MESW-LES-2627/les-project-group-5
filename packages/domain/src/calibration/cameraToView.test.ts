@@ -10,10 +10,15 @@ describe('cameraToView', () => {
     expect(p.y).toBeCloseTo(0.7);
   });
 
-  it('maps the visible slice to 0..1 when the view is narrower (phone)', () => {
-    const view = { width: 300, height: 600 };
-    expect(cameraToView({ x: 0.3125, y: 0.5 }, camera, view).x).toBeCloseTo(0);
-    expect(cameraToView({ x: 0.6875, y: 0.5 }, camera, view).x).toBeCloseTo(1);
-    expect(cameraToView({ x: 0.5, y: 0.5 }, camera, view).x).toBeCloseTo(0.5);
+  it('maps the visible slice when the view is wider than the camera', () => {
+    const view = { width: 640, height: 360 };
+    const top = cameraToView({ x: 0.25, y: 0.125 }, camera, view);
+    const center = cameraToView({ x: 0.25, y: 0.5 }, camera, view);
+    const bottom = cameraToView({ x: 0.25, y: 0.875 }, camera, view);
+
+    expect(top.y).toBeCloseTo(0);
+    expect(center.y).toBeCloseTo(0.5);
+    expect(bottom.y).toBeCloseTo(1);
+    expect(center.x).toBeCloseTo(0.25);
   });
 });

@@ -5,8 +5,8 @@ import type { Layout } from './Layout';
 import type { Region } from './Region';
 
 /**
- * The play area has the camera's shape (4:3), so a region that is PAD_WIDTH wide must be
- * PAD_WIDTH × 4/3 high to be a square on the screen, and the web page draws it as a circle.
+ * On the 16:9 desktop stage, a pad with normalized width PAD_WIDTH
+ * needs a normalized height of PAD_WIDTH × 16/9 to appear square.
  */
 const PAD_WIDTH = 0.17;
 const PAD_HEIGHT = (PAD_WIDTH * 16) / 9;
