@@ -184,12 +184,8 @@ export class SettingsStore {
     } catch {
       return;
     }
-    if (saved.hand === 'Left' || saved.hand === 'Right') {
-      this.current = saved.hand;
-    }
-    if (typeof saved.cameraPreview === 'boolean') {
-      this.currentCameraPreview = saved.cameraPreview;
-    }
+    if (saved.hand === 'Left' || saved.hand === 'Right') { this.current = saved.hand; }
+    if (typeof saved.cameraPreview === 'boolean') { this.currentCameraPreview = saved.cameraPreview; }
     this.currentPitch = isPitchClass(saved.pitch) ? saved.pitch : DEFAULT_PITCH;
     this.currentScale = ScaleType.fromName(saved.scale) ?? DEFAULT_SCALE;
     this.currentLayout = isLayoutKind(saved.layout)
