@@ -216,7 +216,7 @@ describe('SettingsStore saving and restoring', () => {
       hand: 'Left',
       cameraPreview: false,
       pitch: 'D',
-      scale: ScaleType.NATURAL_MINOR.name,
+      scale: ScaleType.NATURAL_MINOR.id,
       layout: 'piano',
       sensitivity: 0.8,
     });
@@ -228,7 +228,7 @@ describe('SettingsStore saving and restoring', () => {
         hand: 'Left',
         cameraPreview: false,
         pitch: 'D',
-        scale: ScaleType.NATURAL_MINOR.name,
+        scale: ScaleType.NATURAL_MINOR.id,
         layout: 'piano',
         sensitivity: 0.8,
       }),
@@ -255,107 +255,19 @@ describe('SettingsStore saving and restoring', () => {
     expect(store.pitch).toBe('C');
   });
 
-  it('uses the default pitch when the saved pitch is invalid', () => {
-    expect(new SettingsStore(storageWith({ pitch: 'H' })).pitch).toBe('C');
-  });
-
-  it('uses the default scale when the saved scale name is unknown', () => {
-    expect(new SettingsStore(storageWith({ scale: 'Unknown' })).scale).toBe(
-      ScaleType.MAJOR,
-    );
-  });
-
-  it('uses the default layout when the saved layout is invalid', () => {
-    expect(new SettingsStore(storageWith({ layout: 'invalid' })).layout).toBe(
-      'pad-grid',
-    );
-  });
-
-  it('ignores an invalid hand and an invalid camera preview', () => {
-    const store = new SettingsStore(
-      storageWith({ hand: 'Middle', cameraPreview: 'yes' }),
-    );
-    expect(store.hand).toBe('Right');
-    expect(store.cameraPreview).toBe(true);
-  });
-
-  it('clamps a saved sensitivity and ignores a value that is not a number', () => {
-    expect(new SettingsStore(storageWith({ sensitivity: 5 })).sensitivity).toBe(
-      1,
-    );
-    expect(
-      new SettingsStore(storageWith({ sensitivity: 'high' })).sensitivity,
-    ).toBe(0.5);
-  });
-
-  it('saves the defaults after reset', () => {
-    const storage = new MemoryStorage();
-    const store = new SettingsStore(storage);
-    store.setHand('Left');
-    store.reset();
-    expect(JSON.parse(storage.value as string).hand).toBe('Right');
-  });
-});
-
-describe('SettingsStore saving and restoring', () => {
-  it('saves the settings when one changes', () => {
-    const storage = new MemoryStorage();
-    const store = new SettingsStore(storage);
-    store.setHand('Left');
-    store.setPitch('D');
-    store.setScale(ScaleType.NATURAL_MINOR);
-    store.setLayout('piano');
-    store.setCameraPreview(false);
-    store.setSensitivity(0.8);
-
-    expect(JSON.parse(storage.value as string)).toEqual({
-      hand: 'Left',
-      cameraPreview: false,
-      pitch: 'D',
-      scale: ScaleType.NATURAL_MINOR.name,
-      layout: 'piano',
-      sensitivity: 0.8,
-    });
-  });
-
-  it('restores the saved settings', () => {
-    const store = new SettingsStore(
-      storageWith({
-        hand: 'Left',
-        cameraPreview: false,
-        pitch: 'D',
-        scale: ScaleType.NATURAL_MINOR.name,
-        layout: 'piano',
-        sensitivity: 0.8,
-      }),
-    );
-
-    expect(store.hand).toBe('Left');
-    expect(store.cameraPreview).toBe(false);
-    expect(store.pitch).toBe('D');
-    expect(store.scale).toBe(ScaleType.NATURAL_MINOR);
-    expect(store.layout).toBe('piano');
-    expect(store.sensitivity).toBe(0.8);
-  });
-
-  it('does not write to the storage while restoring', () => {
-    const storage = storageWith({ pitch: 'D' });
-    const save = vi.spyOn(storage, 'save');
-    new SettingsStore(storage);
-    expect(save).not.toHaveBeenCalled();
-  });
-
-  it('uses the defaults when the saved text is not valid JSON', () => {
-    const store = new SettingsStore(storageWith('{ broken'));
-    expect(store.hand).toBe('Right');
-    expect(store.pitch).toBe('C');
+  it('uses the defaults when the saved JSON is not an object', () => {
+    for (const saved of ['null', '42', '"text"']) {
+      const store = new SettingsStore(storageWith(saved));
+      expect(store.hand).toBe('Right');
+      expect(store.scale).toBe(ScaleType.MAJOR);
+    }
   });
 
   it('uses the default pitch when the saved pitch is invalid', () => {
     expect(new SettingsStore(storageWith({ pitch: 'H' })).pitch).toBe('C');
   });
 
-  it('uses the default scale when the saved scale name is unknown', () => {
+  it('uses the default scale when the saved scale id is unknown', () => {
     expect(new SettingsStore(storageWith({ scale: 'Unknown' })).scale).toBe(
       ScaleType.MAJOR,
     );

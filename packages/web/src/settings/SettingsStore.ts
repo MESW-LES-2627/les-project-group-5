@@ -30,6 +30,28 @@ const LAYOUT_KIND_LOOKUP: Record<LayoutKind, true> = {
 
 const isLayoutKind = (value: unknown): value is LayoutKind =>
   typeof value === 'string' && Object.keys(LAYOUT_KIND_LOOKUP).includes(value);
+
+/**
+ * Turns the saved text into an object, or returns null if there is nothing usable.
+ * The text comes from a cookie the user can edit, so it may be broken JSON or JSON that
+ * is not an object (such as `null`); reading fields from those would crash the app on start.
+ */
+const parseSaved = (raw: string | null): Record<string, unknown> | null => {
+  if (!raw) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+};
+
+/** A saved sensitivity clamped to 0..1, or the default if it is not a finite number. */
+const savedSensitivity = (value: unknown): number =>
+  typeof value === 'number' && Number.isFinite(value)
+    ? Math.min(1, Math.max(0, value))
+    : DEFAULT_SENSITIVITY;
+
 /** Holds the player's settings. Pages report changes to it; the loop and the instrument page listen to it. */
 export class SettingsStore {
   private current: Handedness = DEFAULT_HAND;
@@ -176,14 +198,8 @@ export class SettingsStore {
   }
 
   private restore(): void {
-    const raw = this.storage.load();
-    if (!raw) return;
-    let saved: Record<string, unknown>;
-    try {
-      saved = JSON.parse(raw);
-    } catch {
-      return;
-    }
+    const saved = parseSaved(this.storage.load());
+    if (!saved) return;
     if (saved.hand === 'Left' || saved.hand === 'Right') {
       this.current = saved.hand;
     }
@@ -191,16 +207,11 @@ export class SettingsStore {
       this.currentCameraPreview = saved.cameraPreview;
     }
     this.currentPitch = isPitchClass(saved.pitch) ? saved.pitch : DEFAULT_PITCH;
-    this.currentScale = ScaleType.fromName(saved.scale) ?? DEFAULT_SCALE;
+    this.currentScale = ScaleType.fromId(saved.scale) ?? DEFAULT_SCALE;
     this.currentLayout = isLayoutKind(saved.layout)
       ? saved.layout
       : DEFAULT_LAYOUT;
-    if (
-      typeof saved.sensitivity === 'number'
-      && Number.isFinite(saved.sensitivity)
-    ) {
-      this.currentSensitivity = Math.min(1, Math.max(0, saved.sensitivity));
-    }
+    this.currentSensitivity = savedSensitivity(saved.sensitivity);
   }
 
   private persist(): void {
@@ -209,7 +220,7 @@ export class SettingsStore {
         hand: this.current,
         cameraPreview: this.currentCameraPreview,
         pitch: this.currentPitch,
-        scale: this.currentScale.name,
+        scale: this.currentScale.id,
         layout: this.currentLayout,
         sensitivity: this.currentSensitivity,
       }),
