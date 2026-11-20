@@ -19,10 +19,21 @@ export class ScaleType {
    */
   static readonly NATURAL_MINOR = new ScaleType('Natural minor', [0, 2, 3, 5, 7, 8, 10, 12]);
 
+  /** Every scale type. Add new scales here. */
+  static readonly ALL: readonly ScaleType[] = [
+    ScaleType.MAJOR,
+    ScaleType.NATURAL_MINOR,
+  ];
+
   private constructor(
     /** The scale name shown to people. */
     readonly name: string,
     /** Semitone distances from the root, in order; 0 is the root and 12 is the next octave. */
     readonly intervals: readonly number[],
   ) {}
+
+  /** Finds a scale by its name, or returns undefined if the name is unknown. */
+  static fromName(name: unknown): ScaleType | undefined {
+    return ScaleType.ALL.find((scale) => scale.name === name);
+  }
 }
