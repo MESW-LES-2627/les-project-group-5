@@ -1,6 +1,6 @@
 /* Look taken from the layout template (packages/layout) and the Figma design "Web-based Gesture Instrument":
    dark warm background, orange for the notes, green for "online". */
-@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap');
 
 :root {
   --bg: #0d0d0d;
@@ -12,8 +12,8 @@
   --orange: #ff7a1a;
   --orange-strong: #f36d13;
   --ok: #83ae75;
-  --mono: "DM Mono", ui-monospace, monospace;
-  font-family: "Manrope", system-ui, sans-serif;
+  --mono: 'DM Mono', ui-monospace, monospace;
+    font-family: 'Manrope', system-ui, sans-serif;
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
@@ -77,11 +77,7 @@ svg {
   flex-direction: column;
   /* The warm light from the top of the template, without the extra background elements. */
   background:
-    radial-gradient(
-      ellipse 68vw 82vh at 50% -10%,
-      rgba(211, 146, 82, 0.16),
-      transparent 66%
-    ),
+    radial-gradient(ellipse 68vw 82vh at 50% -10%, rgba(211, 146, 82, 0.16), transparent 66%),
     #11100f;
 }
 
@@ -173,7 +169,7 @@ svg {
 }
 
 .status-light::before {
-  content: "";
+  content: '';
   width: 6px;
   height: 6px;
   border-radius: 50%;
@@ -226,7 +222,7 @@ svg {
 
 /* A dark layer over the camera, so the pads and the text stay easy to read. */
 .stage::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg, rgba(7, 7, 6, 0.08), rgba(8, 8, 7, 0.22));
@@ -251,17 +247,9 @@ svg {
   color: #f3eee8;
   border: 2px solid rgba(255, 139, 62, 0.6);
   /* See-through, so the hand behind the pad stays visible. */
-  background: linear-gradient(
-    145deg,
-    rgba(57, 49, 43, 0.28),
-    rgba(24, 23, 21, 0.18)
-  );
+  background: linear-gradient(145deg, rgba(57, 49, 43, 0.28), rgba(24, 23, 21, 0.18));
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.85);
-  transition:
-    transform 0.18s,
-    border-color 0.2s,
-    background 0.2s,
-    box-shadow 0.2s;
+  transition: transform 0.18s, border-color 0.2s, background 0.2s, box-shadow 0.2s;
 }
 
 .cell strong {
@@ -281,11 +269,7 @@ svg {
   transform: translateY(-5px) scale(0.98);
   color: #fff;
   border-color: var(--orange);
-  background: radial-gradient(
-    circle,
-    rgba(255, 124, 31, 0.42),
-    rgba(42, 29, 20, 0.4)
-  );
+  background: radial-gradient(circle, rgba(255, 124, 31, 0.42), rgba(42, 29, 20, 0.4));
   box-shadow:
     0 0 0 1px rgba(255, 109, 10, 0.4),
     0 0 35px rgba(255, 98, 0, 0.38),
@@ -309,19 +293,13 @@ svg {
   color: #77716b;
   border-color: #d6d0c7;
   /* Use translucent fills, not element opacity, so labels stay crisp over the webcam preview. */
-  background: linear-gradient(
-    rgba(207, 201, 192, 0.84),
-    rgba(244, 240, 233, 0.84)
-  );
+  background: linear-gradient(rgba(207, 201, 192, 0.84), rgba(244, 240, 233, 0.84));
 }
 
 .piano-key.white-key.in-scale {
   color: #24211e;
   border-color: rgba(255, 139, 62, 0.72);
-  background: linear-gradient(
-    rgba(238, 232, 223, 0.86),
-    rgba(255, 253, 249, 0.86)
-  );
+  background: linear-gradient(rgba(238, 232, 223, 0.86), rgba(255, 253, 249, 0.86));
 }
 
 .piano-key.black-key {
@@ -364,10 +342,7 @@ svg {
   transform: translateY(3px) scale(0.98);
   color: #fff;
   border-color: var(--orange);
-  background: linear-gradient(
-    rgba(255, 150, 62, 0.88),
-    rgba(255, 108, 8, 0.88)
-  );
+  background: linear-gradient(rgba(255, 150, 62, 0.88), rgba(255, 108, 8, 0.88));
   box-shadow: 0 0 24px rgba(255, 106, 6, 0.55);
 }
 
@@ -393,7 +368,7 @@ svg {
 
 .pointer::before,
 .pointer::after {
-  content: "";
+  content: '';
   position: absolute;
   background: rgba(255, 176, 119, 0.8);
 }
@@ -560,7 +535,7 @@ svg {
 
 /* The round handle at the end of the orange bar. */
 .volume-fill::after {
-  content: "";
+  content: '';
   position: absolute;
   right: -6px;
   top: -4.5px;
@@ -763,7 +738,7 @@ svg {
 }
 
 .toggle input::after {
-  content: "";
+  content: '';
   position: absolute;
   left: 3px;
   top: 3px;
@@ -771,9 +746,7 @@ svg {
   height: 14px;
   border-radius: 50%;
   background: #9c968e;
-  transition:
-    transform 0.18s,
-    background 0.18s;
+  transition: transform 0.18s, background 0.18s;
 }
 
 .toggle input:checked {
@@ -818,7 +791,7 @@ svg {
   font-size: 11px;
 }
 
-.slider input[type="range"] {
+.slider input[type='range'] {
   flex: 1;
   height: 20px;
   margin: 0;
@@ -827,14 +800,14 @@ svg {
   cursor: pointer;
 }
 
-.slider input[type="range"]::-webkit-slider-runnable-track,
-.slider input[type="range"]::-moz-range-track {
+.slider input[type='range']::-webkit-slider-runnable-track,
+.slider input[type='range']::-moz-range-track {
   height: 3px;
   border-radius: 3px;
   background: #3e3c39;
 }
 
-.slider input[type="range"]::-webkit-slider-thumb {
+.slider input[type='range']::-webkit-slider-thumb {
   appearance: none;
   width: 14px;
   height: 14px;
@@ -845,7 +818,7 @@ svg {
   box-shadow: 0 0 10px rgba(255, 107, 11, 0.6);
 }
 
-.slider input[type="range"]::-moz-range-thumb {
+.slider input[type='range']::-moz-range-thumb {
   width: 10px;
   height: 10px;
   border: 2px solid #121110;
@@ -908,7 +881,7 @@ svg {
   font: inherit;
 }
 
-.field input[aria-invalid="true"] {
+.field input[aria-invalid='true'] {
   border-color: #e0694f;
 }
 
