@@ -10,13 +10,14 @@ const apps = [
 const children = apps.map(({ name, workspace }) => {
   // shell: true lets this work on Windows too, where npm is "npm.cmd".
   const child = spawn(`npm run dev -w ${workspace}`, { shell: true, stdio: ['inherit', 'pipe', 'pipe'] });
-  const prefix = (chunk) =>
-    chunk
+  const prefix = (chunk) => {
+    const lines = chunk
       .toString()
       .split('\n')
       .filter((line) => line.trim() !== '')
-      .map((line) => `[${name}] ${line}`)
-      .join('\n') + '\n';
+      .map((line) => `[${name}] ${line}`);
+    return `${lines.join('\n')}\n`;
+  };
   child.stdout.on('data', (chunk) => process.stdout.write(prefix(chunk)));
   child.stderr.on('data', (chunk) => process.stderr.write(prefix(chunk)));
   child.on('exit', (code) => {

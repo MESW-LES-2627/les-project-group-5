@@ -1,5 +1,5 @@
 /**
- * The 12 note names in one octave in english. 
+ * The 12 note names in one octave in english.
  * C, D, E, F, G, A, B = Dó, Ré, Mi, Fá, Sol, Lá, Si.
  * # marks the notes between some of those notes (the black keys of the piano).
  * The pattern repeats each octave, so these names do not include an octave number.
@@ -7,18 +7,18 @@
 
 // The 12 note names in one octave in english.
 export const PITCH_CLASSES = [
-  'C',  // Dó
+  'C', // Dó
   'C#', // Dó sharp/sustenido = Ré flat/bemol
-  'D',  // Ré
+  'D', // Ré
   'D#', // Ré sharp/sustenido = Mi flat/bemol
-  'E',  // Mi
-  'F',  // Fá
+  'E', // Mi
+  'F', // Fá
   'F#', // Fá sharp/sustenido = Sol flat/bemol
-  'G',  // Sol
+  'G', // Sol
   'G#', // Sol sharp/sustenido = Lá flat/bemol
-  'A',  // Lá
+  'A', // Lá
   'A#', // Lá sharp/sustenido = Si flat/bemol
-  'B',  // Si
+  'B', // Si
 ] as const;
 
 /** One of the 12 note names in PITCH_CLASSES. Restricts PitchClass to the exact note names listed above. */

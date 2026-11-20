@@ -20,18 +20,19 @@ export function readConfig(defaultAppBaseUrl?: string): Config {
   const appBaseUrl = process.env.APP_BASE_URL || defaultAppBaseUrl;
   if (!appBaseUrl) throw new Error('Missing APP_BASE_URL: the address of the web app, used for the links in emails.');
   return {
-    databaseUrl: requireEnv("DATABASE_URL"),
+    databaseUrl: requireEnv('DATABASE_URL'),
     appBaseUrl: appBaseUrl.replace(/\/+$/, ''),
     // On unless turned off on purpose, so a missing variable can never send the password unencrypted to Supabase.
-    databaseSsl: process.env.DATABASE_SSL !== "false",
+    databaseSsl: process.env.DATABASE_SSL !== 'false',
   };
 }
 
 function requireEnv(name: string): string {
   const value = process.env[name];
-  if (!value)
+  if (!value) {
     throw new Error(
       `Missing ${name}. Copy it from the Supabase dashboard (Connect button) into packages/server/.env.`,
     );
+  }
   return value;
 }

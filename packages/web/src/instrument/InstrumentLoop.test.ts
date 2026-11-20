@@ -22,12 +22,13 @@ function pointerTravel(sensitivity: number): number {
   tracker.setHands([makeHand({ handedness: 'Right', indexTip: { x: 0.3, y: 0.5 }, reach: 2 })]);
   video.currentTime = 2;
   loop.tick(1033);
+
   return Math.abs(frames[1].pointer!.x - frames[0].pointer!.x);
 }
 
 const bothHands = () => [
   makeHand({ handedness: 'Right', indexTip: { x: 0.75, y: 0.5 }, reach: 2 }), // degree 1
-  makeHand({ handedness: 'Left', indexTip: { x: 0.25, y: 0.5 }, reach: 2 }),  // degree 2
+  makeHand({ handedness: 'Left', indexTip: { x: 0.25, y: 0.5 }, reach: 2 }), // degree 2
 ];
 
 function setup() {
@@ -107,8 +108,6 @@ describe('InstrumentLoop', () => {
     expect(frames[1]).toMatchObject({ handDetected: true, degree: 2 });
   });
 
-
-
   it('reports a frame-processing error and stops the animation loop', () => {
     const { tracker, video, loop } = setup();
     const onError = vi.fn();
@@ -151,5 +150,4 @@ describe('InstrumentLoop', () => {
     loop.tick(1033);
     expect(frames[1].pointer).toEqual(frames[0].pointer);
   });
-
 });

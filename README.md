@@ -187,14 +187,15 @@ Open **http://localhost:5173**, as with `npm run dev`. Press **Ctrl+C** to stop.
 
 ## How to test
 
-| Command | What it does |
-|---|---|
-| `npm run check` | **Run this before every commit.** Lint + type check + all tests. Same as running the three commands below. |
-| `npm run lint` | ESLint: code problems and architecture rules. |
-| `npm run typecheck` | TypeScript compiler for `domain`, `web` and `server`, without building. |
-| `npm test` | All tests once (`*.test.ts` files in `packages/*/src`). |
-| `npm run test:watch` | Tests again on every save. Handy while you work. |
-| `npm run build` | Production build of the web app into `packages/web/dist/`. |
+| Command             | What it does                                                                                              |
+|---------------------|-----------------------------------------------------------------------------------------------------------|
+| `npm run check`     | **Run this before every commit.** Lint + type check + all tests. Same as running the three commands below. |
+| `npm run lint`      | ESLint: code problems and architecture rules.                                                             |
+| `npm run lint:fix`  | ESLint: fix code problems.                                                          |
+| `npm run typecheck` | TypeScript compiler for `domain`, `web` and `server`, without building.                                   |
+| `npm test`          | All tests once (`*.test.ts` files in `packages/*/src`).                                                   |
+| `npm run test:watch` | Tests again on every save. Handy while you work.                                                          |
+| `npm run build`     | Production build of the web app into `packages/web/dist/`.                                                |
 
 Run one test file, or only the tests whose name matches some text:
 

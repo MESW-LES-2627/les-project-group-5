@@ -7,6 +7,6 @@ export default defineConfig({
     // API_URL is set by compose.yaml, where the server runs in another container.
     proxy: {
       '/api': process.env.API_URL ?? 'http://127.0.0.1:3000',
-    }
-  }
+    },
+  },
 });
