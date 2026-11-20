@@ -14,9 +14,11 @@ class RecordingSynth implements Synth {
   noteOn(frequencyHz: number): void {
     this.calls.push(`noteOn ${frequencyHz}`);
   }
+
   noteOff(): void {
     this.calls.push('noteOff');
   }
+
   setVolume(volume: number): void {
     this.calls.push(`volume ${volume}`);
   }
@@ -30,6 +32,7 @@ class HundredsScale extends Scale {
   constructor() {
     super('C', ScaleType.MAJOR);
   }
+
   override frequencyOf(degree: Degree): number {
     return degree * 100;
   }

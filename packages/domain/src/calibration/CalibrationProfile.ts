@@ -42,7 +42,6 @@ export const DEFAULT_CALIBRATION_PROFILE = new CalibrationProfile(
   new ControlCalibration(1.0, 1.8),
 );
 
-
 export const DEFAULT_SENSITIVITY = 0.5;
 /** At High the open-hand end of the volume range is 1.55 instead of 1.8. */
 const OPENNESS_MAX_AT_HIGH = 1.55;
@@ -66,5 +65,5 @@ export function calibrationForSensitivity(sensitivity: number): CalibrationProfi
   const { min, max } = DEFAULT_CALIBRATION_PROFILE.openness;
   const t = Math.max(0, (s - 0.5) * 2); // volume range only narrows above the default
   const openness = new ControlCalibration(min, max + (OPENNESS_MAX_AT_HIGH - max) * t);
-  return new CalibrationProfile(pointerRange(s), pointerRange( s), openness);
+  return new CalibrationProfile(pointerRange(s), pointerRange(s), openness);
 }

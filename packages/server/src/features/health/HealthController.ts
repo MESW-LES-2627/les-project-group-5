@@ -21,7 +21,7 @@ export class HealthController {
               type: 'object',
               properties: {
                 status: { type: 'string', enum: ['ok'] },
-                database: { type: 'string', enum: ['online', 'offline'] }
+                database: { type: 'string', enum: ['online', 'offline'] },
               },
               required: ['status', 'database'],
             },
@@ -30,7 +30,7 @@ export class HealthController {
       },
       async () => ({
         status: 'ok' as const,
-        database: (await this.database.isOnline()) ? ('online' as const) : ('offline' as const)
+        database: (await this.database.isOnline()) ? ('online' as const) : ('offline' as const),
       }),
     );
   }

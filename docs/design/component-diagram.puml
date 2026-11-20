@@ -38,7 +38,7 @@ skinparam ranksep 55
 actor Player
 
 node "Browser" #EFF6FF {
-  component "Player App\n(instrument, settings,\nsign-up and\nemail confirmation pages)" as App
+  component "Player App\n(instrument, settings,\nsign-up, email confirmation\nand login pages)" as App
   component "Settings\n(SettingsStore)" as Set
   component "Game\n(exercises, attempts)" as Ear <<planned>>
   component "Instrument\n(layouts, scale, notes)" as Instr
@@ -54,7 +54,7 @@ node "Vercel" #ECFDF5 {
     () "Settings API\n(REST)" as SAPI
     component "Health" as Health
     component "Accounts\n(sign up,\nemail confirmation)" as Acc
-    component "Login and logout\n(session cookie)" as Login <<planned>>
+    component "Login and logout\n(session cookie)" as Login
     component "Settings\n(saved settings)" as SSet <<planned>>
     () "DatabaseStatus" as DBS
     () "EmailSender" as ES

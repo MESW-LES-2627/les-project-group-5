@@ -10,9 +10,9 @@ Previous tag: `iter-0`
 
 | What | Link |
 | :---- | :---- |
-| MVP | [mvp.md](../0/mvp.md) |
-| Vision | [vision.md](../0/vision.md) |
-| Definition of Done | [definition-of-done.md](../0/definition-of-done.md) |
+| MVP | [mvp.md](../mvp.md) |
+| Vision | [vision.md](../vision.md) |
+| Definition of Done | [definition-of-done.md](../definition-of-done.md) |
 |  |  |
 | This tag (`iter-1`) | [iter-1](https://github.com/MESW-LES-2627/les-project-group-5/tree/iter-1) |
 |  |  |

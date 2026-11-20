@@ -21,7 +21,6 @@ export class SettingsPage {
   private readonly cameraPreviewInput: HTMLInputElement;
   private readonly serverStatus: HTMLElement;
   private readonly sensitivitySelector: HTMLInputElement;
-  
 
   constructor(root: HTMLElement) {
     // The option values for the scale are indexes into SCALE_OPTIONS, so this works

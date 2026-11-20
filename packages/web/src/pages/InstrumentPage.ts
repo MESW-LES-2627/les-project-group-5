@@ -203,8 +203,8 @@ export class InstrumentPage {
     if (this.debug) {
       const where = frame.pointer ? `${frame.pointer.x.toFixed(2)}, ${frame.pointer.y.toFixed(2)}` : '-';
       this.debug.textContent =
-        `hand: ${frame.handDetected ? 'yes' : 'no'}  pointer: ${where}  pad: ${frame.degree ?? '-'}\n` +
-        `volume: ${Math.round(frame.volume * 100)}%  sounding: ${frame.sounding ? 'yes' : 'no'}`;
+        `hand: ${frame.handDetected ? 'yes' : 'no'}  pointer: ${where}  pad: ${frame.degree ?? '-'}\n`
+        + `volume: ${Math.round(frame.volume * 100)}%  sounding: ${frame.sounding ? 'yes' : 'no'}`;
     }
 
     this.setStatus(frame.handDetected ? HINT : `Show your ${this.handLabel} hand to the camera.`);

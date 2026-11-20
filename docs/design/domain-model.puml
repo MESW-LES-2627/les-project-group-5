@@ -38,11 +38,11 @@ package "Playing" #EFF6FF {
   class Preferences {
     dominant hand : Left | Right
     camera preview : on | off
-    sensitivity (planned)
+    sensitivity : 0 (Low)..1 (High)
   }
   class Pad
   class Layout {
-    kind : Pad grid | Single box
+    kind : Pad grid | Piano
   }
   class Note {
     pitch
@@ -103,10 +103,11 @@ HandGesture "*" -down- "0..1" Pad : points at >
 Preferences "*" -down- "1" Scale : chosen key and mode >
 Preferences "*" -down- "1" Layout : chosen layout >
 Preferences .left.> Instrument : configures
+Preferences "*" -- "1" CalibrationProfile : sensitivity scales >
 Instrument "1" -down- "1" Layout : arranged as >
 Instrument "1" -down- "*" Note : produces >
 Instrument "1" -down- "1" Scale : tuned to >
-Layout "1" *-down- "1..8" Pad
+Layout "1" *-down- "8" Pad
 Pad "1" -down- "1" Degree : stands for >
 Note "*" -down- "1" Degree : of >
 Scale "1" *-down- "8" Degree

@@ -1,27 +1,26 @@
-# CLAIM — Iteration X
-Team:&nbsp;  
-Tag: `iter-X`  
-Previous tag: `iter-(X-1)`
-This file lives on the tagged commit at `docs/iterations/X/CLAIM.md`. The review opens this file. We do not hunt the repository. A dead link scores that line at most 4\.&nbsp;
-Iteration 0 is a readiness review. An ugly claim does not cap the mark if the slice runs. From Iteration 1, a missing tag or a missing CLAIM.md caps the team mark at 10\.
+# CLAIM — Iteration 2
+
+Team: E  
+Tag: `iter-2`  
+Previous tag: `iter-1`
+
 ---
+
 ## Required permalinks
-Use links that work on tag `iter-X`. If something does not exist yet, write `none yet` — do not paste a link that 404s.
+
 | What | Link |
 | :---- | :---- |
-| MVP&nbsp; | URL |
-| Vision | URL |
-| Definition of Done | URL |
+| MVP | [mvp.md](../mvp.md) |
+| Vision | [vision.md](../vision.md) |
+| Definition of Done | [definition-of-done.md](../definition-of-done.md) |
 |  |  |
-| This tag (`iter-X`) | URL |
+| This tag (`iter-2`) | [iter-2](https://github.com/MESW-LES-2627/les-project-group-5/tree/iter-2) |
 |  |  |
-| Production | URL |
-| Staging | URL |
+| Production | https://les-project-group-5.vercel.app |
+| Staging | https://les-project-group-5-aw2wa8tvl-les-119e.vercel.app |
 |  |  |
-| CI/CD Pipeline | URL |
+| CI/CD Pipeline | [Runs on GitHub Actions](https://github.com/MESW-LES-2627/les-project-group-5/actions/workflows/ci.yml) (the `check` job is CI, the `deploy` job publishes to Vercel); [workflow file](https://github.com/MESW-LES-2627/les-project-group-5/blob/iter-2/.github/workflows/ci.yml) |
 |  |  |
-| Stories in this increment | URL |
-| Retrospective | URL |
-| AI log | URL |
-&nbsp;
-&nbsp;
+| Stories in this increment | [user-stories](user-stories/user-stories.md) |
+| Retrospective | [retro.md](retro.md) |
+| AI log | [ai-log.md](ai-log.md) |

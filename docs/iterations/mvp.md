@@ -4,7 +4,7 @@
 
 ## In
 
-- **Instrument:** one hand; the pointer picks the note and hand opening sets the volume. One sound. Volume bar, camera preview on/off, debug view. Default movement ranges plus a **sensitivity** setting.
+- **Instrument:** one hand; the pointer picks the note and hand opening sets the volume. One sound. Volume bar, camera preview on/off. Default movement ranges plus a **sensitivity** setting.
 - **Layouts:** 2×4 pad grid (2 rows × 4 columns on desktop, 4 × 2 on a phone held upright, low notes at the bottom) and piano (one octave, scale notes highlighted).
 - **Game, Listen and Repeat:** levels 1 and 2, 1 to 3 stars, success unlocks the next exercise. Each exercise sets its own key and scale.
 - **Settings:** key, scale (major or natural minor), layout, dominant hand, sensitivity, camera preview.

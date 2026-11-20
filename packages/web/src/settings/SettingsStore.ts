@@ -139,5 +139,4 @@ export class SettingsStore {
     this.sensitivityListeners.add(listener);
     return () => this.sensitivityListeners.delete(listener);
   }
-
 }

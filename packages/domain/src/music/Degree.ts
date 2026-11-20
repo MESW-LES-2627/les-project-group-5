@@ -1,6 +1,6 @@
-/** 
+/**
  * Represents a position or key in the instrument's eight-note range, not a fixed note.
- * The same degree can map to different notes when the key or scale changes, 
+ * The same degree can map to different notes when the key or scale changes,
  * so exercises can be transposed to different keys without changing their degree sequence.
  * Degree 1 is the root note; degree 8 is the root one octave higher.
  */

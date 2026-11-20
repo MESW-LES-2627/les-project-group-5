@@ -1,8 +1,8 @@
-import type { Point } from "../geometry/Point";
-import { DEGREES, type Degree } from "../music/Degree";
-import type { Scale } from "../music/Scale";
-import type { Layout } from "./Layout";
-import type { Region } from "./Region";
+import type { Point } from '../geometry/Point';
+import { DEGREES, type Degree } from '../music/Degree';
+import type { Scale } from '../music/Scale';
+import type { Layout } from './Layout';
+import type { Region } from './Region';
 
 /**
  * The play area has the camera's shape (4:3), so a region that is PAD_WIDTH wide must be
