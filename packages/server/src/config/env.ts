@@ -4,7 +4,7 @@ export interface Config {
   databaseUrl: string;
   /** Where the web app is, for the links in emails, without a trailing "/" (for example https://les-project-group-5.vercel.app). */
   appBaseUrl: string;
-   /** Whether to encrypt the database connection. Supabase requires it; the local Docker database has no SSL. */
+  /** Whether to encrypt the database connection. Supabase requires it; the local Docker database has no SSL. */
   databaseSsl: boolean;
   /**
    * How to send emails over SMTP, or undefined when EMAIL_USER or EMAIL_PASS is not set.
