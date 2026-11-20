@@ -187,6 +187,7 @@ describe('Scale', () => {                      // a group of tests about one thi
 | A real hand | `makeHand({ indexTip, reach, handedness })` from `@instrument/domain/testing` | [`HandFeatureExtractor.test.ts`](../packages/domain/src/hand/HandFeatureExtractor.test.ts) |
 | Web Audio | A small class that implements `Synth` and records the calls | [`SoundOutput.test.ts`](../packages/web/src/audio/SoundOutput.test.ts) |
 | A layout | An object with `regions` and `hitTest` (left half = 1, right half = 2) | [`Instrument.test.ts`](../packages/domain/src/instrument/Instrument.test.ts) |
+| The settings cookie | A `MemoryStorage` class that implements `SettingsStorage` and keeps the text in a field | [`SettingsStore.test.ts`](../packages/web/src/settings/SettingsStore.test.ts) |
 | `fetch` / the server | A function that returns a fixed `Response` | [`ApiClient.test.ts`](../packages/web/src/api/ApiClient.test.ts) |
 | The network | `app.inject({ method: 'GET', url: '/api/health' })` | [`HealthController.test.ts`](../packages/server/src/features/health/HealthController.test.ts) |
 

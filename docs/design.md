@@ -66,7 +66,7 @@ The model ([source](design/domain-model.puml)) uses the words of the problem, no
 | Component | Responsibility |
 |---|---|
 | **Player App** | The pages and the composition root [`main.ts`](../packages/web/src/main.ts), the only place that creates and connects the concrete classes. |
-| **Settings** | [`SettingsStore`](../packages/web/src/settings/SettingsStore.ts) holds the player's choices and notifies when one changes. |
+| **Settings** | [`SettingsStore`](../packages/web/src/settings/SettingsStore.ts) holds the player's choices, notifies when one changes and keeps them between visits through the [`SettingsStorage`](../packages/web/src/settings/SettingsStorage.ts) interface. [`CookieSettingsStorage`](../packages/web/src/settings/CookieSettingsStorage.ts) saves them in a cookie for one week (guests, [#34](https://github.com/MESW-LES-2627/les-project-group-5/issues/34)). |
 | **Instrument** | The rules of playing (layouts, scale, notes), in the `domain` package, with no dependency on the browser. |
 | **Hand Tracking, Sound** | Wrap MediaPipe and Web Audio behind interfaces ([`HandTracker`](../packages/web/src/tracking/HandTracker.ts), [`Synth`](../packages/web/src/audio/Synth.ts)). |
 | **API client** | [`ApiClient`](../packages/web/src/api/ApiClient.ts), the only code that calls the server. |
@@ -135,6 +135,8 @@ The settings live only in the browser's memory and are lost on reload. That is i
 It is plausible because it comes right after login in the backlog, the EventStorming has the policy *"if logged in, save the settings"*, and the `user_settings` table ([migration 002](../packages/server/migrations/002_create_settings_and_progress.sql)) already exists, unused.
 
 Affected: `SettingsStore`, `main.ts`, `ApiClient`, the settings page, a new server feature, the session (login), the `user_settings` table, and the domain types of each setting.
+
+> **Note (2026-11-20).** Guest settings are no longer lost on reload: story [#34](https://github.com/MESW-LES-2627/les-project-group-5/issues/34) keeps them in a cookie for one week. `SettingsStore` receives a `SettingsStorage` in its constructor and only `CookieSettingsStorage` touches `document.cookie`. Saving in the account can be another `SettingsStorage` (or sit next to it) without changing the store. Scales are saved by a fixed `ScaleType.id`, not by the name shown to people, so the server can use the same ids.
 
 #### Coupling and cohesion analysis
 
