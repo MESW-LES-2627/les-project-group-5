@@ -4,7 +4,7 @@ import { appHeader } from './appHeader';
 /** The texts from US-E1-04 for each answer that keeps the person on this page. */
 const MESSAGES: Record<Exclude<LogInAnswer['kind'], 'logged-in'>, string> = {
   invalid: 'Invalid email or password.',
-  // The link to send the email again comes with "Resend the confirmation email" (US-E1-03).
+  // The "Didn't get the email?" link under the form sends a new one (US-E1-03).
   'not-confirmed': 'Please confirm your email first.',
   failed: 'Something went wrong. Check your connection and try again.',
 };
@@ -51,6 +51,7 @@ export class LoginPage {
               <p class="form-message" role="alert"></p>
               <button type="submit" class="done-button">Log in</button>
               <p class="form-footer">No account yet? <a href="#/sign-up">Sign up</a></p>
+              <p class="form-footer">Didn't get the confirmation email? <a href="#/resend-confirmation">Send it again</a></p>
             </form>
           </div>
         </main>
