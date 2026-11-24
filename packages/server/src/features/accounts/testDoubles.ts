@@ -1,5 +1,10 @@
 import type { Email, EmailSender } from '../../shared/email/EmailSender';
-import type { AccountRepository, NewAccount, StoredConfirmationToken } from './AccountRepository';
+import type {
+  AccountRepository,
+  ConfirmationTokenReplacement,
+  NewAccount,
+  StoredConfirmationToken,
+} from './AccountRepository';
 import { AccountEmails } from './AccountEmails';
 import { AccountService } from './AccountService';
 import type { PasswordHasher } from './PasswordHasher';
@@ -38,6 +43,18 @@ export class InMemoryAccountRepository implements AccountRepository {
     this.confirmationTokens.delete(tokenHash);
     const account = this.accounts.find((existing) => existing.id === token.userId);
     if (account && !account.emailConfirmedAt) account.emailConfirmedAt = confirmedAt;
+    return true;
+  }
+
+  async replaceConfirmationToken(replacement: ConfirmationTokenReplacement): Promise<boolean> {
+    const account = this.accounts.find((existing) => existing.email === replacement.email);
+    if (!account || account.emailConfirmedAt) return false;
+    const current = [...this.confirmationTokens].find(([, token]) => token.userId === account.id);
+    if (current && current[1].expiresAt.getTime() > replacement.replaceIfExpiresBy.getTime()) return false;
+    if (current) this.confirmationTokens.delete(current[0]);
+    this.confirmationTokens.set(replacement.tokenHash, { userId: account.id, expiresAt: replacement.expiresAt });
+    account.confirmationTokenHash = replacement.tokenHash;
+    account.confirmationExpiresAt = replacement.expiresAt;
     return true;
   }
 }

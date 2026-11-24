@@ -1,5 +1,10 @@
 import type pg from 'pg';
-import type { AccountRepository, NewAccount, StoredConfirmationToken } from './AccountRepository';
+import type {
+  AccountRepository,
+  ConfirmationTokenReplacement,
+  NewAccount,
+  StoredConfirmationToken,
+} from './AccountRepository';
 
 /** Stores accounts in Postgres (tables from migrations/001_create_account_tables.sql). */
 export class PostgresAccountRepository implements AccountRepository {
@@ -77,5 +82,23 @@ export class PostgresAccountRepository implements AccountRepository {
     } finally {
       client.release();
     }
+  }
+
+  async replaceConfirmationToken(replacement: ConfirmationTokenReplacement): Promise<boolean> {
+    // One statement, so two requests at the same moment can't both replace the token and both send an email.
+    // - The SELECT finds the account only if it exists and is not confirmed yet.
+    // - Each account has at most one token (user_id is UNIQUE), so ON CONFLICT replaces it: the old link stops working.
+    // - The WHERE of the update skips the replacement while the current token is less than a minute old.
+    // A row comes back only when a token was inserted or replaced.
+    const result = await this.pool.query<{ user_id: string }>(
+      `INSERT INTO email_confirmation_tokens (token_hash, user_id, expires_at)
+       SELECT $2, id, $3 FROM users WHERE email = $1 AND email_confirmed_at IS NULL
+       ON CONFLICT (user_id) DO UPDATE
+         SET token_hash = EXCLUDED.token_hash, expires_at = EXCLUDED.expires_at
+         WHERE email_confirmation_tokens.expires_at <= $4
+       RETURNING user_id`,
+      [replacement.email, replacement.tokenHash, replacement.expiresAt, replacement.replaceIfExpiresBy],
+    );
+    return result.rows.length > 0;
   }
 }

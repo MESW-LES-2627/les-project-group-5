@@ -7,6 +7,16 @@ import { createSecretToken, hashToken, isWellFormedToken } from './SecretToken';
 
 /** How long a confirmation link works (US-E1-02). */
 const CONFIRMATION_LINK_HOURS = 24;
+const CONFIRMATION_LINK_MS = CONFIRMATION_LINK_HOURS * 60 * 60 * 1000;
+
+/** At most one new confirmation email per account in this time (US-E1-03). */
+const RESEND_INTERVAL_MS = 60 * 1000;
+
+/**
+ * Asking for a new confirmation email always takes at least this long. Sending an email takes a second or two,
+ * so without it, a fast answer would tell that the email has no unconfirmed account (US-E2-02).
+ */
+export const RESEND_MIN_DURATION_MS = 3000;
 
 /** Which fields were rejected, and why. */
 export interface SignUpErrors {
@@ -26,6 +36,12 @@ export type SignUpResult = { outcome: 'accepted' } | { outcome: 'rejected'; erro
  */
 export type ConfirmEmailResult = 'confirmed' | 'expired' | 'invalid';
 
+/**
+ * The result of asking for a new confirmation email (US-E1-03). "accepted" is the same whether or not
+ * an email was sent, so it doesn't say whether the account exists or is confirmed.
+ */
+export type ResendConfirmationResult = 'accepted' | 'invalid-email';
+
 /** The account rules. Knows nothing about HTTP or the database: it gets those through interfaces. */
 export class AccountService {
   constructor(
@@ -35,6 +51,8 @@ export class AccountService {
     private readonly emails: AccountEmails,
     // The clock is passed in, so tests can check the expiry time.
     private readonly now: () => Date = () => new Date(),
+    // Waiting is passed in too, so tests don't really wait for the minimum duration of a resend.
+    private readonly wait: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   ) {}
 
   /** US-E1-01: creates an unconfirmed account and sends the confirmation email. */
@@ -54,7 +72,7 @@ export class AccountService {
       email,
       passwordHash,
       confirmationTokenHash: confirmation.hash,
-      confirmationExpiresAt: new Date(this.now().getTime() + CONFIRMATION_LINK_HOURS * 60 * 60 * 1000),
+      confirmationExpiresAt: new Date(this.now().getTime() + CONFIRMATION_LINK_MS),
     });
 
     await this.emailSender.send(
@@ -75,5 +93,33 @@ export class AccountService {
     const now = this.now();
     if (stored.expiresAt.getTime() <= now.getTime()) return 'expired';
     return (await this.accounts.confirmEmail(tokenHash, now)) ? 'confirmed' : 'invalid';
+  }
+
+  /**
+   * US-E1-03: sends a new confirmation link if the email has an unconfirmed account.
+   * The new link replaces the old one, and at most one email per account is sent each minute.
+   * The answer and its timing are the same in every case (US-E2-02).
+   */
+  async resendConfirmation(emailText: string): Promise<ResendConfirmationResult> {
+    const email = normalizeEmail(emailText);
+    // A malformed email can't have an account, so this answer reveals nothing.
+    if (!isValidEmail(email)) return 'invalid-email';
+
+    const startedAt = this.now().getTime();
+    const confirmation = createSecretToken();
+    const expiresAt = new Date(startedAt + CONFIRMATION_LINK_MS);
+    const replaced = await this.accounts.replaceConfirmationToken({
+      email,
+      tokenHash: confirmation.hash,
+      expiresAt,
+      // Every link lasts the same time, so a token sent a minute ago expires a minute before the new one.
+      replaceIfExpiresBy: new Date(expiresAt.getTime() - RESEND_INTERVAL_MS),
+    });
+    if (replaced) await this.emailSender.send(this.emails.confirmation(email, confirmation.token));
+
+    // Answer only after the minimum duration, whether or not an email was sent.
+    const elapsed = this.now().getTime() - startedAt;
+    if (elapsed < RESEND_MIN_DURATION_MS) await this.wait(RESEND_MIN_DURATION_MS - elapsed);
+    return 'accepted';
   }
 }
