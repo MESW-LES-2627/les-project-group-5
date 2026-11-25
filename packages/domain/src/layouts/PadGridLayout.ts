@@ -5,15 +5,15 @@ import type { Layout } from './Layout';
 import type { Region } from './Region';
 
 /**
- * The play area has the camera's shape (4:3), so a region that is PAD_WIDTH wide must be
- * PAD_WIDTH × 4/3 high to be a square on the screen, and the web page draws it as a circle.
+ * On the 16:9 desktop stage, a pad with normalized width PAD_WIDTH
+ * needs a normalized height of PAD_WIDTH × 16/9 to appear square.
  */
-const PAD_WIDTH = 0.2;
-const PAD_HEIGHT = (PAD_WIDTH * 4) / 3;
+const PAD_WIDTH = 0.17;
+const PAD_HEIGHT = (PAD_WIDTH * 16) / 9;
 /** Distance between the left sides of two neighbour pads in the same row (a bit more than PAD_WIDTH leaves a gap). */
-const COLUMN_STEP = 0.23;
-const LEFT = 0.04;
-const TOP_ROW_Y = 0.2;
+const COLUMN_STEP = 0.2;
+const LEFT = 0.115;
+const TOP_ROW_Y = 0.15;
 const BOTTOM_ROW_Y = TOP_ROW_Y + PAD_HEIGHT + 0.05;
 
 /** Odd degrees (1, 3, 5, 7) go in the top row and even degrees (2, 4, 6, 8) in the bottom row, so the notes alternate. */
