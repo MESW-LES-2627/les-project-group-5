@@ -3,7 +3,7 @@ import { appHeader } from './appHeader';
 
 /** The texts from US-E1-02, for each answer of the server. */
 const MESSAGES: Record<Exclude<ConfirmEmailAnswer, 'confirmed'>, string> = {
-  // The way to get a new link comes with "Resend the confirmation email" (US-E1-03).
+  // The page then also shows a link to ask for a new one (US-E1-03).
   expired: 'This link has expired.',
   invalid: 'This link is invalid or has already been used.',
   failed: 'Something went wrong. Check your connection and try again.',
@@ -19,6 +19,7 @@ export class ConfirmEmailPage {
   private readonly confirmButton: HTMLButtonElement;
   private readonly message: HTMLElement;
   private readonly loginLink: HTMLElement;
+  private readonly resendHint: HTMLElement;
 
   constructor(root: HTMLElement) {
     root.innerHTML = `
@@ -36,6 +37,7 @@ export class ConfirmEmailPage {
             <button type="button" class="done-button confirm-button">Confirm my email</button>
             <p class="sent-message confirm-message" role="status"></p>
             <a class="done-button login-link" href="#/login" hidden>Log in</a>
+            <p class="form-footer resend-hint" hidden>Didn't get the email? <a href="#/resend-confirmation">Send a new link</a></p>
           </div>
         </main>
       </div>`;
@@ -43,6 +45,7 @@ export class ConfirmEmailPage {
     this.confirmButton = find(root, '.confirm-button');
     this.message = find(root, '.confirm-message');
     this.loginLink = find(root, '.login-link');
+    this.resendHint = find(root, '.resend-hint');
   }
 
   /** Shows the button again, for a new link opened in the same tab. */
@@ -52,6 +55,7 @@ export class ConfirmEmailPage {
     this.confirmButton.disabled = false;
     this.message.textContent = '';
     this.loginLink.hidden = true;
+    this.resendHint.hidden = true;
   }
 
   /** Calls the handler when the button is clicked, and shows its answer. */
@@ -72,6 +76,7 @@ export class ConfirmEmailPage {
         this.loginLink.hidden = false;
       } else {
         this.message.textContent = MESSAGES[answer];
+        this.resendHint.hidden = answer !== 'expired';
       }
     });
   }

@@ -32,6 +32,12 @@ export type ConfirmEmailAnswer = 'confirmed' | 'expired' | 'invalid' | 'failed';
  */
 export type LogInAnswer = { kind: 'logged-in'; email: string } | { kind: 'invalid' } | { kind: 'not-confirmed' } | { kind: 'failed' };
 
+/**
+ * The answer to asking for a new confirmation email (US-E1-03). "sent" is the same whether or not an email
+ * was really sent, so it doesn't say whether the account exists. "failed": the server could not be reached.
+ */
+export type ResendConfirmationAnswer = 'sent' | 'invalid-email' | 'failed';
+
 const CONFIRM_EMAIL_ANSWERS: Record<number, ConfirmEmailAnswer> = { 200: 'confirmed', 410: 'expired', 400: 'invalid' };
 
 /**
@@ -89,6 +95,22 @@ export class ApiClient {
         body: JSON.stringify({ token }),
       });
       return CONFIRM_EMAIL_ANSWERS[response.status] ?? 'failed';
+    } catch {
+      return 'failed';
+    }
+  }
+
+  /** Asks for a new confirmation email (US-E1-03). Never throws: problems come back as "failed". */
+  async resendConfirmation(email: string): Promise<ResendConfirmationAnswer> {
+    try {
+      const response = await this.fetchFn('/api/confirmation-emails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (response.status === 202) return 'sent';
+      if (response.status === 400) return 'invalid-email';
+      return 'failed';
     } catch {
       return 'failed';
     }

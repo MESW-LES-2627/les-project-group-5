@@ -23,6 +23,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import { SignUpPage } from './pages/SignUpPage';
 import { ConfirmEmailPage } from './pages/ConfirmEmailPage';
 import { LoginPage } from './pages/LoginPage';
+import { ResendConfirmationPage } from './pages/ResendConfirmationPage';
 
 // Composition root: the only place that creates the concrete classes and connects them.
 // Everything else receives what it needs through its constructor.
@@ -37,7 +38,8 @@ const settingsRoot = document.createElement('div');
 const signUpRoot = document.createElement('div');
 const confirmEmailRoot = document.createElement('div');
 const loginRoot = document.createElement('div');
-const screens = [instrumentRoot, settingsRoot, signUpRoot, confirmEmailRoot, loginRoot];
+const resendConfirmationRoot = document.createElement('div');
+const screens = [instrumentRoot, settingsRoot, signUpRoot, confirmEmailRoot, loginRoot, resendConfirmationRoot];
 root.append(...screens);
 
 // Each address after "#" shows one screen. Any other address shows the instrument.
@@ -47,6 +49,7 @@ const ROUTES: Record<string, HTMLElement> = {
   '#/sign-up': signUpRoot,
   '#/confirm-email': confirmEmailRoot,
   '#/login': loginRoot,
+  '#/resend-confirmation': resendConfirmationRoot,
 };
 const routePath = (): string => location.hash.split('?')[0];
 const routeParameter = (name: string): string =>
@@ -79,6 +82,7 @@ const settingsPage = new SettingsPage(settingsRoot);
 const signUpPage = new SignUpPage(signUpRoot);
 const confirmEmailPage = new ConfirmEmailPage(confirmEmailRoot);
 const loginPage = new LoginPage(loginRoot);
+const resendConfirmationPage = new ResendConfirmationPage(resendConfirmationRoot);
 const tracker = new MediaPipeHandTracker();
 const synth = new WebAudioSynth();
 const camera = new Camera();
@@ -212,6 +216,12 @@ addEventListener('hashchange', () => {
   if (currentScreen() === confirmEmailRoot) confirmEmailPage.reset();
 });
 
+// "Didn't get the email?" (US-E1-03): an empty form on every visit.
+resendConfirmationPage.onSubmit((email) => api.resendConfirmation(email));
+addEventListener('hashchange', () => {
+  if (currentScreen() === resendConfirmationRoot) resendConfirmationPage.reset();
+});
+
 // ---------- Logging in and out (US-E1-04, US-E1-05) ----------
 
 // The email of the logged-in player, or null for a guest. Asked once when the app opens;
@@ -229,7 +239,7 @@ const showAccount = (email: string | null) => {
 
 // After logging in, the player goes back to the page they were on before opening the login page.
 // Account pages are not worth going back to, so those lead to the instrument.
-const NO_RETURN_ROUTES = new Set(['#/login', '#/sign-up', '#/confirm-email']);
+const NO_RETURN_ROUTES = new Set(['#/login', '#/sign-up', '#/confirm-email', '#/resend-confirmation']);
 let returnTo = '#/';
 addEventListener('hashchange', (event) => {
   if (routePath() !== '#/login') return;

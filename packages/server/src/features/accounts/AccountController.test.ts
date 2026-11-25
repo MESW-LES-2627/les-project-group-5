@@ -10,7 +10,15 @@ const emailSender = new RecordingEmailSender();
 const app = buildApp({
   logger: false,
   database: { isOnline: async () => true },
-  accounts: new AccountService(accounts, new FakePasswordHasher(), emailSender, new AccountEmails('https://app.example')),
+  accounts: new AccountService(
+    accounts,
+    new FakePasswordHasher(),
+    emailSender,
+    new AccountEmails('https://app.example'),
+    () => new Date(),
+    // No real waiting for the minimum duration of a resend.
+    async () => {},
+  ),
   sessions: new SessionService(new InMemorySessionRepository(accounts), new FakePasswordHasher()),
   secureCookies: false,
 });
@@ -92,5 +100,34 @@ describe('POST /api/email-confirmations', () => {
 
   it('answers 400 when the token is missing', async () => {
     expect((await confirm({})).statusCode).toBe(400);
+  });
+});
+
+describe('POST /api/confirmation-emails', () => {
+  function resend(body: unknown) {
+    return app.inject({ method: 'POST', url: '/api/confirmation-emails', payload: body as object });
+  }
+
+  it('answers the same 202 for an unconfirmed account and for no account', async () => {
+    await signUp({ email: 'resend@mail.com', password: 'a long enough password' });
+    const before = emailSender.sent.length;
+    const unconfirmed = await resend({ email: 'resend@mail.com' });
+    // The sign-up email was just sent, so this one is inside the one-minute limit: nothing is sent.
+    expect(emailSender.sent.length).toBe(before);
+    const unknown = await resend({ email: 'nobody-here@mail.com' });
+    for (const response of [unconfirmed, unknown]) {
+      expect(response.statusCode).toBe(202);
+      expect(response.json()).toEqual({ status: 'check-your-email' });
+    }
+  });
+
+  it('answers 400 for a malformed email', async () => {
+    const response = await resend({ email: 'not-an-email' });
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({ errors: { email: 'invalid-format' } });
+  });
+
+  it('answers 400 when the email is missing', async () => {
+    expect((await resend({})).statusCode).toBe(400);
   });
 });

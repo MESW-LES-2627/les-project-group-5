@@ -110,6 +110,35 @@ describe('ApiClient.confirmEmail', () => {
   });
 });
 
+describe('ApiClient.resendConfirmation', () => {
+  it('sends the email as JSON to POST /api/confirmation-emails', async () => {
+    let request: { url: string; init?: RequestInit } | undefined;
+    const recording: typeof fetch = async (input, init) => {
+      request = { url: String(input), init };
+      return new Response(JSON.stringify({ status: 'check-your-email' }), { status: 202 });
+    };
+    expect(await new ApiClient(recording).resendConfirmation('ana@mail.com')).toBe('sent');
+    expect(request?.url).toBe('/api/confirmation-emails');
+    expect(request?.init?.method).toBe('POST');
+    expect(JSON.parse(String(request?.init?.body))).toEqual({ email: 'ana@mail.com' });
+  });
+
+  it.each([
+    [202, 'sent'],
+    [400, 'invalid-email'],
+    [500, 'failed'],
+  ] as const)('maps status %i to "%s"', async (status, answer) => {
+    expect(await new ApiClient(answering(status, {})).resendConfirmation('ana@mail.com')).toBe(answer);
+  });
+
+  it('reports "failed" when the server can not be reached', async () => {
+    const failing: typeof fetch = async () => {
+      throw new TypeError('Failed to fetch');
+    };
+    expect(await new ApiClient(failing).resendConfirmation('ana@mail.com')).toBe('failed');
+  });
+});
+
 describe('ApiClient.logIn', () => {
   it('sends the email and password as JSON to POST /api/sessions', async () => {
     let request: { url: string; init?: RequestInit } | undefined;
