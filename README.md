@@ -28,6 +28,7 @@ A musical instrument that runs in the browser and is played with your hand inste
 | [PostgreSQL](https://www.postgresql.org/) on [Supabase](https://supabase.com/) + [`pg`](https://node-postgres.com/) | Hosted database for the optional accounts and saved data. Only the server talks to it, with hand-written SQL through `pg` (no `supabase-js`, no Supabase Auth). |
 | [Vitest](https://vitest.dev/) | Runs the automated tests. |
 | [ESLint](https://eslint.org/) + [typescript-eslint](https://typescript-eslint.io/) | Finds code problems and **enforces our architecture rules** (for example, "the domain can't use the browser"). |
+| [Semgrep](https://semgrep.dev/) | Security scan in CI: finds risky code such as SQL built from strings or server data put in `innerHTML`. |
 
 No UI framework (no React): pages are plain TypeScript classes that create and update HTML elements.
 
@@ -100,6 +101,8 @@ The full explanation, with the real-time pipeline step by step, is in the [devel
 ├── compose.yaml           # `docker compose up`: web, server and a local PostgreSQL (see "Run with Docker")
 ├── Dockerfile             # The development image used by compose.yaml
 ├── eslint.config.js       # Lint + architecture rules
+├── .semgrep/              # Our Semgrep security rules (rules.yml) and their test examples (rules.ts)
+├── .semgrepignore         # Files the Semgrep scan skips
 ├── tsconfig.base.json     # Shared TypeScript settings
 └── vitest.config.ts       # Test settings
 ```
@@ -223,6 +226,54 @@ npx vitest run -t "starts a note"
 - [ ] Open hand over a cell: the note plays. Closed hand or outside the cell: silence. No clicks.
 - [ ] The volume bar follows how open the hand is.
 - [ ] Blocking the camera shows a clear message and a "Try again" button.
+
+## Security scan (Semgrep)
+
+Every pull request and every push to `staging` or `main` runs [Semgrep](https://semgrep.dev/) in CI (the `semgrep` job in `.github/workflows/ci.yml`). It checks the code with:
+
+- **Public rule packs** for this stack: `p/javascript`, `p/typescript`, `p/nodejs`, `p/secrets`, `p/github-actions` and `p/dockerfile`.
+- **Our own rules** in `.semgrep/rules.yml`: SQL built with `${}` or `+` instead of `$1` placeholders, `Math.random()` on the server, secrets compared with `===`, a database URL with a password in the code, passwords or tokens in logs, cookies without `httpOnly`, redirects to a URL taken from the request, and user or server data put in `innerHTML`.
+
+**Any finding fails the job, and `deploy` only runs when it passes.**
+
+On a pull request the job also writes **one comment with the scan summary** (✅ no findings, or a table with each finding, its rule and a link to the line). New pushes update that same comment instead of adding more. The same summary is on the run's **Summary** page in the Actions tab. The summary is built by `scripts/semgrep-summary.mjs` from Semgrep's JSON output.
+
+Semgrep isn't an npm package, so install it once (Python 3.9+ or Homebrew):
+
+```bash
+brew install semgrep        # macOS
+pipx install semgrep        # or: python3 -m pip install semgrep
+```
+
+Then, from the repository root, run the same commands as CI:
+
+```bash
+# Check that our rules still catch the bad examples in .semgrep/rules.ts
+semgrep --test --config .semgrep/rules.yml .semgrep/rules.ts --metrics=off
+
+# Full scan (same rule packs as CI; exit code 1 if anything is found)
+semgrep scan \
+  --config p/javascript --config p/typescript --config p/nodejs \
+  --config p/secrets --config p/github-actions --config p/dockerfile \
+  --config .semgrep/rules.yml \
+  --metrics=off --error
+
+# Quick scan with only our rules (no internet needed)
+semgrep scan --config .semgrep/rules.yml --metrics=off
+```
+
+Without installing anything, with Docker:
+
+```bash
+docker run --rm -v "$PWD:/src" -w /src semgrep/semgrep:1.187.0 \
+  semgrep scan --config .semgrep/rules.yml --metrics=off --error
+```
+
+**When Semgrep finds something:**
+
+- **Real problem:** fix the code. The message explains the safe way (for example, use `textContent` instead of `innerHTML`).
+- **False positive:** add `// nosemgrep: <rule-id>` on the line above it, with a comment saying why it is safe. For an example, see the TLS option in `packages/server/src/shared/database/createDatabasePool.ts`.
+- **New rule:** add it to `.semgrep/rules.yml`, plus a `// ruleid: <id>` example (must be flagged) and an `// ok: <id>` example (must not be flagged) in `.semgrep/rules.ts`, then run `semgrep --test` as above. ESLint and TypeScript skip `.semgrep/` because those examples are insecure on purpose.
 
 ## Deploy
 

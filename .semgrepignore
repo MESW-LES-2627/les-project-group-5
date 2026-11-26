@@ -1,0 +1,9 @@
+# Files Semgrep skips. Files in .gitignore (node_modules, dist, api/, ...) are skipped too.
+node_modules/
+dist/
+coverage/
+api/
+packages/web/public/mediapipe/
+docs/code-doc/
+package-lock.json
+.semgrep/

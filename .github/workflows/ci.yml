@@ -1,5 +1,5 @@
 # Pipeline for the whole repository:
-# - pull request:       lint, type check and all tests. Nothing is deployed.
+# - pull request:       lint, type check, all tests and a Semgrep security scan. Nothing is deployed.
 # - push to staging:    the same checks, then deploy the web app and the API to Vercel as "preview".
 # - push to main:       the same checks, then deploy to Vercel as "production".
 # Vercel's own Git deploys are turned off in vercel.json, so this pipeline is the only way code gets deployed.
@@ -22,9 +22,9 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -41,9 +41,78 @@ jobs:
       - name: Test
         run: npm test
 
+  # Static security scan: public rule packs for this stack plus our own rules in .semgrep/rules.yml.
+  # Any finding fails the job. On a pull request it also writes (and keeps updating) one comment
+  # with the summary. A false positive is silenced on its line with `// nosemgrep: <rule-id>`
+  # and a comment that explains why it is safe.
+  semgrep:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Needed to write the summary comment on the pull request.
+      pull-requests: write
+    env:
+      SEMGREP_VERSION: 1.187.0
+    steps:
+      # Actions are pinned to a commit SHA because a tag can be moved to other code (Semgrep checks this too).
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      # Installed on the runner (not run in the Semgrep Docker image) because the comment step needs
+      # Node and the GitHub CLI, which the runner already has.
+      - name: Install Semgrep
+        run: pipx install "semgrep==$SEMGREP_VERSION"
+
+      # Proves each custom rule still catches its bad examples in .semgrep/rules.ts and ignores the good ones.
+      - name: Test the custom rules
+        run: semgrep --test --config .semgrep/rules.yml .semgrep/rules.ts --metrics=off
+
+      # No --error here: the job must go on to write the comment, and fails in the last step instead.
+      # The text output still goes to the log; the JSON file feeds the summary.
+      - name: Scan
+        run: >-
+          semgrep scan
+          --config p/javascript
+          --config p/typescript
+          --config p/nodejs
+          --config p/secrets
+          --config p/github-actions
+          --config p/dockerfile
+          --config .semgrep/rules.yml
+          --metrics=off
+          --json-output=semgrep.json
+
+      - name: Build the summary
+        id: summary
+        run: |
+          node scripts/semgrep-summary.mjs semgrep.json semgrep-summary.md >> "$GITHUB_OUTPUT"
+          cat semgrep-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      # Updates the bot's earlier comment (found by its hidden marker) instead of adding a new one on every push.
+      # continue-on-error: a PR from a fork gets a read-only token, and that must not hide the scan result.
+      - name: Comment on the pull request
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          comment_id=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" --paginate \
+            --jq '[.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- semgrep-summary -->")))][0].id // empty' | head -n 1)
+          if [ -n "$comment_id" ]; then
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$comment_id" -F body=@semgrep-summary.md > /dev/null
+          else
+            gh pr comment "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file semgrep-summary.md
+          fi
+
+      - name: Fail if there are findings
+        if: steps.summary.outputs.findings != '0'
+        run: |
+          echo "Semgrep found ${{ steps.summary.outputs.findings }} problem(s). See the Scan step above."
+          exit 1
+
   deploy:
-    # Only after the checks pass, and only for pushes (staging or main), never for pull requests.
-    needs: check
+    # Only after the checks and the security scan pass, and only for pushes (staging or main), never for pull requests.
+    needs: [check, semgrep]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     env:
@@ -54,9 +123,9 @@ jobs:
       # Vercel needs --prod to build and deploy for production.
       VERCEL_PROD_FLAG: ${{ github.ref_name == 'main' && '--prod' || '' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version-file: .nvmrc
           cache: npm
