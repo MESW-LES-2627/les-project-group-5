@@ -118,6 +118,13 @@ export class InstrumentPage {
     }
   }
 
+  /** Clears the pads and their note-tracking references when Game has no exercise to display. */
+  clearCells(): void {
+    this.cellsElement.replaceChildren();
+    this.cells.clear();
+    this.selected = null;
+  }
+
   /** Draws one piano key, but only maps in-scale keys to degrees that can be highlighted while playing. */
   private addPianoKey(key: PianoKey): void {
     const cell = document.createElement('div');

@@ -20,6 +20,7 @@ import { InstrumentPage } from './pages/InstrumentPage';
 import { MediaPipeHandTracker } from './tracking/MediaPipeHandTracker';
 import { SettingsStore } from './settings/SettingsStore';
 import { SettingsPage } from './pages/SettingsPage';
+import { GamePage } from './pages/GamePage';
 import { SignUpPage } from './pages/SignUpPage';
 import { ConfirmEmailPage } from './pages/ConfirmEmailPage';
 import { LoginPage } from './pages/LoginPage';
@@ -39,13 +40,21 @@ const signUpRoot = document.createElement('div');
 const confirmEmailRoot = document.createElement('div');
 const loginRoot = document.createElement('div');
 const resendConfirmationRoot = document.createElement('div');
-const screens = [instrumentRoot, settingsRoot, signUpRoot, confirmEmailRoot, loginRoot, resendConfirmationRoot];
+const screens = [
+  instrumentRoot,
+  settingsRoot,
+  signUpRoot,
+  confirmEmailRoot,
+  loginRoot,
+  resendConfirmationRoot,
+];
 root.append(...screens);
 
 // Each address after "#" shows one screen. Any other address shows the instrument.
 // Some addresses carry values after "?" (like the token in #/confirm-email?token=...), so only the part before it counts.
 const ROUTES: Record<string, HTMLElement> = {
   '#/settings': settingsRoot,
+  '#/game': instrumentRoot,
   '#/sign-up': signUpRoot,
   '#/confirm-email': confirmEmailRoot,
   '#/login': loginRoot,
@@ -79,6 +88,17 @@ let layout: Layout = LAYOUTS[settings.layout]();
 
 const page = new InstrumentPage(instrumentRoot);
 const settingsPage = new SettingsPage(settingsRoot);
+// No demo exercise belongs in production; a later exercise-loading step will provide this value.
+const gamePage = new GamePage(instrumentRoot, null);
+const visibleScale = () => (gamePage.isVisible && gamePage.scale ? gamePage.scale : currentScale);
+const showCurrentCells = () => {
+  if (gamePage.isVisible && !gamePage.hasExercise) {
+    // Do not display notes from Instrument settings as if they came from a Game exercise.
+    page.clearCells();
+    return;
+  }
+  page.showCells(layout, visibleScale());
+};
 const signUpPage = new SignUpPage(signUpRoot);
 const confirmEmailPage = new ConfirmEmailPage(confirmEmailRoot);
 const loginPage = new LoginPage(loginRoot);
@@ -96,11 +116,30 @@ const loop = new InstrumentLoop(
   settings.hand,
 );
 const sound = new SoundOutput(synth, currentScale);
-loop.subscribe((frame) => sound.onFrame(frame));
+loop.subscribe((frame) => {
+  // With no exercise, avoid playing notes based only on the player's Instrument settings.
+  if (gamePage.isVisible && !gamePage.hasExercise) return;
+  sound.onFrame(frame);
+});
 loop.subscribe((frame) => page.render(frame));
 
 let instrumentStarted = false;
 let trackerNeedsReset = false;
+const syncGameMode = () => {
+  const gameVisible = routePath() === '#/game';
+  if (gamePage.isVisible !== gameVisible && instrumentStarted) {
+    instrument.update(null);
+    sound.stop();
+  }
+  gamePage.setVisible(gameVisible);
+  const scale = visibleScale();
+  sound.setScale(scale);
+  showCurrentCells();
+  page.showInfo(scale, settings.hand);
+};
+syncGameMode();
+addEventListener('hashchange', syncGameMode);
+
 loop.subscribeError((error) => {
   console.error('Instrument tracking stopped unexpectedly.', error);
   loop.stop();
@@ -128,13 +167,12 @@ addEventListener('hashchange', () => {
   }
 });
 
-page.showCells(layout, currentScale);
 const applyLayout = () => {
   instrument.update(null); // release the held note first, so the instrument and the sound agree
   if (instrumentStarted) sound.stop(); // before Start the synth isn't initialized and nothing is sounding
   layout = LAYOUTS[settings.layout]();
   instrument.setLayout(layout);
-  page.showCells(layout, currentScale);
+  showCurrentCells();
 };
 mobileLayoutQuery.addEventListener('change', applyLayout);
 settings.subscribeLayout(applyLayout);
@@ -159,9 +197,10 @@ settings.subscribeCameraPreview((visible) =>
 // One function rebuilds the scale from both settings, so it never works from a half-updated state.
 const applyScale = () => {
   currentScale = new Scale(settings.pitch, settings.scale);
-  sound.setScale(currentScale);
-  page.showCells(layout, currentScale);
-  page.showInfo(currentScale, settings.hand);
+  const scale = visibleScale();
+  sound.setScale(scale);
+  showCurrentCells();
+  page.showInfo(scale, settings.hand);
 };
 settings.subscribePitch(applyScale);
 settings.subscribeScale(applyScale);
@@ -188,8 +227,6 @@ settings.subscribePitch((pitch) => settingsPage.setPitch(pitch));
 settings.subscribeScale((scale) => settingsPage.setScale(scale));
 settings.subscribeLayout((kind) => settingsPage.setLayout(kind));
 settings.subscribeSensitivity((sensitivity) => settingsPage.setSensitivity(sensitivity));
-
-page.showInfo(currentScale, settings.hand);
 
 // Start loading the hand model right away, so Start is quicker. Errors are shown when Start is pressed.
 tracker.init().catch((error: unknown) => {
