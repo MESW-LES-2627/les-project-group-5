@@ -1,0 +1,10 @@
+[
+  {
+    "id": 1,
+    "level": 1,
+    "title": "Exercise 1",
+    "key": "C",
+    "scale": "major",
+    "sequence": ["C", "D"]
+  }
+]

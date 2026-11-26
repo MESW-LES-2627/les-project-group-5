@@ -21,6 +21,7 @@ import { MediaPipeHandTracker } from './tracking/MediaPipeHandTracker';
 import { SettingsStore } from './settings/SettingsStore';
 import { SettingsPage } from './pages/SettingsPage';
 import { GamePage } from './pages/GamePage';
+import { loadExerciseConfigurations } from './exerciseData';
 import { SignUpPage } from './pages/SignUpPage';
 import { ConfirmEmailPage } from './pages/ConfirmEmailPage';
 import { LoginPage } from './pages/LoginPage';
@@ -88,8 +89,8 @@ let layout: Layout = LAYOUTS[settings.layout]();
 
 const page = new InstrumentPage(instrumentRoot);
 const settingsPage = new SettingsPage(settingsRoot);
-// No demo exercise belongs in production; a later exercise-loading step will provide this value.
 const gamePage = new GamePage(instrumentRoot, null);
+gamePage.showLoading();
 const visibleScale = () => (gamePage.isVisible && gamePage.scale ? gamePage.scale : currentScale);
 const showCurrentCells = () => {
   if (gamePage.isVisible && !gamePage.hasExercise) {
@@ -139,6 +140,18 @@ const syncGameMode = () => {
 };
 syncGameMode();
 addEventListener('hashchange', syncGameMode);
+
+void loadExerciseConfigurations()
+  .then((exercises) => {
+    const firstExercise = exercises[0];
+    if (!firstExercise) throw new Error('The exercise data contains no exercises.');
+    gamePage.setExercise(firstExercise);
+    syncGameMode();
+  })
+  .catch((error: unknown) => {
+    console.error('Could not load exercise configurations.', error);
+    gamePage.showLoadError(error instanceof Error ? error.message : String(error));
+  });
 
 loop.subscribeError((error) => {
   console.error('Instrument tracking stopped unexpectedly.', error);
