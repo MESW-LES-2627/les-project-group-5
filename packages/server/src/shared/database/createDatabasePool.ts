@@ -18,6 +18,8 @@ export function createDatabasePool(config: Config): pg.Pool {
     // Supabase requires an encrypted connection. Its certificate is signed by Supabase's own authority,
     // which Node does not know, so we encrypt without checking who signed it.
     // The local Docker database has no SSL, so compose.yaml turns it off (DATABASE_SSL=false).
+    // Semgrep flags this on purpose; it stays until we ship Supabase's CA certificate and verify it.
+    // nosemgrep: problem-based-packs.insecure-transport.js-node.bypass-tls-verification.bypass-tls-verification
     ssl: config.databaseSsl ? { rejectUnauthorized: false } : false,
   });
   // A connection that breaks while unused emits 'error'. Without a listener, Node would stop the whole server.

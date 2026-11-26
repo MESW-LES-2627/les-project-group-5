@@ -38,6 +38,8 @@ export default defineConfig(
       'docs/code-doc/**',
       '.vercel/**',
       'api/**',
+      // Deliberately insecure examples that test the Semgrep rules.
+      '.semgrep/**',
     ],
   },
   tseslint.configs.recommended,

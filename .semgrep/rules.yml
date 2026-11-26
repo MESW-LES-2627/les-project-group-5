@@ -1,0 +1,183 @@
+# Project-specific Semgrep rules. They run in CI together with the public rule packs
+# listed in .github/workflows/ci.yml (JavaScript, TypeScript, Node.js, secrets, ...).
+# Each rule targets a mistake that is easy to make in *this* stack:
+# hand-written SQL with `pg`, Fastify cookies, and pages built with innerHTML.
+#
+# Run locally: semgrep scan --config .semgrep/rules.yml
+# A finding that is a false positive can be silenced on that line with `// nosemgrep: <rule-id>`
+# plus a comment that explains why it is safe.
+rules:
+  # --- Server: SQL -------------------------------------------------------------
+
+  - id: sql-built-with-string-interpolation
+    message: >-
+      SQL built from a template literal or string concatenation can be injected.
+      Use placeholders ($1, $2, ...) and pass the values in the second argument:
+      pool.query('SELECT * FROM users WHERE email = $1', [email]).
+    severity: ERROR
+    languages: [typescript, javascript]
+    paths:
+      include: [/packages/server/]
+    pattern-either:
+      - pattern: $DB.query(`...${...}...`, ...)
+      - pattern: $DB.query("..." + $X, ...)
+      - pattern: $DB.query($X + "...", ...)
+    metadata:
+      category: security
+      cwe: 'CWE-89: SQL Injection'
+
+  # --- Server: secrets and randomness ------------------------------------------
+
+  - id: insecure-random-on-server
+    message: >-
+      Math.random() is predictable and must not be used for tokens, ids or salts.
+      Use randomBytes() or randomUUID() from node:crypto (see SecretToken.ts).
+    severity: ERROR
+    languages: [typescript, javascript]
+    paths:
+      include: [/packages/server/]
+    pattern: Math.random()
+    metadata:
+      category: security
+      cwe: 'CWE-338: Use of Cryptographically Weak PRNG'
+
+  - id: secret-compared-with-equality-operator
+    message: >-
+      Comparing a secret (token, hash, password) with === leaks timing information.
+      Compare hashes with timingSafeEqual() from node:crypto (see ScryptPasswordHasher.ts).
+    severity: WARNING
+    languages: [typescript, javascript]
+    paths:
+      include: [/packages/server/src/]
+      # Test doubles compare fake values on purpose.
+      exclude: ['*.test.ts', 'testDoubles.ts']
+    patterns:
+      - pattern-either:
+          - pattern: $A === $B
+          - pattern: $A !== $B
+          - pattern: $A == $B
+          - pattern: $A != $B
+      - metavariable-regex:
+          metavariable: $A
+          # Only the last name counts, so token.userId === id is not flagged.
+          regex: (?i)(^|\.)\w*(password|token|hash|secret)\w*$
+      # Checking for "missing" is fine; only comparing two secret values is a problem.
+      - metavariable-pattern:
+          metavariable: $B
+          patterns:
+            - pattern-not: undefined
+            - pattern-not: "null"
+            - pattern-not: "''"
+            - pattern-not: '""'
+    metadata:
+      category: security
+      cwe: 'CWE-208: Observable Timing Discrepancy'
+
+  - id: hardcoded-database-url
+    message: >-
+      A database URL with a password is written in the code. Read it from DATABASE_URL
+      (packages/server/.env locally, Vercel environment variables in deploys).
+    severity: ERROR
+    languages: [typescript, javascript]
+    pattern-regex: postgres(ql)?://[^:\s'"`]+:[^@\s'"`]+@
+    metadata:
+      category: security
+      cwe: 'CWE-798: Use of Hard-coded Credentials'
+
+  - id: sensitive-value-logged
+    message: >-
+      A password, token or hash is being logged. Logs end up in Vercel and CI output;
+      log an id or a message instead.
+    severity: ERROR
+    languages: [typescript, javascript]
+    paths:
+      include: [/packages/server/src/]
+    patterns:
+      - pattern-either:
+          - pattern: console.$LOG(..., <... $OBJ.$FIELD ...>, ...)
+          - pattern: $REQ.log.$LOG(..., <... $OBJ.$FIELD ...>, ...)
+          - pattern: console.$LOG(..., <... $FIELD ...>, ...)
+      - metavariable-regex:
+          metavariable: $FIELD
+          regex: (?i)^(password|passwordhash|token|tokenhash|secret|databaseurl)$
+    metadata:
+      category: security
+      cwe: 'CWE-532: Insertion of Sensitive Information into Log File'
+
+  # --- Server: Fastify ---------------------------------------------------------
+
+  - id: cookie-without-httponly
+    message: >-
+      This cookie is set without httpOnly: true, so page scripts (and any XSS) can read it.
+      Use the same options as SessionController.cookieOptions().
+    severity: ERROR
+    languages: [typescript, javascript]
+    paths:
+      include: [/packages/server/src/]
+    patterns:
+      - pattern: $REPLY.setCookie($NAME, $VALUE, {...})
+      # Options built from a spread (e.g. ...this.cookieOptions()) are checked where they are defined.
+      - pattern-not: '$REPLY.setCookie($NAME, $VALUE, {..., ...$OPTS, ...})'
+      - pattern-not: '$REPLY.setCookie($NAME, $VALUE, {..., httpOnly: true, ...})'
+    metadata:
+      category: security
+      cwe: "CWE-1004: Sensitive Cookie Without 'HttpOnly' Flag"
+
+  - id: open-redirect-from-request
+    message: >-
+      The redirect target comes from the request, so anyone can build a link that sends
+      users to another site. Redirect only to fixed paths or check the target against a list.
+    severity: ERROR
+    languages: [typescript, javascript]
+    paths:
+      include: [/packages/server/src/]
+    mode: taint
+    pattern-sources:
+      - pattern: $REQ.query
+      - pattern: $REQ.params
+      - pattern: $REQ.body
+      - pattern: $REQ.headers
+    pattern-sinks:
+      - patterns:
+          - pattern: $REPLY.redirect(..., $URL)
+          - focus-metavariable: $URL
+    metadata:
+      category: security
+      cwe: "CWE-601: URL Redirection to Untrusted Site ('Open Redirect')"
+
+  # --- Web: DOM ----------------------------------------------------------------
+
+  - id: untrusted-data-in-innerhtml
+    message: >-
+      Data typed by the user, read from the URL or returned by the server reaches innerHTML,
+      which runs any HTML/JS inside it (XSS). Set it with textContent, or build the element
+      with document.createElement.
+    severity: ERROR
+    languages: [typescript, javascript]
+    paths:
+      include: [/packages/web/src/]
+    mode: taint
+    pattern-sources:
+      # What the user types in a form field.
+      - pattern: '($EL: HTMLInputElement).value'
+      - pattern: '($EL: HTMLTextAreaElement).value'
+      - pattern: (new FormData(...)).get(...)
+      # The URL (hash routes like #/confirm-email?token=...).
+      - pattern: location.$ANY
+      - pattern: window.location.$ANY
+      - pattern: (new URLSearchParams(...)).get(...)
+      # Anything that comes back from the server.
+      - pattern: await fetch(...)
+      - pattern: await $API.$METHOD(...)
+    pattern-sinks:
+      # Only the HTML value is the sink, not the element it is written to.
+      - patterns:
+          - pattern-either:
+              - pattern: $EL.innerHTML = $X
+              - pattern: $EL.outerHTML = $X
+              - pattern: $EL.insertAdjacentHTML($POS, $X)
+              - pattern: document.write($X)
+          - focus-metavariable: $X
+    metadata:
+      category: security
+      cwe: "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
