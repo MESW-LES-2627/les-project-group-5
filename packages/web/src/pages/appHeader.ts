@@ -12,7 +12,8 @@ export function appHeader(current: CurrentPage): string {
       <a class="brand" href="#/">Web-based Gesture Instrument</a>
       <nav aria-label="Main navigation">
         <a href="#/" class="${active(current, 'instrument')}" ${ariaCurrent(current, 'instrument')}>Instrument</a>
-        <a href="#/game" class="${active(current, 'game')}" ${ariaCurrent(current, 'game')}>
+        <!-- main.ts reveals this link only after it confirms the player is logged in. -->
+        <a class="game-link ${active(current, 'game')}" href="#/game" ${ariaCurrent(current, 'game')} hidden>
           <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20"><path d="M8.5 8h7a5 5 0 0 1 4.8 3.6l1.1 4a2.8 2.8 0 0 1-4.7 2.8L14.8 16H9.2l-1.9 2.4a2.8 2.8 0 0 1-4.7-2.8l1.1-4A5 5 0 0 1 8.5 8Z" /><path d="M7 12v4M5 14h4M17 13h.01M19 15h.01" /></svg>
           Game
         </a>

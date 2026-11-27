@@ -1,6 +1,6 @@
-import { PITCH_CLASSES, ScaleType, type PitchClass } from '@instrument/domain';
+import { DEGREES, PITCH_CLASSES, Scale, ScaleType, type PitchClass } from '@instrument/domain';
 
-/** Configuration used to display one challenge; adding another entry does not require game-engine changes. */
+/** Parsed exercise data; JSON scale ids are converted to domain scale types before reaching the Game page. */
 export interface GameExercise {
   /** Unique id within the exercise data file. */
   readonly id: number;
@@ -10,13 +10,14 @@ export interface GameExercise {
   readonly title: string;
   /** Starting note for the scale, such as C. */
   readonly key: PitchClass;
-  /** Note pattern built from the starting note, such as major or natural minor. */
-  readonly scale: string;
+  /** Note pattern built from the starting note; the JSON file stores its id, such as "major". */
+  readonly scale: ScaleType;
   /** Notes the player will reproduce, in order. */
   readonly sequence: readonly PitchClass[];
 }
 
 export async function loadExerciseConfigurations(): Promise<readonly GameExercise[]> {
+  // Exercise content lives in a public JSON file, so a new exercise does not require game-engine code changes.
   const path = `${import.meta.env.BASE_URL}exercises.json`;
   const response = await fetch(path);
   if (!response.ok) {
@@ -31,10 +32,8 @@ export function parseExerciseConfigurations(data: unknown): readonly GameExercis
   if (!Array.isArray(data)) {
     throw new Error('Exercise data must be a JSON array.');
   }
-  if (data.length === 0) {
-    throw new Error('Exercise data must contain at least one exercise.');
-  }
 
+  // An empty array is allowed so the Game page can show its "No exercise loaded" state.
   const ids = new Set<number>();
   return data.map((item: unknown, index: number) => parseExercise(item, index, ids));
 }
@@ -44,12 +43,20 @@ function parseExercise(item: unknown, index: number, ids: Set<number>): GameExer
   if (!isRecord(item)) throw new Error(`${label} must be an object.`);
 
   const id = positiveInteger(item.id, `${label} id`);
+  // IDs let the data file refer to exercises unambiguously, so reject duplicates.
   if (ids.has(id)) throw new Error(`${label} has a duplicate id (${id}).`);
   const level = positiveInteger(item.level, `${label} level`);
   const title = nonEmptyString(item.title, `${label} title`);
   const key = pitchClass(item.key, `${label} key`);
-  const scale = scaleId(item.scale, label);
+  const scale = scaleType(item.scale, label);
   const sequence = pitchClassList(item.sequence, label);
+  // Work out which notes belong to this key and scale. The exercise must only ask for
+  // notes the player can actually find on its instrument layout.
+  const exerciseScale = new Scale(key, scale);
+  const notesInScale = new Set(DEGREES.map((degree) => exerciseScale.noteNameOf(degree)));
+  if (!sequence.every((note) => notesInScale.has(note))) {
+    throw new Error(`${label} has a sequence note that is not in its scale.`);
+  }
 
   ids.add(id);
   return { id, level, title, key, scale, sequence };
@@ -78,11 +85,12 @@ function pitchClass(value: unknown, name: string): PitchClass {
   return value;
 }
 
-function scaleId(value: unknown, label: string): string {
-  if (typeof value !== 'string' || !ScaleType.fromId(value)) {
+function scaleType(value: unknown, label: string): ScaleType {
+  const scale = typeof value === 'string' ? ScaleType.fromId(value) : undefined;
+  if (!scale) {
     throw new Error(`${label} has an unknown scale.`);
   }
-  return value;
+  return scale;
 }
 
 function pitchClassList(value: unknown, label: string): PitchClass[] {

@@ -1,7 +1,5 @@
-import { PITCH_CLASSES, Scale, ScaleType, type PitchClass } from '@instrument/domain';
+import { Scale, type PitchClass } from '@instrument/domain';
 import type { GameExercise } from '../exerciseData';
-
-export type { GameExercise } from '../exerciseData';
 
 /** Adds exercise controls to the shared instrument stage without creating another camera surface. */
 export class GamePage {
@@ -13,7 +11,7 @@ export class GamePage {
   private readonly gameLink: HTMLAnchorElement;
   private visible = false;
 
-  constructor(root: HTMLElement, exercise: GameExercise | null) {
+  constructor(root: HTMLElement) {
     this.stageArea = find(root, '.stage-area');
     this.instrumentLink = find(root, 'nav a[href="#/"]');
     this.gameLink = find(root, 'nav a[href="#/game"]');
@@ -23,7 +21,7 @@ export class GamePage {
     this.controls.hidden = true;
     this.controls.setAttribute('aria-label', 'Exercise controls');
     find(root, '.stage').append(this.controls);
-    this.setExercise(exercise);
+    this.showLoading();
   }
 
   get scale(): Scale | null {
@@ -39,9 +37,9 @@ export class GamePage {
   }
 
   setExercise(exercise: GameExercise | null): void {
-    const scale = exercise ? createScale(exercise) : null;
     this.exercise = exercise;
-    this.exerciseScale = scale;
+    // The JSON parser has already checked the exercise; build its scale for the page and instrument layout.
+    this.exerciseScale = exercise ? new Scale(exercise.key, exercise.scale) : null;
     this.renderControls();
     this.updateEmptyState();
   }
@@ -49,6 +47,7 @@ export class GamePage {
   showLoading(): void {
     this.exercise = null;
     this.exerciseScale = null;
+    // Keep loading distinct from "no exercise": the data request may still return an exercise.
     this.renderMessage('Loading exercise', 'Please wait while exercise data is loaded.', 'status');
     this.updateEmptyState();
   }
@@ -80,6 +79,7 @@ export class GamePage {
     const exercise = this.exercise;
     const scale = this.exerciseScale;
     if (!exercise || !scale) {
+      // An empty JSON list is valid, so show an empty state instead of treating it as a load failure.
       this.renderMessage('No exercise loaded', 'An exercise will appear here when one is available.', 'status');
       return;
     }
@@ -142,18 +142,6 @@ export class GamePage {
       progress.append(step);
     });
   }
-}
-
-function createScale(exercise: GameExercise): Scale {
-  const scaleType = ScaleType.fromId(exercise.scale);
-  if (!scaleType) throw new Error(`GamePage: unknown exercise scale "${exercise.scale}"`);
-  if (!PITCH_CLASSES.includes(exercise.key)) {
-    throw new Error(`GamePage: unknown exercise key "${exercise.key}"`);
-  }
-  if (exercise.sequence.length === 0 || !exercise.sequence.every((note) => PITCH_CLASSES.includes(note))) {
-    throw new Error('GamePage: exercise sequence must contain valid notes');
-  }
-  return new Scale(exercise.key, scaleType);
 }
 
 function find<T extends HTMLElement>(root: ParentNode, selector: string): T {
