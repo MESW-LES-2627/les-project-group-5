@@ -20,6 +20,8 @@ import { InstrumentPage } from './pages/InstrumentPage';
 import { MediaPipeHandTracker } from './tracking/MediaPipeHandTracker';
 import { SettingsStore } from './settings/SettingsStore';
 import { SettingsPage } from './pages/SettingsPage';
+import { GamePage } from './pages/GamePage';
+import { loadExerciseConfigurations } from './exerciseData';
 import { SignUpPage } from './pages/SignUpPage';
 import { ConfirmEmailPage } from './pages/ConfirmEmailPage';
 import { LoginPage } from './pages/LoginPage';
@@ -31,6 +33,10 @@ import { ResendConfirmationPage } from './pages/ResendConfirmationPage';
 const root = document.querySelector<HTMLElement>('#app');
 if (!root) throw new Error('Missing #app element');
 
+// The session check starts asynchronously. Keep track of when it finishes so a guest is not
+// redirected from the Game page before we know whether they are actually logged in.
+let loggedInEmail: string | null = null, accountStatusResolved = false;
+
 // All screens stay mounted and only one is visible. Removing the instrument page would destroy
 // the video and stop the camera, so the player would have to press Start again after every visit to another page.
 const instrumentRoot = document.createElement('div');
@@ -39,13 +45,21 @@ const signUpRoot = document.createElement('div');
 const confirmEmailRoot = document.createElement('div');
 const loginRoot = document.createElement('div');
 const resendConfirmationRoot = document.createElement('div');
-const screens = [instrumentRoot, settingsRoot, signUpRoot, confirmEmailRoot, loginRoot, resendConfirmationRoot];
+const screens = [
+  instrumentRoot,
+  settingsRoot,
+  signUpRoot,
+  confirmEmailRoot,
+  loginRoot,
+  resendConfirmationRoot,
+];
 root.append(...screens);
 
 // Each address after "#" shows one screen. Any other address shows the instrument.
 // Some addresses carry values after "?" (like the token in #/confirm-email?token=...), so only the part before it counts.
 const ROUTES: Record<string, HTMLElement> = {
   '#/settings': settingsRoot,
+  '#/game': instrumentRoot,
   '#/sign-up': signUpRoot,
   '#/confirm-email': confirmEmailRoot,
   '#/login': loginRoot,
@@ -61,7 +75,6 @@ const showRoute = () => {
   const visible = currentScreen();
   for (const screen of screens) screen.hidden = screen !== visible;
 };
-addEventListener('hashchange', showRoute);
 showRoute();
 
 // The instrument starts with 8 notes in a zigzag of two rows. Key and scale come from the settings.
@@ -79,6 +92,16 @@ let layout: Layout = LAYOUTS[settings.layout]();
 
 const page = new InstrumentPage(instrumentRoot);
 const settingsPage = new SettingsPage(settingsRoot);
+const gamePage = new GamePage(instrumentRoot);
+const visibleScale = () => (gamePage.isVisible && gamePage.scale ? gamePage.scale : currentScale);
+const showCurrentCells = () => {
+  if (gamePage.isVisible && !gamePage.hasExercise) {
+    // Do not display notes from Instrument settings as if they came from a Game exercise.
+    page.clearCells();
+    return;
+  }
+  page.showCells(layout, visibleScale());
+};
 const signUpPage = new SignUpPage(signUpRoot);
 const confirmEmailPage = new ConfirmEmailPage(confirmEmailRoot);
 const loginPage = new LoginPage(loginRoot);
@@ -96,11 +119,62 @@ const loop = new InstrumentLoop(
   settings.hand,
 );
 const sound = new SoundOutput(synth, currentScale);
-loop.subscribe((frame) => sound.onFrame(frame));
+loop.subscribe((frame) => {
+  // With no exercise, avoid playing notes based only on the player's Instrument settings.
+  if (gamePage.isVisible && !gamePage.hasExercise) return;
+  sound.onFrame(frame);
+});
 loop.subscribe((frame) => page.render(frame));
 
 let instrumentStarted = false;
 let trackerNeedsReset = false;
+const syncGameMode = () => {
+  // The Game screen shares the instrument stage, but guests must not enter its exercise mode.
+  const gameVisible = routePath() === '#/game' && loggedInEmail !== null;
+  gamePage.setVisible(gameVisible);
+  const scale = visibleScale();
+  sound.setScale(scale);
+  showCurrentCells();
+  page.showInfo(scale, settings.hand);
+};
+syncGameMode();
+
+const syncInstrumentLoop = (instrumentVisible: boolean, gameModeChanged: boolean) => {
+  if (!instrumentStarted) return;
+  // Stop tracking when leaving the shared instrument screen; release any held note when changing modes.
+  if (!instrumentVisible) loop.stop();
+  if (!instrumentVisible || gameModeChanged) {
+    instrument.update(null);
+    sound.stop();
+  }
+  if (instrumentVisible) loop.start();
+};
+
+const handleRouteChange = () => {
+  const instrumentVisible = onInstrument();
+  const gameVisible = routePath() === '#/game' && loggedInEmail !== null;
+  syncInstrumentLoop(instrumentVisible, gamePage.isVisible !== gameVisible);
+  showRoute();
+  syncGameMode();
+  // Wait for the session lookup before redirecting, so a returning player can still open Game directly.
+  if (accountStatusResolved && loggedInEmail === null && routePath() === '#/game') {
+    location.hash = '#/login';
+  }
+};
+addEventListener('hashchange', handleRouteChange);
+
+// The JSON file supplies the exercises. For now the Game page uses its first entry;
+// an empty list is valid and lets the page show its "No exercise loaded" state.
+void loadExerciseConfigurations()
+  .then((exercises) => {
+    gamePage.setExercise(exercises[0] ?? null);
+    syncGameMode();
+  })
+  .catch((error: unknown) => {
+    console.error('Could not load exercise configurations.', error);
+    gamePage.showLoadError(error instanceof Error ? error.message : String(error));
+  });
+
 loop.subscribeError((error) => {
   console.error('Instrument tracking stopped unexpectedly.', error);
   loop.stop();
@@ -113,28 +187,12 @@ loop.subscribeError((error) => {
   page.showStart('Try again');
 });
 
-showRoute();
-addEventListener('hashchange', () => {
-  showRoute();
-  // The instrument only runs while its page is visible.
-  if (!onInstrument()) {
-    if (instrumentStarted) {
-      loop.stop();
-      instrument.update(null);
-      sound.stop();
-    }
-  } else if (instrumentStarted) {
-    loop.start();
-  }
-});
-
-page.showCells(layout, currentScale);
 const applyLayout = () => {
   instrument.update(null); // release the held note first, so the instrument and the sound agree
   if (instrumentStarted) sound.stop(); // before Start the synth isn't initialized and nothing is sounding
   layout = LAYOUTS[settings.layout]();
   instrument.setLayout(layout);
-  page.showCells(layout, currentScale);
+  showCurrentCells();
 };
 mobileLayoutQuery.addEventListener('change', applyLayout);
 settings.subscribeLayout(applyLayout);
@@ -159,9 +217,10 @@ settings.subscribeCameraPreview((visible) =>
 // One function rebuilds the scale from both settings, so it never works from a half-updated state.
 const applyScale = () => {
   currentScale = new Scale(settings.pitch, settings.scale);
-  sound.setScale(currentScale);
-  page.showCells(layout, currentScale);
-  page.showInfo(currentScale, settings.hand);
+  const scale = visibleScale();
+  sound.setScale(scale);
+  showCurrentCells();
+  page.showInfo(scale, settings.hand);
 };
 settings.subscribePitch(applyScale);
 settings.subscribeScale(applyScale);
@@ -188,8 +247,6 @@ settings.subscribePitch((pitch) => settingsPage.setPitch(pitch));
 settings.subscribeScale((scale) => settingsPage.setScale(scale));
 settings.subscribeLayout((kind) => settingsPage.setLayout(kind));
 settings.subscribeSensitivity((sensitivity) => settingsPage.setSensitivity(sensitivity));
-
-page.showInfo(currentScale, settings.hand);
 
 // Start loading the hand model right away, so Start is quicker. Errors are shown when Start is pressed.
 tracker.init().catch((error: unknown) => {
@@ -224,17 +281,17 @@ addEventListener('hashchange', () => {
 
 // ---------- Logging in and out (US-E1-04, US-E1-05) ----------
 
-// The email of the logged-in player, or null for a guest. Asked once when the app opens;
-// the session itself lives in a cookie that only the server can read.
-let loggedInEmail: string | null = null;
-
 /** Shows "Log in / Sign up" to a guest and "Log out" to a logged-in player, in every page's header. */
-const showAccount = (email: string | null) => {
+const showAccount = (email: string | null, syncRoute = true) => {
   loggedInEmail = email;
+  accountStatusResolved = true;
   for (const links of document.querySelectorAll<HTMLElement>('.guest-links')) links.hidden = email !== null;
   for (const links of document.querySelectorAll<HTMLElement>('.user-links')) links.hidden = email === null;
+  // The Game link is available only after the session check confirms a signed-in player.
+  for (const link of document.querySelectorAll<HTMLElement>('.game-link')) link.hidden = email === null;
   // A logged-in player who opens the login page goes to the instrument instead.
   if (email !== null && routePath() === '#/login') location.hash = '#/';
+  else if (syncRoute) handleRouteChange();
 };
 
 // After logging in, the player goes back to the page they were on before opening the login page.
@@ -264,10 +321,10 @@ loginPage.onSubmit(async (email, password) => {
 document.addEventListener('click', async (event) => {
   if (!(event.target instanceof Element) || !event.target.closest('.log-out')) return;
   if (!(await api.logOut())) return;
-  showAccount(null);
   // Back to a guest with the default settings, on the instrument page (US-E1-05).
   settings.reset();
   location.hash = '#/';
+  showAccount(null, false);
 });
 
 void api.currentUser().then(showAccount);

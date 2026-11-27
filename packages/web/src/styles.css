@@ -845,6 +845,190 @@ svg {
   background: #e9680d;
 }
 
+/* ---------- Game controls on the shared instrument page ---------- */
+
+.game-mode .status {
+  display: none;
+}
+
+.game-controls {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  pointer-events: none;
+}
+
+.game-controls[hidden] {
+  display: none;
+}
+
+/* Without exercise data, keep the player's Instrument notes and pointer out of the Game view. */
+.game-mode.game-empty .cells,
+.game-mode.game-empty .pointer {
+  display: none;
+}
+
+/* The footer's scale name comes from Instrument settings, so hide it in the empty Game state. */
+.stage-area.game-empty ~ .status-bar .status-copy {
+  visibility: hidden;
+}
+
+.game-empty-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(90%, 420px);
+  padding: 20px 24px;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(8, 8, 7, 0.82);
+  color: #fff;
+  text-align: center;
+  text-shadow: 0 1px 5px #000;
+}
+
+.game-empty-message h1 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.game-empty-message p {
+  margin: 8px 0 0;
+  color: #e0dad1;
+  font-size: 14px;
+}
+
+.game-heading {
+  position: absolute;
+  top: 2%;
+  left: 3%;
+  right: 3%;
+  display: grid;
+  grid-template-columns: minmax(70px, 1fr) minmax(220px, auto) minmax(70px, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(8, 8, 7, 0.78);
+  backdrop-filter: blur(6px);
+  text-shadow: 0 1px 5px #000;
+}
+
+.game-level {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.game-level span,
+.game-level strong,
+.game-progress {
+  font-family: var(--mono);
+}
+
+.game-level span {
+  color: #e0dad1;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.game-level strong {
+  color: var(--orange);
+  font-size: 36px;
+  font-weight: 500;
+}
+
+.game-title {
+  text-align: center;
+}
+
+.game-title p {
+  margin: 0 0 5px;
+  color: #ff9a52;
+  font: 500 10px var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.game-title h1 {
+  margin: 0;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.game-title .exercise-scale {
+  margin: 5px 0 0;
+  color: #f5eee7;
+  font-size: 11px;
+}
+
+.game-progress {
+  justify-self: end;
+  display: flex;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.game-progress li {
+  width: 20px;
+  height: 5px;
+  border-radius: 4px;
+  background: #968b80;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.65);
+}
+
+.game-action {
+  position: absolute;
+  right: 3%;
+  bottom: 2%;
+  left: 3%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(8, 8, 7, 0.8);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+}
+
+.game-instructions {
+  max-width: min(52%, 420px);
+  margin: 0;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.game-play {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px 12px 18px;
+  border: 0;
+  border-radius: 99px;
+  color: #fff;
+  background: var(--orange-strong);
+  box-shadow: 0 0 28px rgba(255, 100, 0, 0.22);
+  font-size: 14px;
+  font-weight: 600;
+  pointer-events: auto;
+}
+
+.game-play:hover {
+  background: #e9680d;
+}
+
 /* ---------- Account pages (sign up) ---------- */
 
 .account-page {
@@ -1038,6 +1222,11 @@ svg {
     pointer-events: none;
   }
 
+  .game-mode .start-overlay {
+    align-items: center;
+    background: rgba(13, 13, 13, 0.35);
+  }
+
   .start-overlay .start {
     padding: 8px 26px;
     font-size: 13px;
@@ -1082,5 +1271,75 @@ svg {
     grid-template-columns: 1fr;
     gap: 16px;
     padding: 24px 18px;
+  }
+
+  .game-heading {
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+  }
+
+  .game-title {
+    text-align: right;
+  }
+
+  .game-title h1 {
+    font-size: 16px;
+  }
+
+  .game-progress {
+    grid-column: 1 / -1;
+    justify-self: center;
+  }
+
+  .game-controls {
+    inset: 0;
+  }
+
+  .game-heading {
+    top: 2%;
+    left: 3%;
+    right: 3%;
+    grid-template-columns: auto 1fr;
+    gap: 8px;
+    align-items: start;
+  }
+
+  .game-title {
+    text-align: right;
+  }
+
+  .game-title h1 {
+    font-size: 15px;
+  }
+
+  .game-title p {
+    font-size: 9px;
+  }
+
+  .game-title .exercise-scale {
+    font-size: 10px;
+  }
+
+  .game-progress {
+    grid-column: 1 / -1;
+    justify-self: center;
+  }
+
+  .game-action {
+    top: 15%;
+    right: 3%;
+    bottom: auto;
+    left: 3%;
+    gap: 8px;
+  }
+
+  .game-instructions {
+    max-width: 55%;
+    font-size: 10px;
+  }
+
+  .game-play {
+    padding: 7px 12px;
+    font-size: 11px;
   }
 }
