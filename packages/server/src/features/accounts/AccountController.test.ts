@@ -131,3 +131,35 @@ describe('POST /api/confirmation-emails', () => {
     expect((await resend({})).statusCode).toBe(400);
   });
 });
+
+describe('POST /api/password-reset-emails', () => {
+  function requestReset(body: unknown) {
+    return app.inject({ method: 'POST', url: '/api/password-reset-emails', payload: body as object });
+  }
+
+  it('answers the same 202 for an existing account and an unknown email', async () => {
+    await signUp({ email: 'reset-request@mail.com', password: 'a long enough password' });
+    const existing = await requestReset({ email: 'reset-request@mail.com' });
+    const sentAfterExisting = emailSender.sent.length;
+    const unknown = await requestReset({ email: 'nobody-reset@mail.com' });
+
+    for (const response of [existing, unknown]) {
+      expect(response.statusCode).toBe(202);
+      expect(response.json()).toEqual({ status: 'check-your-email' });
+    }
+    expect(sentAfterExisting).toBe(emailSender.sent.length);
+    expect(emailSender.sent.at(-1)?.subject).toBe('Reset your password');
+  });
+
+  it('answers 202 for an invalid email without sending anything', async () => {
+    const before = emailSender.sent.length;
+    const response = await requestReset({ email: 'not-an-email' });
+    expect(response.statusCode).toBe(202);
+    expect(response.json()).toEqual({ status: 'check-your-email' });
+    expect(emailSender.sent).toHaveLength(before);
+  });
+
+  it('answers 400 when the email is missing', async () => {
+    expect((await requestReset({})).statusCode).toBe(400);
+  });
+});

@@ -38,6 +38,9 @@ export type LogInAnswer = { kind: 'logged-in'; email: string } | { kind: 'invali
  */
 export type ResendConfirmationAnswer = 'sent' | 'invalid-email' | 'failed';
 
+/** The answer to asking for a password reset; "sent" does not reveal whether the account exists. */
+export type PasswordResetRequestAnswer = 'sent' | 'failed';
+
 const CONFIRM_EMAIL_ANSWERS: Record<number, ConfirmEmailAnswer> = { 200: 'confirmed', 410: 'expired', 400: 'invalid' };
 
 /**
@@ -111,6 +114,20 @@ export class ApiClient {
       if (response.status === 202) return 'sent';
       if (response.status === 400) return 'invalid-email';
       return 'failed';
+    } catch {
+      return 'failed';
+    }
+  }
+
+  /** Asks for a password reset link (US-E1-06). Never reveals whether an account exists. */
+  async requestPasswordReset(email: string): Promise<PasswordResetRequestAnswer> {
+    try {
+      const response = await this.fetchFn('/api/password-reset-emails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      return response.status === 202 ? 'sent' : 'failed';
     } catch {
       return 'failed';
     }

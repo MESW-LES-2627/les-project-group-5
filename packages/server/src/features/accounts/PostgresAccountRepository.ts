@@ -3,6 +3,7 @@ import type {
   AccountRepository,
   ConfirmationTokenReplacement,
   NewAccount,
+  PasswordResetTokenReplacement,
   StoredConfirmationToken,
 } from './AccountRepository';
 
@@ -98,6 +99,29 @@ export class PostgresAccountRepository implements AccountRepository {
          WHERE email_confirmation_tokens.expires_at <= $4
        RETURNING user_id`,
       [replacement.email, replacement.tokenHash, replacement.expiresAt, replacement.replaceIfExpiresBy],
+    );
+    return result.rows.length > 0;
+  }
+
+  async replacePasswordResetToken(replacement: PasswordResetTokenReplacement): Promise<boolean> {
+    // One statement keeps concurrent requests from both replacing the token and sending an email.
+    // Unlike confirmation links, reset links are available to confirmed and unconfirmed accounts.
+    const result = await this.pool.query<{ user_id: string }>(
+      `INSERT INTO password_reset_tokens (token_hash, user_id, expires_at, created_at)
+       SELECT $2, id, $3, $4 FROM users WHERE email = $1
+       ON CONFLICT (user_id) DO UPDATE
+         SET token_hash = EXCLUDED.token_hash,
+             expires_at = EXCLUDED.expires_at,
+             created_at = EXCLUDED.created_at
+         WHERE password_reset_tokens.created_at <= $5
+       RETURNING user_id`,
+      [
+        replacement.email,
+        replacement.tokenHash,
+        replacement.expiresAt,
+        replacement.createdAt,
+        replacement.replaceIfCreatedAtOrBefore,
+      ],
     );
     return result.rows.length > 0;
   }

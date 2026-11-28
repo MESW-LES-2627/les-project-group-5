@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AccountEmails } from './AccountEmails';
-import { AccountService, RESEND_MIN_DURATION_MS } from './AccountService';
+import { AccountService, RESEND_MIN_DURATION_MS, PASSWORD_RESET_MIN_DURATION_MS } from './AccountService';
 import { hashToken } from './SecretToken';
 import { FakePasswordHasher, InMemoryAccountRepository, RecordingEmailSender } from './testDoubles';
 
@@ -281,5 +281,89 @@ describe('AccountService.resendConfirmation', () => {
     expect(await service.resendConfirmation('not-an-email')).toBe('invalid-email');
     expect(emailSender.sent).toHaveLength(0);
     expect(waits).toEqual([]);
+  });
+});
+
+describe('AccountService.requestPasswordReset', () => {
+  async function setUpPasswordReset() {
+    const clock = { now: NOW };
+    const waits: number[] = [];
+    const accounts = new InMemoryAccountRepository();
+    const emailSender = new RecordingEmailSender();
+    const service = new AccountService(
+      accounts,
+      new FakePasswordHasher(),
+      emailSender,
+      new AccountEmails('https://app.example'),
+      () => clock.now,
+      async (ms) => {
+        waits.push(ms);
+      },
+    );
+    await service.signUp('ana@mail.com', PASSWORD);
+    await service.signUp('bia@mail.com', PASSWORD);
+    await service.confirmEmail(tokenIn(emailSender.sent[1].text));
+    emailSender.sent.length = 0;
+    return { clock, waits, accounts, emailSender, service };
+  }
+
+  function resetTokenIn(text: string): string {
+    const match = /#\/reset-password\?token=([\w-]+)/.exec(text);
+    if (!match) throw new Error('No password reset link in the email');
+    return match[1];
+  }
+
+  it('sends a 30-minute reset link for confirmed and unconfirmed accounts', async () => {
+    const { clock, accounts, emailSender, service } = await setUpPasswordReset();
+
+    expect(await service.requestPasswordReset(' ANA@mail.com ')).toBe('accepted');
+    expect(emailSender.sent).toHaveLength(1);
+    expect(emailSender.sent[0].to).toBe('ana@mail.com');
+    expect(emailSender.sent[0].text).toContain('expires in 30 minutes');
+    const anaToken = resetTokenIn(emailSender.sent[0].text);
+    const anaStored = accounts.passwordResetTokens.get(hashToken(anaToken));
+    expect(anaStored?.expiresAt).toEqual(new Date(NOW.getTime() + 30 * 60 * 1000));
+
+    clock.now = new Date(NOW.getTime() + 60 * 1000);
+    expect(await service.requestPasswordReset('bia@mail.com')).toBe('accepted');
+    expect(emailSender.sent).toHaveLength(2);
+    expect(emailSender.sent[1].to).toBe('bia@mail.com');
+  });
+
+  it('replaces the previous token once the 60-second limit passes', async () => {
+    const { clock, accounts, emailSender, service } = await setUpPasswordReset();
+    await service.requestPasswordReset('ana@mail.com');
+    const firstToken = resetTokenIn(emailSender.sent[0].text);
+
+    clock.now = new Date(NOW.getTime() + 60 * 1000);
+    await service.requestPasswordReset('ana@mail.com');
+    const secondToken = resetTokenIn(emailSender.sent[1].text);
+
+    expect(accounts.passwordResetTokens.has(hashToken(firstToken))).toBe(false);
+    expect(accounts.passwordResetTokens.has(hashToken(secondToken))).toBe(true);
+  });
+
+  it('sends nothing inside the 60-second limit and returns the same result', async () => {
+    const { clock, accounts, emailSender, service } = await setUpPasswordReset();
+    expect(await service.requestPasswordReset('ana@mail.com')).toBe('accepted');
+    const firstToken = resetTokenIn(emailSender.sent[0].text);
+
+    clock.now = new Date(NOW.getTime() + 59 * 1000);
+    expect(await service.requestPasswordReset('ana@mail.com')).toBe('accepted');
+    expect(emailSender.sent).toHaveLength(1);
+    expect(accounts.passwordResetTokens.has(hashToken(firstToken))).toBe(true);
+  });
+
+  it('returns the same result and sends nothing for unknown or malformed emails', async () => {
+    const { emailSender, service } = await setUpPasswordReset();
+    expect(await service.requestPasswordReset('nobody@mail.com')).toBe('accepted');
+    expect(await service.requestPasswordReset('not-an-email')).toBe('accepted');
+    expect(emailSender.sent).toHaveLength(0);
+  });
+
+  it('waits at least the minimum duration for an unknown account', async () => {
+    const { waits, service } = await setUpPasswordReset();
+    await service.requestPasswordReset('nobody@mail.com');
+    expect(waits).toEqual([PASSWORD_RESET_MIN_DURATION_MS]);
   });
 });

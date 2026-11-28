@@ -12,11 +12,20 @@ const CONFIRMATION_LINK_MS = CONFIRMATION_LINK_HOURS * 60 * 60 * 1000;
 /** At most one new confirmation email per account in this time (US-E1-03). */
 const RESEND_INTERVAL_MS = 60 * 1000;
 
+/** How long a password reset link works (US-E1-06). */
+const PASSWORD_RESET_LINK_MS = 30 * 60 * 1000;
+
+/** At most one password reset email per account in this time (US-E1-06). */
+const PASSWORD_RESET_INTERVAL_MS = 60 * 1000;
+
 /**
  * Asking for a new confirmation email always takes at least this long. Sending an email takes a second or two,
  * so without it, a fast answer would tell that the email has no unconfirmed account (US-E2-02).
  */
 export const RESEND_MIN_DURATION_MS = 3000;
+
+/** Asking for a password reset also takes a minimum time to avoid revealing whether an account exists. */
+export const PASSWORD_RESET_MIN_DURATION_MS = 3000;
 
 /** Which fields were rejected, and why. */
 export interface SignUpErrors {
@@ -41,6 +50,9 @@ export type ConfirmEmailResult = 'confirmed' | 'expired' | 'invalid';
  * an email was sent, so it doesn't say whether the account exists or is confirmed.
  */
 export type ResendConfirmationResult = 'accepted' | 'invalid-email';
+
+/** The result of asking for a password reset; it does not reveal whether the account exists. */
+export type PasswordResetRequestResult = 'accepted';
 
 /** The account rules. Knows nothing about HTTP or the database: it gets those through interfaces. */
 export class AccountService {
@@ -120,6 +132,31 @@ export class AccountService {
     // Answer only after the minimum duration, whether or not an email was sent.
     const elapsed = this.now().getTime() - startedAt;
     if (elapsed < RESEND_MIN_DURATION_MS) await this.wait(RESEND_MIN_DURATION_MS - elapsed);
+    return 'accepted';
+  }
+
+  /**
+   * Sends a reset link for an account whether or not its email is confirmed.
+   * Unknown and malformed emails, and requests inside the one-minute limit, get the same answer.
+   */
+  async requestPasswordReset(emailText: string): Promise<PasswordResetRequestResult> {
+    const startedAt = this.now();
+    const email = normalizeEmail(emailText);
+    if (isValidEmail(email)) {
+      const reset = createSecretToken();
+      const created = await this.accounts.replacePasswordResetToken({
+        email,
+        tokenHash: reset.hash,
+        expiresAt: new Date(startedAt.getTime() + PASSWORD_RESET_LINK_MS),
+        createdAt: startedAt,
+        replaceIfCreatedAtOrBefore: new Date(startedAt.getTime() - PASSWORD_RESET_INTERVAL_MS),
+      });
+      if (created) await this.emailSender.send(this.emails.passwordReset(email, reset.token));
+    }
+
+    // Make known-account, unknown-account and malformed-email requests take a comparable time.
+    const elapsed = this.now().getTime() - startedAt.getTime();
+    if (elapsed < PASSWORD_RESET_MIN_DURATION_MS) await this.wait(PASSWORD_RESET_MIN_DURATION_MS - elapsed);
     return 'accepted';
   }
 }

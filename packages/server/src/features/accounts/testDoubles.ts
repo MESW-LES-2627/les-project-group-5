@@ -3,6 +3,7 @@ import type {
   AccountRepository,
   ConfirmationTokenReplacement,
   NewAccount,
+  PasswordResetTokenReplacement,
   StoredConfirmationToken,
 } from './AccountRepository';
 import { AccountEmails } from './AccountEmails';
@@ -24,6 +25,8 @@ export class InMemoryAccountRepository implements AccountRepository {
   readonly accounts: StoredAccount[] = [];
   /** Confirmation tokens still usable, by hash. */
   readonly confirmationTokens = new Map<string, StoredConfirmationToken>();
+  /** Password reset tokens, keyed by their hash. */
+  readonly passwordResetTokens = new Map<string, { userId: string; expiresAt: Date; createdAt: Date }>();
 
   async createUnconfirmed(account: NewAccount): Promise<boolean> {
     if (this.accounts.some((existing) => existing.email === account.email)) return false;
@@ -55,6 +58,20 @@ export class InMemoryAccountRepository implements AccountRepository {
     this.confirmationTokens.set(replacement.tokenHash, { userId: account.id, expiresAt: replacement.expiresAt });
     account.confirmationTokenHash = replacement.tokenHash;
     account.confirmationExpiresAt = replacement.expiresAt;
+    return true;
+  }
+
+  async replacePasswordResetToken(replacement: PasswordResetTokenReplacement): Promise<boolean> {
+    const account = this.accounts.find((existing) => existing.email === replacement.email);
+    if (!account) return false;
+    const current = [...this.passwordResetTokens].find(([, token]) => token.userId === account.id);
+    if (current && current[1].createdAt.getTime() > replacement.replaceIfCreatedAtOrBefore.getTime()) return false;
+    if (current) this.passwordResetTokens.delete(current[0]);
+    this.passwordResetTokens.set(replacement.tokenHash, {
+      userId: account.id,
+      expiresAt: replacement.expiresAt,
+      createdAt: replacement.createdAt,
+    });
     return true;
   }
 }
