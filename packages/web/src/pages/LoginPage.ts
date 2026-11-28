@@ -48,6 +48,7 @@ export class LoginPage {
                   <button type="button" class="show-password" aria-pressed="false">Show</button>
                 </div>
               </div>
+              <p class="form-footer"><a href="#/forgot-password">Forgot your password?</a></p>
               <p class="form-message" role="alert"></p>
               <button type="submit" class="done-button">Log in</button>
               <p class="form-footer">No account yet? <a href="#/sign-up">Sign up</a></p>

@@ -24,6 +24,8 @@ import { SignUpPage } from './pages/SignUpPage';
 import { ConfirmEmailPage } from './pages/ConfirmEmailPage';
 import { LoginPage } from './pages/LoginPage';
 import { ResendConfirmationPage } from './pages/ResendConfirmationPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 
 // Composition root: the only place that creates the concrete classes and connects them.
 // Everything else receives what it needs through its constructor.
@@ -39,7 +41,9 @@ const signUpRoot = document.createElement('div');
 const confirmEmailRoot = document.createElement('div');
 const loginRoot = document.createElement('div');
 const resendConfirmationRoot = document.createElement('div');
-const screens = [instrumentRoot, settingsRoot, signUpRoot, confirmEmailRoot, loginRoot, resendConfirmationRoot];
+const forgotPasswordRoot = document.createElement('div');
+const resetPasswordRoot = document.createElement('div');
+const screens = [instrumentRoot, settingsRoot, signUpRoot, confirmEmailRoot, loginRoot, resendConfirmationRoot, forgotPasswordRoot, resetPasswordRoot];
 root.append(...screens);
 
 // Each address after "#" shows one screen. Any other address shows the instrument.
@@ -50,6 +54,8 @@ const ROUTES: Record<string, HTMLElement> = {
   '#/confirm-email': confirmEmailRoot,
   '#/login': loginRoot,
   '#/resend-confirmation': resendConfirmationRoot,
+  '#/forgot-password': forgotPasswordRoot,
+  '#/reset-password': resetPasswordRoot,
 };
 const routePath = (): string => location.hash.split('?')[0];
 const routeParameter = (name: string): string =>
@@ -83,6 +89,8 @@ const signUpPage = new SignUpPage(signUpRoot);
 const confirmEmailPage = new ConfirmEmailPage(confirmEmailRoot);
 const loginPage = new LoginPage(loginRoot);
 const resendConfirmationPage = new ResendConfirmationPage(resendConfirmationRoot);
+const forgotPasswordPage = new ForgotPasswordPage(forgotPasswordRoot);
+const resetPasswordPage = new ResetPasswordPage(resetPasswordRoot);
 const tracker = new MediaPipeHandTracker();
 const synth = new WebAudioSynth();
 const camera = new Camera();
@@ -222,6 +230,16 @@ addEventListener('hashchange', () => {
   if (currentScreen() === resendConfirmationRoot) resendConfirmationPage.reset();
 });
 
+forgotPasswordPage.onSubmit((email) => api.requestPasswordReset(email));
+addEventListener('hashchange', () => {
+  if (currentScreen() === forgotPasswordRoot) forgotPasswordPage.reset();
+});
+
+resetPasswordPage.onSubmit((password) => api.resetPassword(routeParameter('token'), password));
+addEventListener('hashchange', () => {
+  if (currentScreen() === resetPasswordRoot) resetPasswordPage.reset();
+});
+
 // ---------- Logging in and out (US-E1-04, US-E1-05) ----------
 
 // The email of the logged-in player, or null for a guest. Asked once when the app opens;
@@ -239,7 +257,7 @@ const showAccount = (email: string | null) => {
 
 // After logging in, the player goes back to the page they were on before opening the login page.
 // Account pages are not worth going back to, so those lead to the instrument.
-const NO_RETURN_ROUTES = new Set(['#/login', '#/sign-up', '#/confirm-email', '#/resend-confirmation']);
+const NO_RETURN_ROUTES = new Set(['#/login', '#/sign-up', '#/confirm-email', '#/resend-confirmation', '#/forgot-password', '#/reset-password']);
 let returnTo = '#/';
 addEventListener('hashchange', (event) => {
   if (routePath() !== '#/login') return;

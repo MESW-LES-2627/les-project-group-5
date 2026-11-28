@@ -3,6 +3,8 @@ import type {
   AccountRepository,
   ConfirmationTokenReplacement,
   NewAccount,
+  PasswordResetCompletion,
+  PasswordResetTokenReplacement,
   StoredConfirmationToken,
 } from './AccountRepository';
 
@@ -100,5 +102,67 @@ export class PostgresAccountRepository implements AccountRepository {
       [replacement.email, replacement.tokenHash, replacement.expiresAt, replacement.replaceIfExpiresBy],
     );
     return result.rows.length > 0;
+  }
+
+  async replacePasswordResetToken(replacement: PasswordResetTokenReplacement): Promise<boolean> {
+    // One statement keeps concurrent requests from both replacing the token and sending an email.
+    // Unlike confirmation links, reset links are available to confirmed and unconfirmed accounts.
+    const result = await this.pool.query<{ user_id: string }>(
+      `INSERT INTO password_reset_tokens (token_hash, user_id, expires_at, created_at)
+       SELECT $2, id, $3, $4 FROM users WHERE email = $1
+       ON CONFLICT (user_id) DO UPDATE
+         SET token_hash = EXCLUDED.token_hash,
+             expires_at = EXCLUDED.expires_at,
+             created_at = EXCLUDED.created_at
+         WHERE password_reset_tokens.created_at <= $5
+       RETURNING user_id`,
+      [
+        replacement.email,
+        replacement.tokenHash,
+        replacement.expiresAt,
+        replacement.createdAt,
+        replacement.replaceIfCreatedAtOrBefore,
+      ],
+    );
+    return result.rows.length > 0;
+  }
+
+  async completePasswordReset(completion: PasswordResetCompletion): Promise<boolean> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const consumed = await client.query<{ user_id: string }>(
+        `DELETE FROM password_reset_tokens
+         WHERE token_hash = $1 AND expires_at > $2
+         RETURNING user_id`,
+        [completion.tokenHash, completion.changedAt],
+      );
+      const userId = consumed.rows[0]?.user_id;
+      if (!userId) {
+        await client.query('ROLLBACK');
+        return false;
+      }
+
+      const updated = await client.query<{ email: string }>(
+        `UPDATE users
+         SET password_hash = $2, email_confirmed_at = COALESCE(email_confirmed_at, $3)
+         WHERE id = $1
+         RETURNING email`,
+        [userId, completion.passwordHash, completion.changedAt],
+      );
+      const email = updated.rows[0]?.email;
+      if (!email) throw new Error('Password reset token refers to a missing account');
+
+      await client.query('DELETE FROM email_confirmation_tokens WHERE user_id = $1', [userId]);
+      await client.query('DELETE FROM sessions WHERE user_id = $1', [userId]);
+      await client.query('DELETE FROM login_attempts WHERE email = $1', [email]);
+      await client.query('COMMIT');
+      return true;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 }

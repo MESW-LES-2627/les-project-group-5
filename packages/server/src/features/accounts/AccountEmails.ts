@@ -44,4 +44,19 @@ export class AccountEmails {
       ].join('\n'),
     };
   }
+
+  /** Sent when someone requests a password reset */
+  passwordReset(to: string, token: string): Email {
+    return {
+      to,
+      subject: 'Reset your password',
+      text: [
+        'We received a request to reset the password for your account.',
+        '',
+        `Open this link to reset your password: ${this.appBaseUrl}/#/reset-password?token=${token}`,
+        '',
+        "If you didn't request a password reset, you can ignore this email.",
+      ].join('\n'),
+    };
+  }
 }

@@ -28,6 +28,25 @@ export interface StoredConfirmationToken {
   expiresAt: Date;
 }
 
+/** A reset link for an account, with the time it was requested for rate limiting. */
+export interface PasswordResetTokenReplacement {
+  /** Already normalized (see normalizeEmail in the domain). */
+  email: string;
+  /** Hash of the token in the new link. */
+  tokenHash: string;
+  expiresAt: Date;
+  createdAt: Date;
+  /** Replace the current link only when it was created at or before this time. */
+  replaceIfCreatedAtOrBefore: Date;
+}
+
+/** A token is consumed only if it exists and has not expired. */
+export interface PasswordResetCompletion {
+  tokenHash: string;
+  passwordHash: string;
+  changedAt: Date;
+}
+
 /**
  * Stores accounts. The service depends on this interface, so its tests use an in-memory fake
  * and need no database (see PostgresAccountRepository for the real one).
@@ -54,4 +73,16 @@ export interface AccountRepository {
    * no account, the account is already confirmed, or the current token is too recent (see replaceIfExpiresBy).
    */
   replaceConfirmationToken(replacement: ConfirmationTokenReplacement): Promise<boolean>;
+
+  /**
+   * Creates or replaces a reset token for any account, confirmed or not. Returns true only when the token
+   * was saved; false means there is no account or its previous email was sent less than a minute ago.
+   */
+  replacePasswordResetToken(replacement: PasswordResetTokenReplacement): Promise<boolean>;
+
+  /**
+   * Atomically consumes a valid reset token, changes the password, confirms the email, ends all sessions,
+   * and clears login attempts for the account. Returns false if the token is missing, expired or already used.
+   */
+  completePasswordReset(completion: PasswordResetCompletion): Promise<boolean>;
 }

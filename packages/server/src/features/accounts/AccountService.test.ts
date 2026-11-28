@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { AccountEmails } from './AccountEmails';
-import { AccountService, RESEND_MIN_DURATION_MS } from './AccountService';
+import { AccountService, RESEND_MIN_DURATION_MS, PASSWORD_RESET_MIN_DURATION_MS } from './AccountService';
+import { SessionService } from './SessionService';
 import { hashToken } from './SecretToken';
-import { FakePasswordHasher, InMemoryAccountRepository, RecordingEmailSender } from './testDoubles';
+import { FakePasswordHasher, InMemoryAccountRepository, RecordingEmailSender, InMemorySessionRepository } from './testDoubles';
 
 const NOW = new Date('2026-11-11T10:00:00Z');
 const PASSWORD = 'a long enough password';
@@ -281,5 +282,145 @@ describe('AccountService.resendConfirmation', () => {
     expect(await service.resendConfirmation('not-an-email')).toBe('invalid-email');
     expect(emailSender.sent).toHaveLength(0);
     expect(waits).toEqual([]);
+  });
+});
+
+describe('AccountService.requestPasswordReset', () => {
+  async function setUpPasswordReset() {
+    const clock = { now: NOW };
+    const waits: number[] = [];
+    const accounts = new InMemoryAccountRepository();
+    const emailSender = new RecordingEmailSender();
+    const sessionRepository = new InMemorySessionRepository(accounts);
+    const service = new AccountService(
+      accounts,
+      new FakePasswordHasher(),
+      emailSender,
+      new AccountEmails('https://app.example'),
+      () => clock.now,
+      async (ms) => {
+        waits.push(ms);
+      },
+    );
+    const sessions = new SessionService(sessionRepository, new FakePasswordHasher(), () => clock.now);
+    await service.signUp('ana@mail.com', PASSWORD);
+    await service.signUp('bia@mail.com', PASSWORD);
+    await service.confirmEmail(tokenIn(emailSender.sent[1].text));
+    emailSender.sent.length = 0;
+    return { clock, waits, accounts, emailSender, service, sessionRepository, sessions };
+  }
+
+  function resetTokenIn(text: string): string {
+    const match = /#\/reset-password\?token=([\w-]+)/.exec(text);
+    if (!match) throw new Error('No password reset link in the email');
+    return match[1];
+  }
+
+  it('sends a 30-minute reset link for confirmed and unconfirmed accounts', async () => {
+    const { clock, accounts, emailSender, service } = await setUpPasswordReset();
+
+    expect(await service.requestPasswordReset(' ANA@mail.com ')).toBe('accepted');
+    expect(emailSender.sent).toHaveLength(1);
+    expect(emailSender.sent[0].to).toBe('ana@mail.com');
+    const anaToken = resetTokenIn(emailSender.sent[0].text);
+    const anaStored = accounts.passwordResetTokens.get(hashToken(anaToken));
+    expect(anaStored?.expiresAt).toEqual(new Date(NOW.getTime() + 30 * 60 * 1000));
+
+    clock.now = new Date(NOW.getTime() + 60 * 1000);
+    expect(await service.requestPasswordReset('bia@mail.com')).toBe('accepted');
+    expect(emailSender.sent).toHaveLength(2);
+    expect(emailSender.sent[1].to).toBe('bia@mail.com');
+  });
+
+  it('replaces the previous token once the 60-second limit passes', async () => {
+    const { clock, accounts, emailSender, service } = await setUpPasswordReset();
+    await service.requestPasswordReset('ana@mail.com');
+    const firstToken = resetTokenIn(emailSender.sent[0].text);
+
+    clock.now = new Date(NOW.getTime() + 60 * 1000);
+    await service.requestPasswordReset('ana@mail.com');
+    const secondToken = resetTokenIn(emailSender.sent[1].text);
+
+    expect(accounts.passwordResetTokens.has(hashToken(firstToken))).toBe(false);
+    expect(accounts.passwordResetTokens.has(hashToken(secondToken))).toBe(true);
+  });
+
+  it('sends nothing inside the 60-second limit and returns the same result', async () => {
+    const { clock, accounts, emailSender, service } = await setUpPasswordReset();
+    expect(await service.requestPasswordReset('ana@mail.com')).toBe('accepted');
+    const firstToken = resetTokenIn(emailSender.sent[0].text);
+
+    clock.now = new Date(NOW.getTime() + 59 * 1000);
+    expect(await service.requestPasswordReset('ana@mail.com')).toBe('accepted');
+    expect(emailSender.sent).toHaveLength(1);
+    expect(accounts.passwordResetTokens.has(hashToken(firstToken))).toBe(true);
+  });
+
+  it('returns the same result and sends nothing for unknown or malformed emails', async () => {
+    const { emailSender, service } = await setUpPasswordReset();
+    expect(await service.requestPasswordReset('nobody@mail.com')).toBe('accepted');
+    expect(await service.requestPasswordReset('not-an-email')).toBe('accepted');
+    expect(emailSender.sent).toHaveLength(0);
+  });
+
+  it('waits at least the minimum duration for an unknown account', async () => {
+    const { waits, service } = await setUpPasswordReset();
+    await service.requestPasswordReset('nobody@mail.com');
+    expect(waits).toEqual([PASSWORD_RESET_MIN_DURATION_MS]);
+  });
+
+  it('changes the password, consumes the token, confirms email, ends sessions, and clears login attempts', async () => {
+    const { accounts, emailSender, service, sessionRepository, sessions } = await setUpPasswordReset();
+    const ana = accounts.accounts[0];
+    const bia = accounts.accounts[1];
+    await service.requestPasswordReset(ana.email);
+    const token = resetTokenIn(emailSender.sent[0].text);
+
+    sessionRepository.sessions.set('ana-device-one', { userId: ana.id, expiresAt: new Date('2026-12-11T10:00:00Z') });
+    sessionRepository.sessions.set('ana-device-two', { userId: ana.id, expiresAt: new Date('2026-12-11T10:00:00Z') });
+    sessionRepository.sessions.set('bia-device', { userId: bia.id, expiresAt: new Date('2026-12-11T10:00:00Z') });
+    accounts.loginAttempts.push(
+      { email: ana.email, ipAddress: '192.0.2.1', attemptedAt: NOW },
+      { email: ana.email, ipAddress: '192.0.2.2', attemptedAt: NOW },
+      { email: bia.email, ipAddress: '192.0.2.3', attemptedAt: NOW },
+    );
+
+    expect(await service.resetPassword(token, 'a completely new password')).toEqual({ outcome: 'changed' });
+    expect(ana.passwordHash).toBe('hashed:a completely new password');
+    expect(ana.emailConfirmedAt).toEqual(NOW);
+    expect(accounts.passwordResetTokens.has(hashToken(token))).toBe(false);
+    expect([...accounts.confirmationTokens.values()].some((stored) => stored.userId === ana.id)).toBe(false);
+    expect([...sessionRepository.sessions.values()].map((session) => session.userId)).toEqual([bia.id]);
+    expect(accounts.loginAttempts).toEqual([{ email: bia.email, ipAddress: '192.0.2.3', attemptedAt: NOW }]);
+    expect((await sessions.logIn(ana.email, 'a completely new password')).outcome).toBe('logged-in');
+    expect((await sessions.logIn(ana.email, PASSWORD)).outcome).toBe('invalid');
+  });
+
+  it('rejects expired, malformed, and already-used reset links', async () => {
+    const { clock, emailSender, service } = await setUpPasswordReset();
+    await service.requestPasswordReset('ana@mail.com');
+    const token = resetTokenIn(emailSender.sent[0].text);
+
+    expect(await service.resetPassword('malformed-token', 'a completely new password')).toEqual({
+      outcome: 'invalid-link',
+    });
+    clock.now = new Date(NOW.getTime() + 30 * 60 * 1000);
+    expect(await service.resetPassword(token, 'a completely new password')).toEqual({ outcome: 'invalid-link' });
+    clock.now = NOW;
+    expect(await service.resetPassword(token, 'a completely new password')).toEqual({ outcome: 'changed' });
+    expect(await service.resetPassword(token, 'another new password')).toEqual({ outcome: 'invalid-link' });
+  });
+
+  it('does not consume a reset link when the new password is invalid', async () => {
+    const { accounts, emailSender, service } = await setUpPasswordReset();
+    await service.requestPasswordReset('ana@mail.com');
+    const token = resetTokenIn(emailSender.sent[0].text);
+
+    expect(await service.resetPassword(token, 'short')).toEqual({
+      outcome: 'rejected',
+      errors: { password: 'too-short' },
+    });
+    expect(accounts.passwordResetTokens.has(hashToken(token))).toBe(true);
+    expect(accounts.accounts[0].passwordHash).toBe(`hashed:${PASSWORD}`);
   });
 });

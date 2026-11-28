@@ -139,6 +139,77 @@ describe('ApiClient.resendConfirmation', () => {
   });
 });
 
+describe('ApiClient.requestPasswordReset', () => {
+  it('sends the email as JSON to POST /api/password-reset-emails', async () => {
+    let request: { url: string; init?: RequestInit } | undefined;
+    const recording: typeof fetch = async (input, init) => {
+      request = { url: String(input), init };
+      return new Response(JSON.stringify({ status: 'check-your-email' }), { status: 202 });
+    };
+    expect(await new ApiClient(recording).requestPasswordReset('ana@mail.com')).toBe('sent');
+    expect(request?.url).toBe('/api/password-reset-emails');
+    expect(request?.init?.method).toBe('POST');
+    expect(JSON.parse(String(request?.init?.body))).toEqual({ email: 'ana@mail.com' });
+  });
+
+  it.each([
+    [202, 'sent'],
+    [500, 'failed'],
+  ] as const)('maps status %i to "%s"', async (status, answer) => {
+    expect(await new ApiClient(answering(status, {})).requestPasswordReset('ana@mail.com')).toBe(answer);
+  });
+
+  it('reports "failed" when the server can not be reached', async () => {
+    const failing: typeof fetch = async () => {
+      throw new TypeError('Failed to fetch');
+    };
+    expect(await new ApiClient(failing).requestPasswordReset('ana@mail.com')).toBe('failed');
+  });
+});
+
+describe('ApiClient.resetPassword', () => {
+  it('sends the token and new password to POST /api/password-resets', async () => {
+    let request: { url: string; init?: RequestInit } | undefined;
+    const recording: typeof fetch = async (input, init) => {
+      request = { url: String(input), init };
+      return new Response(JSON.stringify({ status: 'changed' }), { status: 200 });
+    };
+    expect(await new ApiClient(recording).resetPassword('the-token', 'a completely new password')).toEqual({
+      kind: 'changed',
+    });
+    expect(request?.url).toBe('/api/password-resets');
+    expect(request?.init?.method).toBe('POST');
+    expect(JSON.parse(String(request?.init?.body))).toEqual({
+      token: 'the-token',
+      password: 'a completely new password',
+    });
+  });
+
+  it('maps invalid links and password errors', async () => {
+    const invalidLink = new ApiClient(answering(400, { status: 'invalid-link' }));
+    const invalidPassword = new ApiClient(answering(400, { errors: { password: 'too-short' } }));
+    expect(await invalidLink.resetPassword('the-token', 'a completely new password')).toEqual({
+      kind: 'invalid-link',
+    });
+    expect(await invalidPassword.resetPassword('the-token', 'short')).toEqual({
+      kind: 'rejected',
+      errors: { password: 'too-short' },
+    });
+  });
+
+  it('reports server and network errors', async () => {
+    expect(await new ApiClient(answering(500, {})).resetPassword('the-token', 'a completely new password')).toEqual({
+      kind: 'failed',
+    });
+    const failing: typeof fetch = async () => {
+      throw new TypeError('Failed to fetch');
+    };
+    expect(await new ApiClient(failing).resetPassword('the-token', 'a completely new password')).toEqual({
+      kind: 'failed',
+    });
+  });
+});
+
 describe('ApiClient.logIn', () => {
   it('sends the email and password as JSON to POST /api/sessions', async () => {
     let request: { url: string; init?: RequestInit } | undefined;

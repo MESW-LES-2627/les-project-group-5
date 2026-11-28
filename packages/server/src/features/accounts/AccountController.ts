@@ -14,6 +14,15 @@ interface ResendConfirmationBody {
   email: string;
 }
 
+interface PasswordResetRequestBody {
+  email: string;
+}
+
+interface PasswordResetBody {
+  token: string;
+  password: string;
+}
+
 /** The HTTP status for each result of a confirmation: 410 Gone says the link existed but is too old. */
 const CONFIRM_EMAIL_STATUS = { confirmed: 200, expired: 410, invalid: 400 } as const;
 
@@ -90,6 +99,50 @@ export class AccountController {
         if (result === 'invalid-email') return reply.code(400).send({ errors: { email: 'invalid-format' } });
         // The same answer whether or not an email was sent (US-E1-03, US-E2-02).
         return reply.code(202).send({ status: 'check-your-email' });
+      },
+    );
+
+    // POST /api/password-reset-emails: request a password reset link.
+    app.post<{ Body: PasswordResetRequestBody }>(
+      '/api/password-reset-emails',
+      {
+        schema: {
+          body: {
+            type: 'object',
+            properties: { email: { type: 'string', maxLength: 1000 } },
+            required: ['email'],
+            additionalProperties: false,
+          },
+        },
+      },
+      async (request, reply) => {
+        await this.accounts.requestPasswordReset(request.body.email);
+        // Same status and body whether an email was sent or not.
+        return reply.code(202).send({ status: 'check-your-email' });
+      },
+    );
+
+    // POST /api/password-resets: consume a reset link and choose a new password.
+    app.post<{ Body: PasswordResetBody }>(
+      '/api/password-resets',
+      {
+        schema: {
+          body: {
+            type: 'object',
+            properties: {
+              token: { type: 'string', maxLength: 200 },
+              password: { type: 'string', maxLength: 1000 },
+            },
+            required: ['token', 'password'],
+            additionalProperties: false,
+          },
+        },
+      },
+      async (request, reply) => {
+        const result = await this.accounts.resetPassword(request.body.token, request.body.password);
+        if (result.outcome === 'invalid-link') return reply.code(400).send({ status: 'invalid-link' });
+        if (result.outcome === 'rejected') return reply.code(400).send({ errors: result.errors });
+        return reply.code(200).send({ status: 'changed' });
       },
     );
   }
