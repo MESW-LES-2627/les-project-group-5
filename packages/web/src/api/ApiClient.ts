@@ -41,6 +41,13 @@ export type ResendConfirmationAnswer = 'sent' | 'invalid-email' | 'failed';
 /** The answer to asking for a password reset; "sent" does not reveal whether the account exists. */
 export type PasswordResetRequestAnswer = 'sent' | 'failed';
 
+/** The answer to choosing a new password with a reset link. */
+export type ResetPasswordAnswer =
+  | { kind: 'changed' }
+  | { kind: 'invalid-link' }
+  | { kind: 'rejected'; errors: { password: PasswordProblem } }
+  | { kind: 'failed' };
+
 const CONFIRM_EMAIL_ANSWERS: Record<number, ConfirmEmailAnswer> = { 200: 'confirmed', 410: 'expired', 400: 'invalid' };
 
 /**
@@ -133,6 +140,20 @@ export class ApiClient {
     }
   }
 
+  /** Changes the password using a reset link (US-E1-07). Never throws. */
+  async resetPassword(token: string, password: string): Promise<ResetPasswordAnswer> {
+    try {
+      const response = await this.fetchFn('/api/password-resets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, password }),
+      });
+      return await resetPasswordAnswer(response);
+    } catch {
+      return { kind: 'failed' };
+    }
+  }
+
   /** Logs in (US-E1-04). The server sets the session cookie; the page never sees it. Never throws. */
   async logIn(email: string, password: string): Promise<LogInAnswer> {
     try {
@@ -179,4 +200,20 @@ async function emailIn(response: Response): Promise<string | null> {
   const body: unknown = await response.json();
   const email = (body as { email?: unknown } | null)?.email;
   return typeof email === 'string' ? email : null;
+}
+
+async function resetPasswordAnswer(response: Response): Promise<ResetPasswordAnswer> {
+  if (response.status === 200) return { kind: 'changed' };
+  if (response.status !== 400) return { kind: 'failed' };
+
+  const body: unknown = await response.json();
+  if (typeof body !== 'object' || body === null) return { kind: 'failed' };
+  const { status, errors } = body as { status?: unknown; errors?: unknown };
+  if (status === 'invalid-link') return { kind: 'invalid-link' };
+  if (typeof errors !== 'object' || errors === null) return { kind: 'failed' };
+  const passwordProblem = (errors as { password?: unknown }).password;
+  if (passwordProblem === 'too-short' || passwordProblem === 'too-long') {
+    return { kind: 'rejected', errors: { password: passwordProblem } };
+  }
+  return { kind: 'failed' };
 }

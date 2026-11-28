@@ -3,6 +3,7 @@ import type {
   AccountRepository,
   ConfirmationTokenReplacement,
   NewAccount,
+  PasswordResetCompletion,
   PasswordResetTokenReplacement,
   StoredConfirmationToken,
 } from './AccountRepository';
@@ -124,5 +125,44 @@ export class PostgresAccountRepository implements AccountRepository {
       ],
     );
     return result.rows.length > 0;
+  }
+
+  async completePasswordReset(completion: PasswordResetCompletion): Promise<boolean> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const consumed = await client.query<{ user_id: string }>(
+        `DELETE FROM password_reset_tokens
+         WHERE token_hash = $1 AND expires_at > $2
+         RETURNING user_id`,
+        [completion.tokenHash, completion.changedAt],
+      );
+      const userId = consumed.rows[0]?.user_id;
+      if (!userId) {
+        await client.query('ROLLBACK');
+        return false;
+      }
+
+      const updated = await client.query<{ email: string }>(
+        `UPDATE users
+         SET password_hash = $2, email_confirmed_at = COALESCE(email_confirmed_at, $3)
+         WHERE id = $1
+         RETURNING email`,
+        [userId, completion.passwordHash, completion.changedAt],
+      );
+      const email = updated.rows[0]?.email;
+      if (!email) throw new Error('Password reset token refers to a missing account');
+
+      await client.query('DELETE FROM email_confirmation_tokens WHERE user_id = $1', [userId]);
+      await client.query('DELETE FROM sessions WHERE user_id = $1', [userId]);
+      await client.query('DELETE FROM login_attempts WHERE email = $1', [email]);
+      await client.query('COMMIT');
+      return true;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 }

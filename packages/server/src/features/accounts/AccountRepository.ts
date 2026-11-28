@@ -40,6 +40,13 @@ export interface PasswordResetTokenReplacement {
   replaceIfCreatedAtOrBefore: Date;
 }
 
+/** A token is consumed only if it exists and has not expired. */
+export interface PasswordResetCompletion {
+  tokenHash: string;
+  passwordHash: string;
+  changedAt: Date;
+}
+
 /**
  * Stores accounts. The service depends on this interface, so its tests use an in-memory fake
  * and need no database (see PostgresAccountRepository for the real one).
@@ -72,4 +79,10 @@ export interface AccountRepository {
    * was saved; false means there is no account or its previous email was sent less than a minute ago.
    */
   replacePasswordResetToken(replacement: PasswordResetTokenReplacement): Promise<boolean>;
+
+  /**
+   * Atomically consumes a valid reset token, changes the password, confirms the email, ends all sessions,
+   * and clears login attempts for the account. Returns false if the token is missing, expired or already used.
+   */
+  completePasswordReset(completion: PasswordResetCompletion): Promise<boolean>;
 }

@@ -3,6 +3,7 @@ import type {
   AccountRepository,
   ConfirmationTokenReplacement,
   NewAccount,
+  PasswordResetCompletion,
   PasswordResetTokenReplacement,
   StoredConfirmationToken,
 } from './AccountRepository';
@@ -20,6 +21,20 @@ export interface StoredAccount extends NewAccount {
   emailConfirmedAt: Date | null;
 }
 
+function removeEntriesForUser<T extends { userId: string }>(entries: Map<string, T>, userId: string): void {
+  for (const [key, entry] of entries) {
+    if (entry.userId === userId) entries.delete(key);
+  }
+}
+
+function removeLoginAttemptsForEmail(
+  attempts: { email: string; ipAddress: string; attemptedAt: Date }[],
+  email: string,
+): void {
+  const remaining = attempts.filter((attempt) => attempt.email !== email);
+  attempts.splice(0, attempts.length, ...remaining);
+}
+
 /** Keeps accounts in memory, with the same rules as the database: one account per email, one token per account. */
 export class InMemoryAccountRepository implements AccountRepository {
   readonly accounts: StoredAccount[] = [];
@@ -27,6 +42,10 @@ export class InMemoryAccountRepository implements AccountRepository {
   readonly confirmationTokens = new Map<string, StoredConfirmationToken>();
   /** Password reset tokens, keyed by their hash. */
   readonly passwordResetTokens = new Map<string, { userId: string; expiresAt: Date; createdAt: Date }>();
+  /** Sessions belonging to accounts, shared with the in-memory session repository. */
+  readonly sessions = new Map<string, { userId: string; expiresAt: Date }>();
+  /** Failed login attempts, keyed by their email so reset completion can clear the account's block. */
+  readonly loginAttempts: { email: string; ipAddress: string; attemptedAt: Date }[] = [];
 
   async createUnconfirmed(account: NewAccount): Promise<boolean> {
     if (this.accounts.some((existing) => existing.email === account.email)) return false;
@@ -74,6 +93,22 @@ export class InMemoryAccountRepository implements AccountRepository {
     });
     return true;
   }
+
+  async completePasswordReset(completion: PasswordResetCompletion): Promise<boolean> {
+    const token = this.passwordResetTokens.get(completion.tokenHash);
+    if (!token || token.expiresAt.getTime() <= completion.changedAt.getTime()) return false;
+
+    const account = this.accounts.find((existing) => existing.id === token.userId);
+    if (!account) return false;
+
+    this.passwordResetTokens.delete(completion.tokenHash);
+    account.passwordHash = completion.passwordHash;
+    account.emailConfirmedAt ??= completion.changedAt;
+    removeEntriesForUser(this.confirmationTokens, account.id);
+    removeEntriesForUser(this.sessions, account.id);
+    removeLoginAttemptsForEmail(this.loginAttempts, account.email);
+    return true;
+  }
 }
 
 /** A fast, readable stand-in for the real hash. Never use it outside tests. */
@@ -99,9 +134,11 @@ export class RecordingEmailSender implements EmailSender {
 /** Sessions in memory, reading the accounts of an InMemoryAccountRepository. */
 export class InMemorySessionRepository implements SessionRepository {
   /** Sessions by token hash. */
-  readonly sessions = new Map<string, { userId: string; expiresAt: Date }>();
+  readonly sessions: InMemoryAccountRepository['sessions'];
 
-  constructor(private readonly accounts: InMemoryAccountRepository) {}
+  constructor(private readonly accounts: InMemoryAccountRepository) {
+    this.sessions = accounts.sessions;
+  }
 
   async findAccountForLogin(email: string): Promise<AccountForLogin | null> {
     const account = this.accounts.accounts.find((existing) => existing.email === email);

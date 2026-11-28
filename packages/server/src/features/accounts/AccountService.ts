@@ -54,6 +54,12 @@ export type ResendConfirmationResult = 'accepted' | 'invalid-email';
 /** The result of asking for a password reset; it does not reveal whether the account exists. */
 export type PasswordResetRequestResult = 'accepted';
 
+/** The result of using a password reset link. */
+export type PasswordResetResult =
+  | { outcome: 'changed' }
+  | { outcome: 'invalid-link' }
+  | { outcome: 'rejected'; errors: { password: PasswordProblem } };
+
 /** The account rules. Knows nothing about HTTP or the database: it gets those through interfaces. */
 export class AccountService {
   constructor(
@@ -158,5 +164,21 @@ export class AccountService {
     const elapsed = this.now().getTime() - startedAt.getTime();
     if (elapsed < PASSWORD_RESET_MIN_DURATION_MS) await this.wait(PASSWORD_RESET_MIN_DURATION_MS - elapsed);
     return 'accepted';
+  }
+
+  /** Changes the password only when the link is well-formed, unused and unexpired. */
+  async resetPassword(token: string, password: string): Promise<PasswordResetResult> {
+    const passwordProblem = checkPassword(password);
+    if (passwordProblem) return { outcome: 'rejected', errors: { password: passwordProblem } };
+    if (!isWellFormedToken(token)) return { outcome: 'invalid-link' };
+
+    const changedAt = this.now();
+    const passwordHash = await this.passwords.hash(password);
+    const changed = await this.accounts.completePasswordReset({
+      tokenHash: hashToken(token),
+      passwordHash,
+      changedAt,
+    });
+    return changed ? { outcome: 'changed' } : { outcome: 'invalid-link' };
   }
 }

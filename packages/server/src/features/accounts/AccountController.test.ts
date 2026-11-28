@@ -163,3 +163,47 @@ describe('POST /api/password-reset-emails', () => {
     expect((await requestReset({})).statusCode).toBe(400);
   });
 });
+
+describe('POST /api/password-resets', () => {
+  function reset(body: unknown) {
+    return app.inject({ method: 'POST', url: '/api/password-resets', payload: body as object });
+  }
+
+  it('changes the password and confirms the email with a valid token', async () => {
+    const email = 'complete-reset@mail.com';
+    const oldPassword = 'a long enough password';
+    const newPassword = 'a completely new password';
+    await signUp({ email, password: oldPassword });
+    await app.inject({
+      method: 'POST',
+      url: '/api/password-reset-emails',
+      payload: { email },
+    });
+    const resetEmail = emailSender.sent.at(-1)?.text ?? '';
+    const token = /#\/reset-password\?token=([\w-]+)/.exec(resetEmail)?.[1] ?? '';
+
+    const changed = await reset({ token, password: newPassword });
+    expect(changed.statusCode).toBe(200);
+    expect(changed.json()).toEqual({ status: 'changed' });
+    expect((await app.inject({ method: 'POST', url: '/api/sessions', payload: { email, password: newPassword } })).statusCode).toBe(200);
+    expect((await app.inject({ method: 'POST', url: '/api/sessions', payload: { email, password: oldPassword } })).statusCode).toBe(401);
+    expect((await reset({ token, password: 'another new password' })).json()).toEqual({ status: 'invalid-link' });
+  });
+
+  it('rejects invalid passwords without consuming the link', async () => {
+    const email = 'invalid-password-reset@mail.com';
+    await signUp({ email, password: 'a long enough password' });
+    await app.inject({ method: 'POST', url: '/api/password-reset-emails', payload: { email } });
+    const resetEmail = emailSender.sent.at(-1)?.text ?? '';
+    const token = /#\/reset-password\?token=([\w-]+)/.exec(resetEmail)?.[1] ?? '';
+
+    const response = await reset({ token, password: 'short' });
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({ errors: { password: 'too-short' } });
+    expect((await reset({ token, password: 'a new valid password' })).statusCode).toBe(200);
+  });
+
+  it('answers 400 when required fields are missing', async () => {
+    expect((await reset({ token: 'a-token' })).statusCode).toBe(400);
+  });
+});
